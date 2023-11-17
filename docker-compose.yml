@@ -1,0 +1,15 @@
+version: '3'
+services:
+  api:
+    image: bam-api
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    command: uvicorn bam_app.main:app --reload --port 3030 --host 0.0.0.0
+    ports:
+      - "3030:3030"
+    volumes:
+      - ./app:/opt/bam/
+    environment:
+      BAM_APIKEY: 'bam'
+

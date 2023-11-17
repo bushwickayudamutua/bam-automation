@@ -1,0 +1,58 @@
+filepath: data/open-requests.json
+metrics:
+  - name: Groceries
+    translations:
+      span: Comida
+      eng: Groceries
+    table: "Assistance Requests: Main"
+    view: P2W - Open Grocery Requests
+    fields: ["Phone Number"]
+    unique: True
+  - name: Pots and Pans
+    translations:
+      span: Ollas y sartenes
+      eng: Pots and Pans
+    table: "Assistance Requests: Main"
+    view: P2W - Open Pots & Pans Requests
+    fields: ["Phone Number"]
+    unique: True
+  - name: Beds
+    translations:
+      span: Camas
+      eng: Beds
+    table: "Assistance Requests: Main"
+    view: P2W - Open Bed Requests
+    fields: ["Phone Number"]
+    unique: True
+  - name: Pads
+    translations:
+      span: Toallas sanitarias
+      eng: Pads
+    table: "Assistance Requests: Main"
+    view: P2W - Open Pads Requests
+    fields: ["Phone Number"]
+    unique: True
+  - name: Diapers
+    translations:
+      span: Pañales
+      eng: Diapers
+    table: "Assistance Requests: Main"
+    view: P2W - Open Baby Diaper Requests
+    fields: ["Phone Number"]
+    unique: True
+  - name: Clothing Assistance
+    translations:
+      span: Ropa
+      eng: Clothing Assistance
+    table: "Assistance Requests: Main"
+    view: P2W - Open Clothing Requests
+    fields: ["Phone Number"]
+    unique: True
+  - name: School Supplies
+    translations:
+      span: Útiles escolares
+      eng: School Supplies
+    table: "Assistance Requests: Main"
+    view: P2W - Open School Supplies Requests
+    fields: ["Phone Number"]
+    unique: True

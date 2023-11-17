@@ -1,0 +1,6 @@
+pytest
+virtualenv
+black
+wheel>=0.41.2
+httpx
+setuptools>=68.1.2

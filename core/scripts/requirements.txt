@@ -1,0 +1,4 @@
+requests==2.25.1 
+twilio==6.51.1
+python-dotenv==0.15.0
+click==8.0.1

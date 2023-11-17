@@ -1,0 +1,126 @@
+environment:
+  BAM_AIRTABLE_TOKEN: "${BAM_AIRTABLE_TOKEN}"
+  BAM_AIRTABLE_BASE_ID: "${BAM_AIRTABLE_BASE_ID}"
+  BAM_MAILJET_API_KEY: "${BAM_MAILJET_API_KEY}"
+  BAM_MAILJET_API_SECRET: "${BAM_MAILJET_API_SECRET}"
+  BAM_DO_TOKEN: "${BAM_DO_TOKEN}"
+  BAM_S3_BASE_URL: "https://nyc3.digitaloceanspaces.com"
+  BAM_S3_ENDPOINT_URL: "https://nyc3.digitaloceanspaces.com"
+  BAM_S3_BUCKET: "bam-file"
+  BAM_S3_REGION_NAME: "nyc3"
+  BAM_S3_ACCESS_KEY_ID: ${BAM_S3_ACCESS_KEY_ID}
+  BAM_S3_SECRET_ACCESS_KEY: ${BAM_S3_SECRET_ACCESS_KEY}
+  BAM_S3_PLATFORM: "do"
+  BAM_S3_CDN_ID: ${BAM_S3_CDN_ID}
+parameters: {}
+packages:
+  - name: cron
+    parameters: {}
+    annotations: {}
+    functions:
+      - name: hourly
+        binary: false
+        main: ""
+        runtime: "python:3.9"
+        web: true
+        parameters: {}
+        annotations: {}
+        limits:
+          timeout: 900000
+          logs: 256
+          memory: 1024
+        triggers:
+          - name: trigger-hourly-run
+            sourceType: scheduler
+            sourceDetails:
+              cron: "3 * * * *" # every hour at 3 minutes after the hour
+  
+      - name: daily
+        binary: false
+        main: ""
+        runtime: "python:3.9"
+        web: true
+        parameters: {}
+        annotations: {}
+        limits:
+          timeout: 900000
+          logs: 256
+          memory: 1024
+        triggers:
+          - name: trigger-daily-run
+            sourceType: scheduler
+            sourceDetails:
+              cron: "33 2 * * *" # 10:30pm ET
+  
+  - name: airtable
+    parameters: {}
+    annotations: {}
+    functions:
+      - name: dedupe_views
+        binary: false
+        main: ""
+        runtime: "python:3.9"
+        web: true
+        parameters: {}
+        annotations: {}
+        limits:
+          timeout: 300000
+          logs: 256
+          memory: 1024
+
+      - name: consolidate_eg_requests
+        binary: false
+        main: ""
+        runtime: "python:3.9"
+        web: true
+        parameters: {}
+        annotations: {}
+        limits:
+          timeout: 300000
+          logs: 256
+          memory: 1024
+
+      - name: update_field_value
+        binary: false
+        main: ""
+        runtime: "python:3.9"
+        web: true
+        parameters: {}
+        annotations: {}
+        limits:
+          timeout: 300000
+          logs: 256
+          memory: 1024
+
+  - name: website
+    parameters: {}
+    annotations: {}
+    functions:
+      - name: update_request_data
+        binary: false
+        main: ""
+        runtime: "python:3.9"
+        web: true
+        parameters: {}
+        annotations: {}
+        limits:
+          timeout: 300000
+          logs: 256
+          memory: 512
+
+  - name: mailjet
+    environment: {}
+    parameters: {}
+    annotations: {}
+    functions:
+      - name: update_lists
+        binary: false
+        main: ""
+        runtime: "python:3.9"
+        web: true
+        parameters: {}
+        annotations: {}
+        limits:
+          timeout: 300000
+          logs: 256
+          memory: 1024
