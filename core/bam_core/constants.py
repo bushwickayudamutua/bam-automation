@@ -31,8 +31,8 @@ EG_REQUESTS_SCHEMA = {
         "timeout": "Baby Diapers Timeout",
     },
     "Pañales de adultos / Adult Diapers / 成人纸尿裤": {
-        "delivered": "Baby Diapers Delivered",
-        "timeout": "Baby Diapers Timeout",
+        "delivered": "Adult Diapers Delivered",
+        "timeout": "Adult Diapers Timeout",
     },
     "Ropa / Clothing / 服装协助": {
         "delivered": "Clothing Assistance Delivered",
