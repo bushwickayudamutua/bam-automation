@@ -198,7 +198,7 @@ class DedupeAirtableViews(Function):
         )
 
     def run(self, event, context):
-        dry_run = event["DRY_RUN"]
+        dry_run = event.get("DRY_RUN", False)
         for view in constants.VIEWS:
             log.info(f"Deduping view: {view['name']}")
             dedupe_view(view, dry_run)

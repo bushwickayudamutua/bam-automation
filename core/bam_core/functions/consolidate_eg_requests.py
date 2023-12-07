@@ -266,7 +266,7 @@ class ConsolidateEssentialGoodsRequests(Function):
             delivered_tag=delivered_tag,
             source_view=event["SOURCE_VIEW"],
             target_views=event["TARGET_VIEWS"],
-            dry_run=event["DRY_RUN"],
+            dry_run=event.get("DRY_RUN", False),
         )
         log.info("=" * 60)
 
@@ -275,7 +275,7 @@ class ConsolidateEssentialGoodsRequests(Function):
             request=request,
             timeout_tag=timeout_tag,
             delivered_tag=delivered_tag,
-            dry_run=event["DRY_RUN"],
+            dry_run=event.get("DRY_RUN", False),
         )
         log.info("Consolidate step finished with stats:\n")
         pprint(dict(consolidate_stats))
