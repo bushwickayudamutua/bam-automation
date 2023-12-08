@@ -38,7 +38,7 @@ LOG_FORMAT = os.getenv(
 LOGGING_CONFIG = {
     "version": 1,
     "disable_existing_loggers": True,
-    "formatters": {"default": {"format": (LOG_FORMAT), "datefmt": "%I:%M:%S"}},
+    "formatters": {"default": {"format": (LOG_FORMAT), "datefmt": "%H:%M:%S"}},
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",

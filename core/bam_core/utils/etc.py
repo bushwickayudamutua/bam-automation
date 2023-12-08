@@ -1,5 +1,8 @@
 import os
+from datetime import datetime
 from typing import List, NewType
+
+import pytz
 
 Filepath = NewType("Filepath", str)  # A filepath string
 
@@ -32,3 +35,11 @@ def get_full(path: Filepath) -> str:
     path = os.path.normpath(path)
     path = os.path.abspath(path)
     return path
+
+
+def now_est():
+    """
+    Get the current time in EST
+    :return datetime
+    """
+    return datetime.now(pytz.timezone("US/Eastern"))

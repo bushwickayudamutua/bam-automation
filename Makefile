@@ -27,6 +27,14 @@ deploy-functions:
 	doctl serverless deploy functions --env ./.env --verbose --trace
 	make remove-core-from-functions
 
+run-daily:
+
+	cd functions/packages/cron/daily && python __main__.py
+
+run-hourly:
+
+	cd functions/packages/cron/hourly && python __main__.py
+
 test-core:
 
 	cd core && pytest -vv . --ignore=tests/test_security.py

@@ -127,12 +127,9 @@ class UpdateAirtableFieldValue(Function):
         dry_run = event.get("DRY_RUN", False)
 
         self.update_field(
-            phone_numbers,
-            field_name,
-            new_value,
-            view_name,
-            dry_run
+            phone_numbers, field_name, new_value, view_name, dry_run
         )
+
 
 if __name__ == "__main__":
     UpdateAirtableFieldValue().cli()

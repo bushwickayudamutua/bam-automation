@@ -1,15 +1,18 @@
+from bam_core.functions.base import Function
 from bam_core.functions.dedupe_airtable_views import DedupeAirtableViews
 from bam_core.functions.update_mailjet_lists import UpdateMailjetLists
+from bam_core.functions.snapshot_airtable_views import SnapshotAirtableViews
 
 
 def main(event, context):
-    dedupe_output = DedupeAirtableViews().main(event, context)
-    mailjet_output = UpdateMailjetLists().main(event, context)
-    return {
-        "dedupe_airtable_views": dedupe_output,
-        "update_mailjet_lists": mailjet_output,
-    }
+    return Function.run_functions(
+        event,
+        context,
+        DedupeAirtableViews,
+        UpdateMailjetLists,
+        SnapshotAirtableViews,
+    )
 
 
 if __name__ == "__main__":
-    main(None, None)
+    main({}, {})
