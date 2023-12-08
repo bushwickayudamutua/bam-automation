@@ -56,14 +56,15 @@ class SnapshotAirtableViews(Function):
         for record in self.airtable.get_table(table_name).all():
             fields = record.pop("fields", {})
             record.update(fields)
-            if number_of_days:
+            if number_of_days is not None:
                 last_modified = record.get(last_modified_field, None)
                 if last_modified:
                     last_modified = datetime.strptime(
                         last_modified, AIRTABLE_DATETIME_FORMAT
                     )
                     if last_modified.date() >= (
-                        now_est().date() - timedelta(days=number_of_days)
+                        datetime.utcnow().date()
+                        - timedelta(days=number_of_days)
                     ):
                         records.append(record)
             else:
@@ -107,6 +108,9 @@ class SnapshotAirtableViews(Function):
             records = self.get_modified_records(
                 table_name, last_modified_field, number_of_days
             )
+            if not records:
+                log.info(f"No modified records found in {table_name} table")
+                continue
             log.info(
                 f"Found {len(records)} modified records in {table_name} table"
             )

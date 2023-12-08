@@ -15,7 +15,7 @@ class UpdateWebsiteRequestData(Function):
     """
 
     CONFIG = {
-        "filepath": "data/open-requests.json",
+        "filepath": "website-data/open-requests.json",
         "metrics": [
             {
                 "name": "Groceries",
