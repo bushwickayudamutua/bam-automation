@@ -277,7 +277,7 @@ class S3(object):
             for filename in etc.list_files(local_path):
                 sub_path = os.path.relpath(filename, start=local_path)
                 file_key = os.path.join(key, sub_path)
-                log.debug(f" [s3-upload] UPLOADING {filename} to {file_key}")
+                log.debug(f"[s3-upload] UPLOADING {filename} to {file_key}")
                 self._upload_file(
                     filename,
                     file_key,

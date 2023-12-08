@@ -1,9 +1,13 @@
 from argparse import ArgumentParser
-from typing import Any, Dict, Optional
+import traceback
+import logging
+from typing import Any, Dict, List, Optional
 
 from bam_core.lib.airtable import Airtable
 from bam_core.lib.mailjet import Mailjet
 from bam_core.lib.s3 import S3
+
+log = logging.getLogger(__name__)
 
 
 class Function(object):
@@ -53,3 +57,27 @@ class Function(object):
         # override event with options from argparse
         event = self.get_options()
         return self.run(event, {})
+
+    @classmethod
+    def run_functions(cls, event, context, *functions):
+        """
+        Run a list of functions and handle errors
+        """
+        failures = []
+        output = []
+        for function in functions:
+            log.info(f"Running {function.__name__}\n{'*' * 80}")
+            try:
+                output.append(
+                    {function.__name__: function().main(event, context)}
+                )
+            except Exception as e:
+                log.error(f"Error running {function}")
+                log.error(e)
+                traceback.print_exc()
+                failures.append(function.__name__)
+            log.info(f"Finished {function.__name__}\n{'*' * 80}")
+        if failures:
+            raise Exception(f"Errors running: {failures}")
+
+        return output
