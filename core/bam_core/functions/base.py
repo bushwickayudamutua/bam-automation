@@ -59,18 +59,16 @@ class Function(object):
         return self.run(event, {})
 
     @classmethod
-    def run_functions(cls, event, context, *functions):
+    def run_functions(cls, event, context, *functions) -> Dict[str, Any]:
         """
         Run a list of functions and handle errors
         """
         failures = []
-        output = []
+        output = {}
         for function in functions:
             log.info(f"Running {function.__name__}\n{'*' * 80}")
             try:
-                output.append(
-                    {function.__name__: function().main(event, context)}
-                )
+                output[function.__name__] = function().main(event, context)
             except Exception as e:
                 log.error(f"Error running {function}")
                 log.error(e)

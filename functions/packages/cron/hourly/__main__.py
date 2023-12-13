@@ -9,4 +9,7 @@ def main(event, context):
 
 
 if __name__ == "__main__":
-    main({}, {})
+    from pprint import pprint
+
+    output = main({}, {})
+    pprint(output)
