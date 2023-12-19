@@ -2,12 +2,12 @@
 
 This function accomplishes the following task:
 
-- For all records that have an `ESSENTIAL_GOODS_REQUEST`, add a "timeout" status to any unfulfilled records for phone numbers which have at least one fulfilled request.
+- For all records that have an `ESSENTIAL_GOODS_REQUEST`, add a "timeout" status to any unfulfilled records for phone numbers which have at least one fulfilled request. You can view the full list of support `ESSENTIAL_GOODS_REQUESTS` in [this file](../../../../core/bam_core/constants.py).
 
 ### To Run
 ##### Via DigitalOcean Console
 1) If you don't already have access to BAM DigitalOcean account, request access in the BAM Tech signal chat
-2) In the DigitalOcean dashboard: Click on Manage > Functions on the lefthand navigation bar, then select the `airtable/timeout_eq_requests` function
+2) In the DigitalOcean dashboard: Click on Manage > Functions on the lefthand navigation bar, then select the `airtable/timeout_eg_requests` function
 ![](./assets/images/function_nav.png)
 
 3) Click on `Parameters`

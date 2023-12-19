@@ -17,6 +17,11 @@ copy-core-to-functions:
 	cp -R core functions/packages/mailjet/update_lists/
 	cp -R core functions/packages/website/update_request_data/
 
+cleanup-functions:
+
+	rm -rf functions/packages/*/*/virtualenv
+	rm -rf functions/packages/*/*/__deployer__.zip
+
 remove-core-from-functions:
 
 	rm -rf functions/packages/*/*/core

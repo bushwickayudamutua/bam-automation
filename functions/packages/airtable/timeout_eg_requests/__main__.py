@@ -1,4 +1,4 @@
-from bam_core.functions.timeout_eq_requests import (
+from bam_core.functions.timeout_eg_requests import (
     TimeoutEssentialGoodsRequests,
 )
 
