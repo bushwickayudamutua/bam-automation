@@ -34,7 +34,7 @@ packages:
             sourceType: scheduler
             sourceDetails:
               cron: "3 * * * *" # every hour at 3 minutes after the hour
-  
+
       - name: daily
         binary: false
         main: ""
@@ -51,7 +51,7 @@ packages:
             sourceType: scheduler
             sourceDetails:
               cron: "33 2 * * *" # 10:30pm ET
-  
+
   - name: airtable
     parameters: {}
     annotations: {}
@@ -69,6 +69,18 @@ packages:
           memory: 1024
 
       - name: consolidate_eg_requests
+        binary: false
+        main: ""
+        runtime: "python:3.9"
+        web: true
+        parameters: {}
+        annotations: {}
+        limits:
+          timeout: 300000
+          logs: 256
+          memory: 1024
+
+      - name: timeout_eg_requests
         binary: false
         main: ""
         runtime: "python:3.9"
