@@ -202,7 +202,7 @@ class ConsolidateEssentialGoodsRequests(Function):
             delivered_tag=delivered_tag,
             source_view=event["SOURCE_VIEW"],
             target_views=event["TARGET_VIEWS"],
-            dry_run=event.get("DRY_RUN", False),
+            dry_run=bool(event.get("DRY_RUN", False)),
         )
         log.info("Consolidation finished with stats:\n")
         pprint(consolidate_stats)

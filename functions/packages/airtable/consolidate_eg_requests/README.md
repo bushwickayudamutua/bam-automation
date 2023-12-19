@@ -28,7 +28,7 @@ This function is designed to help consolidate essential good requests to facilit
   "ESSENTIAL_GOODS_REQUEST": "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品",
   "SOURCE_VIEW": "Essential Goods: Soap & Shower Products",
   "TARGET_VIEWS": ["Essential Goods: Pads", "Essential Goods: Baby Diapers", "Essential Goods: Adult Diapers", "Essential Goods: Clothing Requests"],
-  "DRY_RUN": "this is optional. set to `True` when you just want to see the expected output without running updates"
+  "DRY_RUN": "this is optional. set to `true` when you just want to see the expected output without running updates"
 }
 ```
 

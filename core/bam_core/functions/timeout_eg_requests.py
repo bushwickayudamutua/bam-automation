@@ -129,7 +129,7 @@ class TimeoutEssentialGoodsRequests(Function):
             request=request,
             timeout_tag=timeout_tag,
             delivered_tag=delivered_tag,
-            dry_run=event.get("DRY_RUN", False),
+            dry_run=bool(event.get("DRY_RUN", False)),
         )
         log.info("Timeout process finished with stats:\n")
         pprint(timeout_stats)

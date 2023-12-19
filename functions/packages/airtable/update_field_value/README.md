@@ -1,15 +1,16 @@
 ### To Run
 ##### Via DigitalOcean Console
 0) If you don't already have access to BAM DigitalOcean account, request access in the BAM Tech signal chat
-1) In the DigitalOcean dashboard: Click on Manage > Functions on the lefthand navigation bar, then select the airtable/update_field_value function
+1) In the DigitalOcean dashboard: Click on Manage > Functions on the lefthand navigation bar, then select the `airtable/update_field_value` function
 ![](./assets/images/function_nav.png)
 
-2) Click on `parameters`
+2) Click on `Parameters`
 ![](./assets/images/function_params.png)
 
 3) Update the following information
 Note: You'll need to convert the doc text all into one line before copying it here (try pasting to [this site](https://www.textfixer.com/tools/paragraph-to-lines.php), clicking "convert to single line", then pasting into "PHONE_NUMBERS_TO_UPDATE")
-```
+
+```json
 {
   "FIELD_NAME": "Expected EG Distribution Date",
   "NEW_VALUE": "2023-09-02",
