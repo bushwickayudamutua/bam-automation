@@ -61,8 +61,9 @@ def retry_with_backoff(retries=5, backoff_in_seconds=5):
                         if x == retries:
                             raise
                         else:
-                            sleep = backoff_in_seconds * 2**x + random.uniform(
-                                0, 1
+                            sleep = (
+                                backoff_in_seconds * 2 ** x
+                                + random.uniform(0, 1)
                             )
                             time.sleep(sleep)
                             x += 1

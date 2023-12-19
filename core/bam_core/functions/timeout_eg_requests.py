@@ -135,5 +135,6 @@ class TimeoutEssentialGoodsRequests(Function):
         pprint(timeout_stats)
         return timeout_stats
 
+
 if __name__ == "__main__":
     TimeoutEssentialGoodsRequests().cli()

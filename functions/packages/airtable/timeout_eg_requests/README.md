@@ -6,14 +6,14 @@ This function accomplishes the following task:
 
 ### To Run
 ##### Via DigitalOcean Console
-0) If you don't already have access to BAM DigitalOcean account, request access in the BAM Tech signal chat
-1) In the DigitalOcean dashboard: Click on Manage > Functions on the lefthand navigation bar, then select the `airtable/timeout_eq_requests` function
+1) If you don't already have access to BAM DigitalOcean account, request access in the BAM Tech signal chat
+2) In the DigitalOcean dashboard: Click on Manage > Functions on the lefthand navigation bar, then select the `airtable/timeout_eq_requests` function
 ![](./assets/images/function_nav.png)
 
-2) Click on `Parameters`
+3) Click on `Parameters`
 ![](./assets/images/function_params.png)
 
-3) Update the following input
+4) Update the following input
 
 ```json
 {
@@ -22,8 +22,8 @@ This function accomplishes the following task:
 }
 ```
 
-1) Click the `run` button
+5) Click the `Run` button
 ![](./assets/images/function_run.png)
 
-1) In the logs you should see a full list of the changes made and a summary of all changes.
+6) In the logs you should see a full list of the changes made and a summary of all changes.
 ![](./assets/images/function_logs.png)
