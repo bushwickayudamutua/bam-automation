@@ -12,6 +12,7 @@ copy-core-to-functions:
 	cp -R core functions/packages/cron/daily/
 	cp -R core functions/packages/airtable/dedupe_views/
 	cp -R core functions/packages/airtable/consolidate_eg_requests/
+	cp -R core functions/packages/airtable/timeout_eg_requests/
 	cp -R core functions/packages/airtable/update_field_value/
 	cp -R core functions/packages/mailjet/update_lists/
 	cp -R core functions/packages/website/update_request_data/
