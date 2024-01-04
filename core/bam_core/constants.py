@@ -88,13 +88,75 @@ KITCHEN_REQUESTS_SCHEMA = {
         "timeout": "Coffee Maker Timeout",
     },
     "Otras / Other / 其他东西": {
-        "delivered": None,
-        "timeout": None,
+        "delivered": "Kitchen Supplies Delivered",
+        "timeout": "Kitchen Supplies Timeout",
     },
     "Licuadora / Blender / 攪拌機": {
         "delivered": "Blender / Food Processor Delivered",
         "timeout": "Blender / Food Processor Timeout",
     },
+}
+
+FOOD_REQUESTS_SCHEMA = {
+    "Alimentos / Groceries / 杂货": {
+        "delivered": "Groceries Delivered",
+        "timeout": "Groceries Request Timeout",
+        "missed": "Missed Food Distro Appt",
+    },
+    "Comida caliente / Hot meals / 热食": {
+        "delivered": "Hot Food Delivered",
+        "timeout": "Hot Food Request Timeout",
+    }
+}
+
+FURNITURE_REQUESTS_SCHEMA = {
+    "Cama / Bed / 床": {
+        
+    },
+    "Sofa / Sofa / 沙發": {
+        "delivered": "Sofa Delivered",
+        "timeout": "Sofa Timeout",
+        
+    },
+    "Cajonera / Clothes Dresser / 衣服梳妆台": {
+        "delivered": "Dresser Delivered",
+        "timeout": "Dresser Timeout",
+    },
+    "Escritorio / Desk /  书桌": {
+        "delivered": "Desk Delivered",
+        "timeout": "Desk Timeout",
+    
+    },
+    "Mesa de centro / Coffee Table / 咖啡桌": {
+        "delivered": "Coffee Table Delivered",
+        "timeout": "Coffee Table Timeout",
+        
+    },
+    "Sillas / Chairs / 椅子": {
+        "delivered": "Chairs Delivered",
+        "timeout": "Chairs Timeout",
+        
+    },
+    "Almacenamiento / Storage / 存储": {
+        "delivered": "Storage Delivered",
+        "timeout": "Storage Timeout",
+    },
+    "Mesa Para Comedor / Dining Room Table / 餐桌": {
+        "delivered": "Dining Table Delivered",
+        "timeout": "Dining Table Timeout",
+    },
+    "Nevera / Refrigerator / 冰箱": {
+        "delivered": "Fridge Delivered",
+        "timeout": "Fridge Timeout",
+    },
+    "Aire conditionador / Air Conditioner / 冷气机": {
+        "delivered": "AC Delivered",
+        "timeout": "AC Timeout",
+        
+    },
+    "Otras / Other / 其他东西": {
+        
+    }
 }
 
 
