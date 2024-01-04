@@ -111,6 +111,15 @@ class Airtable(object):
             formula = fx.OR(*expressions)
         return table.all(formula=formula, sort=sort, fields=fields)
 
+    @classmethod
+    def _flatten_record(cls, record: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Flatten an Airtable record
+        """
+        fields = record.pop("fields", {})
+        record.update(fields)
+        return record
+
     def get_phone_number_to_requests_lookup(
         self,
         view: Optional[str] = None,
@@ -137,8 +146,8 @@ class Airtable(object):
         records = self.assistance_requests.all(**kwargs)
         lookup = defaultdict(list)
         for record in records:
-            fields = record.pop("fields", {})
-            phone_number = fields.get(phone_number_field, None)
+            record = self._flatten_record(record)
+            phone_number = record.get(phone_number_field, None)
             if not phone_number:
                 continue
             record["createdTime"] = datetime.strptime(

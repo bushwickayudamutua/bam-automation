@@ -186,14 +186,14 @@ class ConsolidateEssentialGoodsRequests(Function):
     def run(self, event, context):
         # validate the provided request
         request = event["ESSENTIAL_GOODS_REQUEST"].strip()
-        if request not in EG_REQUESTS_SCHEMA:
+        if request not in EG_REQUESTS_SCHEMA["items"]:
             raise ValueError(
-                f"Invalid ESSENTIAL_GOODS_REQUEST: {request}. Choose from: {EG_REQUESTS_SCHEMA.keys()}"
+                f"Invalid ESSENTIAL_GOODS_REQUEST: {request}. Choose from: {EG_REQUESTS_SCHEMA['items'].keys()}"
             )
 
         # get the timeout flag from the schema
-        timeout_tag = EG_REQUESTS_SCHEMA[request]["timeout"]
-        delivered_tag = EG_REQUESTS_SCHEMA[request]["delivered"]
+        timeout_tag = EG_REQUESTS_SCHEMA["items"][request]["timeout"]
+        delivered_tag = EG_REQUESTS_SCHEMA["items"][request]["delivered"]
 
         # consolidate the view
         consolidate_stats = self.consolidate_view(
