@@ -112,6 +112,10 @@ def clean_email(email: str) -> str:
     if email.endswith(".vom"):
         email = email[:-4] + ".com"
 
+    # check for .col typos
+    if email.endswith(".col"):
+        email = email[:-4] + ".com"
+
     # check for @com typos
     if email.endswith("@com"):
         email = email[:-4] + ".com"
@@ -216,3 +220,4 @@ def format_email(email: str, dns_check: bool = False) -> Dict[str, str]:
         return {"email": email_info.normalized, "error": ""}
     except EmailNotValidError as e:
         return {"email": email, "error": str(e)}
+    
