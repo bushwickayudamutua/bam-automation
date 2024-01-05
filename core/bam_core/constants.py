@@ -7,7 +7,6 @@ AIRTABLE_DATETIME_FORMAT = r"%Y-%m-%dT%H:%M:%S.%fZ"
 ASSISTANCE_REQUESTS_TABLE_NAME = "Assistance Requests: Main"
 VOLUNTEERS_TABLE_NAME = "Volunteers: Main"
 ESSENTIAL_GOODS_TABLE_NAME = "Essential Good Donations: Main"
-MESH_VIEW_NAME = "MESH - Pending installs, by address (Lu)"
 
 # Airtable field name for phone numbers
 PHONE_FIELD = "Phone Number"
@@ -20,54 +19,37 @@ EG_MISSED_APPT_STATUS = "Missed EG Distro Appt"
 # Airtable field names for food requests/statuses
 FOOD_REQUESTS_FIELD = "Food Requests?"
 FOOD_STATUS_FIELD = "Food Request Status"
+FOOD_MISSED_APPT_STATUS = "Missed Food Distro Appt"
 
 # Airtable field names for social services requests/statuses
 SOCIAL_SERVICES_REQUESTS_FIELD = "Social Services Requests?"
 SOCIAL_SERVICES_STATUS_FIELD = "Social Services Request Status"
 
-# Mapping of kitchen requests to statuses
-KITCHEN_REQUESTS_SCHEMA = {
-    "request_field": "Which Kitchen Items",
-    "status_field": EG_STATUS_FIELD,
-    "items": {
-        "Microondas / Microwave / 微波": {
-            "delivered": "Microwave Delivered",
-            "timeout": "Microwave Timeout",
-        },
-        "Ollas y Sartenes / Pots & Pans / 锅碗瓢盆": {
-            "delivered": "Pots & Pans Delivered",
-            "timeout": "Pots & Pans Timeout",
-        },
-        "Platos / Plates / 板块": {
-            "delivered": "Plates Delivered",
-            "timeout": "Plates Timeout",
-        },
-        "Tazas / Cups / 杯具": {
-            "delivered": "Cups Delivered",
-            "timeout": "Cups Timeout",
-        },
-        "Utensilios / Utensils / 餐具": {
-            "delivered": "Utensils Delivered",
-            "timeout": "Utensils Timeout",
-        },
-        "Cafetera / Coffee Maker / 咖啡机": {
-            "delivered": "Coffee Maker Delivered",
-            "timeout": "Coffee Maker Timeout",
-        },
-        "Otras / Other / 其他东西": {
-            "delivered": "Kitchen Supplies Delivered",
-            "timeout": "Kitchen Supplies Timeout",
-        },
-        "Licuadora / Blender / 攪拌機": {
-            "delivered": "Blender / Food Processor Delivered",
-            "timeout": "Blender / Food Processor Timeout",
-        },
-    },
-}
+# Kitchen Requests Field
+KITCHEN_REQUESTS_FIELD = "Which Kitchen Items"
+
+# Airtable field name for furniture requests
+FURNITURE_REQUESTS_FIELD = "Which Furniture Items"
+
+# Airtable field name for bed requests
+BED_REQUESTS_FIELD = "Which Bed Size"
+
+REQUEST_FIELDS = [
+    PHONE_FIELD,
+    EG_REQUESTS_FIELD,
+    KITCHEN_REQUESTS_FIELD,
+    FURNITURE_REQUESTS_FIELD,
+    BED_REQUESTS_FIELD,
+    EG_STATUS_FIELD,
+    FOOD_REQUESTS_FIELD,
+    FOOD_STATUS_FIELD,
+    SOCIAL_SERVICES_REQUESTS_FIELD,
+    SOCIAL_SERVICES_STATUS_FIELD,
+]
 
 # Mapping of bed requests to statuses
 BED_REQUESTS_SCHEMA = {
-    "request_field": "Which Bed Size",
+    "request_field": BED_REQUESTS_FIELD,
     "status_field": EG_STATUS_FIELD,
     "items": {
         "Cuna / Crib / 婴儿床": {
@@ -132,12 +114,12 @@ BED_REQUESTS_SCHEMA = {
 # Mapping of furniture requests to statuses.
 # Note that bed requests are nested under furniture requests.
 FURNITURE_REQUESTS_SCHEMA = {
-    "request_field": "Which Furniture Items",
+    "request_field": FURNITURE_REQUESTS_FIELD,
     "status_field": EG_STATUS_FIELD,
     "items": {
         "Cama / Bed / 床": {
-            "delivered": None,
-            "timeout": "Furniture Timeout",
+            "delivered": ["Mattress Delivered", "Bed Frame Delivered"],
+            "timeout": ["Mattress Timeout", "Bed Frame Timeout"],
             "items": BED_REQUESTS_SCHEMA,
         },
         "Sofa / Sofa / 沙發": {
@@ -177,8 +159,48 @@ FURNITURE_REQUESTS_SCHEMA = {
             "timeout": "AC Timeout",
         },
         "Otras / Other / 其他东西": {
-            "delivered": "Furniture Delivered",
-            "timeout": "Furniture Timeout",
+            "delivered": "Other Furniture Delivered",
+            "timeout": "Other Furniture Timeout",
+        },
+    },
+}
+
+# Mapping of kitchen requests to statuses
+KITCHEN_REQUESTS_SCHEMA = {
+    "request_field": KITCHEN_REQUESTS_FIELD,
+    "status_field": EG_STATUS_FIELD,
+    "items": {
+        "Microondas / Microwave / 微波": {
+            "delivered": "Microwave Delivered",
+            "timeout": "Microwave Timeout",
+        },
+        "Ollas y Sartenes / Pots & Pans / 锅碗瓢盆": {
+            "delivered": "Pots & Pans Delivered",
+            "timeout": "Pots & Pans Timeout",
+        },
+        "Platos / Plates / 板块": {
+            "delivered": "Plates Delivered",
+            "timeout": "Plates Timeout",
+        },
+        "Tazas / Cups / 杯具": {
+            "delivered": "Cups Delivered",
+            "timeout": "Cups Timeout",
+        },
+        "Utensilios / Utensils / 餐具": {
+            "delivered": "Utensils Delivered",
+            "timeout": "Utensils Timeout",
+        },
+        "Cafetera / Coffee Maker / 咖啡机": {
+            "delivered": "Coffee Maker Delivered",
+            "timeout": "Coffee Maker Timeout",
+        },
+        "Otras / Other / 其他东西": {
+            "delivered": "Kitchen Supplies Delivered",
+            "timeout": "Kitchen Supplies Timeout",
+        },
+        "Licuadora / Blender / 攪拌機": {
+            "delivered": "Blender / Food Processor Delivered",
+            "timeout": "Blender / Food Processor Timeout",
         },
     },
 }
@@ -263,7 +285,7 @@ FOOD_REQUESTS_SCHEMA = {
         "Alimentos / Groceries / 杂货": {
             "delivered": "Groceries Delivered",
             "timeout": "Groceries Request Timeout",
-            "missed": "Missed Food Distro Appt",
+            "missed": FOOD_MISSED_APPT_STATUS,
         },
         "Comida caliente / Hot meals / 热食": {
             "delivered": "Hot Food Delivered",
@@ -328,7 +350,7 @@ SOCIAL_SERVICES_REQUESTS_SCHEMA = {
             "timeout": "Low-Cost Internet Access TImeout",
         },
         "Asistencia con beneficios de comida / Assistance with food benefits / 协助 - WIC, SNAP, P-EBT": {
-            "completed": [
+            "delivered": [
                 "SNAP Signup Completed through WSCAH",
                 "WIC Signup Completed through WSCAH",
                 "ContraCovid - Food Benefits Intake Scheduled",
