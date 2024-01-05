@@ -43,7 +43,7 @@ run-hourly:
 
 test-core:
 
-	cd core && pytest -vv . --ignore=tests/test_security.py
+	cd core && pytest -vv .
 
 test-app:
 

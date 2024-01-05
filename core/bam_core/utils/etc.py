@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from typing import List, NewType
+from typing import Any, List, NewType, Union
 
 import pytz
 
@@ -43,3 +43,14 @@ def now_est():
     :return datetime
     """
     return datetime.now(pytz.timezone("US/Eastern"))
+
+
+def to_list(value: Union[Any, List[Any]]) -> List[Any]:
+    """
+    Convert a value to a list
+    :param value: A value
+    :return list
+    """
+    if isinstance(value, list):
+        return value
+    return [value]
