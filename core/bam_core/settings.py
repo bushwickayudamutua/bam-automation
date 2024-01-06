@@ -13,6 +13,9 @@ AIRTABLE_BASE_ID = os.getenv("BAM_AIRTABLE_BASE_ID", None)
 MAILJET_API_KEY = os.getenv("BAM_MAILJET_API_KEY", None)
 MAILJET_API_SECRET = os.getenv("BAM_MAILJET_API_SECRET", None)
 
+# google settings
+GOOGLE_MAPS_API_KEY = os.getenv("BAM_GOOGLE_MAPS_API_KEY", None)
+
 # s3 settings
 DO_TOKEN = os.getenv("BAM_DO_TOKEN", None)
 S3_BASE_URL = os.getenv(
