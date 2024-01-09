@@ -50,7 +50,9 @@ def format_address(
     address_query = f"{address.strip()} {city_state.strip() or 'New York'} {_fix_zip_code(zipcode.strip())}".strip().upper()
 
     # lookup address using Google Maps Places API
-    place_response = gmaps.get_place(address_query, strict_bounds=strict_bounds)
+    place_response = gmaps.get_place(
+        address_query, strict_bounds=strict_bounds
+    )
     if len(place_response):
         no_place_response = False
         place_address = place_response[0]["description"]
@@ -73,8 +75,12 @@ def format_address(
     norm_address = norm_address_result.get("result", {})
     if no_place_response:
         # if no place response, use granularity from the norm address response
-        granularity = norm_address.get("verdict", {}).get("validationGranularity", "")
-        input_granularity = norm_address.get("verdict", {}).get("inputGranularity", "")
+        granularity = norm_address.get("verdict", {}).get(
+            "validationGranularity", ""
+        )
+        input_granularity = norm_address.get("verdict", {}).get(
+            "inputGranularity", ""
+        )
         if granularity == "SUB_PREMISE":
             response["cleaned_address_accuracy"] = "Apartment"
         # never confirm apartment-level granularity based on input-level granularity
@@ -118,9 +124,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="bam-geo")
     parser.add_argument("-a", "--address", help="The address to format")
     parser.add_argument(
-        "-c", "--city-state", help="The city and state to use.", default="New York"
+        "-c",
+        "--city-state",
+        help="The city and state to use.",
+        default="New York",
     )
-    parser.add_argument("-z", "--zipcode", help="The zipcode to use.", default="")
+    parser.add_argument(
+        "-z", "--zipcode", help="The zipcode to use.", default=""
+    )
     parser.add_argument(
         "-ns",
         "--no-strict-bounds",
@@ -133,6 +144,9 @@ if __name__ == "__main__":
 
     pprint(
         format_address(
-            args.address, args.city_state, args.zipcode, not args.no_strict_bounds
+            args.address,
+            args.city_state,
+            args.zipcode,
+            not args.no_strict_bounds,
         )
     )
