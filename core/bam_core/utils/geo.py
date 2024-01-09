@@ -77,7 +77,8 @@ def format_address(
         input_granularity = norm_address.get("verdict", {}).get("inputGranularity", "")
         if granularity == "SUB_PREMISE":
             response["cleaned_address_accuracy"] = "Apartment"
-        elif granularity == "PREMISE" or input_granularity == "PREMISE":
+        # never confirm apartment-level granularity based on input-level granularity
+        elif granularity == "PREMISE" or input_granularity.endswith("PREMISE"):
             response["cleaned_address_accuracy"] = "Building"
 
     usps_data = norm_address.get("uspsData", {}).get("standardizedAddress", {})
