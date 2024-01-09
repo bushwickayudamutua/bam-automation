@@ -7,7 +7,10 @@ COMMON_ZIPCODE_MISTAKES = {
     "112007": "11207",
 }
 # default bin response from nyc planning labs
-DEFAULT_BIN_RESPONSE = "3000000"
+DEFAULT_BIN_RESPONSES = [
+    "3000000",
+    "1000000"
+]
 
 
 def _fix_zip_code(zip_code: Optional[str]) -> str:
@@ -115,7 +118,7 @@ def format_address(
             .get("pad", {})
             .get("bin", "")
         )
-        if bin and bin != DEFAULT_BIN_RESPONSE:
+        if bin and bin not in DEFAULT_BIN_RESPONSES:
             response["bin"] = bin
     return response
 
