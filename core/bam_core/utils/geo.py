@@ -2,9 +2,6 @@ from typing import Dict, Optional
 from bam_core.lib.google import GoogleMaps
 from bam_core.lib.nyc_planning_labs import NycPlanningLabs
 
-gmaps = GoogleMaps()
-nycpl = NycPlanningLabs()
-
 COMMON_ZIPCODE_MISTAKES = {
     "112007": "11207",
 }
@@ -31,6 +28,10 @@ def format_address(
     Returns:
         Dict[str, str]: The formatted address, bin, and accuracy
     """
+    # connect to APIs
+    gmaps = GoogleMaps()
+    nycpl = NycPlanningLabs()
+    
     response = {
         "cleaned_address": "",
         "bin": "",
