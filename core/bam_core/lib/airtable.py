@@ -9,8 +9,6 @@ from bam_core import settings
 from bam_core.utils.etc import to_list
 from bam_core.constants import (
     AIRTABLE_DATETIME_FORMAT,
-    EG_REQUESTS_FIELD,
-    EG_STATUS_FIELD,
     PHONE_FIELD,
     ASSISTANCE_REQUESTS_TABLE_NAME,
     ESSENTIAL_GOODS_TABLE_NAME,
