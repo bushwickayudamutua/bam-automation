@@ -64,7 +64,7 @@ def format_address(
     address = _fix_address(address)
 
     # format address for query
-    address_query = f"{address.strip()} {city_state.strip() or 'New York'} {_fix_zip_code(zipcode.strip())}".strip().upper()
+    address_query = f"{address.strip()}, {city_state.strip() or 'Brooklyn, New York'} {_fix_zip_code(zipcode.strip())}".strip().upper()
 
     # lookup address using Google Maps Places API
     place_response = gmaps.get_place(
