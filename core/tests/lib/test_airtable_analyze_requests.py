@@ -21,7 +21,10 @@ def test_analyze_requests_simple():
                 "Alimentos / Groceries / 杂货",
                 "Comida caliente / Hot meals / 热食",
             ],
-            FOOD_STATUS_FIELD: ["Groceries Delivered", "Hot Food Request Timeout"],
+            FOOD_STATUS_FIELD: [
+                "Groceries Delivered",
+                "Hot Food Request Timeout",
+            ],
             EG_REQUESTS_FIELD: [
                 "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品",
                 "Productos Femenino - Toallitas / Feminine Products - Pads / 卫生巾",
@@ -55,8 +58,12 @@ def test_analyze_requests_simple():
     assert analysis[FOOD_REQUESTS_FIELD]["timeout"] == [
         "Comida caliente / Hot meals / 热食"
     ]
-    assert analysis[EG_REQUESTS_FIELD]["open"] == ["Pañales / Baby Diapers / 婴儿纸尿裤"]
-    assert analysis[FOOD_REQUESTS_FIELD]["delivered"] == ["Alimentos / Groceries / 杂货"]
+    assert analysis[EG_REQUESTS_FIELD]["open"] == [
+        "Pañales / Baby Diapers / 婴儿纸尿裤"
+    ]
+    assert analysis[FOOD_REQUESTS_FIELD]["delivered"] == [
+        "Alimentos / Groceries / 杂货"
+    ]
     assert analysis[SOCIAL_SERVICES_REQUESTS_FIELD]["timeout"] == [
         "Asistencia asegurando vivienda/ Securing housing / 住房援助"
     ]
@@ -89,12 +96,16 @@ def test_analyze_requests_missed_appt():
         "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品",
         "Productos Femenino - Toallitas / Feminine Products - Pads / 卫生巾",
     ]
-    assert analysis[FOOD_REQUESTS_FIELD]["missed"] == ["Alimentos / Groceries / 杂货"]
+    assert analysis[FOOD_REQUESTS_FIELD]["missed"] == [
+        "Alimentos / Groceries / 杂货"
+    ]
     assert analysis[EG_REQUESTS_FIELD]["open"] == [
         "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品",
         "Productos Femenino - Toallitas / Feminine Products - Pads / 卫生巾",
     ]
-    assert analysis[FOOD_REQUESTS_FIELD]["open"] == ["Alimentos / Groceries / 杂货"]
+    assert analysis[FOOD_REQUESTS_FIELD]["open"] == [
+        "Alimentos / Groceries / 杂货"
+    ]
 
 
 def test_analyze_requests_no_status():
@@ -114,7 +125,9 @@ def test_analyze_requests_no_status():
         "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品",
         "Productos Femenino - Toallitas / Feminine Products - Pads / 卫生巾",
     ]
-    assert analysis[FOOD_REQUESTS_FIELD]["open"] == ["Alimentos / Groceries / 杂货"]
+    assert analysis[FOOD_REQUESTS_FIELD]["open"] == [
+        "Alimentos / Groceries / 杂货"
+    ]
 
 
 def test_analyze_requests_one_level_of_nesting():
@@ -147,7 +160,9 @@ def test_analyze_requests_one_level_of_nesting():
     assert analysis[FURNITURE_REQUESTS_FIELD]["delivered"] == [
         "Cajonera / Clothes Dresser / 衣服梳妆台"
     ]
-    assert analysis[KITCHEN_REQUESTS_FIELD]["timeout"] == ["Platos / Plates / 板块"]
+    assert analysis[KITCHEN_REQUESTS_FIELD]["timeout"] == [
+        "Platos / Plates / 板块"
+    ]
     assert analysis[KITCHEN_REQUESTS_FIELD]["delivered"] == [
         "Ollas y Sartenes / Pots & Pans / 锅碗瓢盆"
     ]
@@ -162,7 +177,9 @@ def test_analyze_requests_two_levels_of_nesting_specific_delivered_tag():
             FURNITURE_REQUESTS_FIELD: [
                 "Cama / Bed / 床",
             ],
-            BED_REQUESTS_FIELD: ["Cama tamaño Queen / Queen Mattress + Frame / 全床垫+框架"],
+            BED_REQUESTS_FIELD: [
+                "Cama tamaño Queen / Queen Mattress + Frame / 全床垫+框架"
+            ],
             EG_STATUS_FIELD: ["Queen Bed Set Delivered"],
         }
     }
@@ -181,7 +198,9 @@ def test_analyze_requests_two_levels_of_nesting_parent_delivered_tag():
             FURNITURE_REQUESTS_FIELD: [
                 "Cama / Bed / 床",
             ],
-            BED_REQUESTS_FIELD: ["Cama tamaño Queen / Queen Mattress + Frame / 全床垫+框架"],
+            BED_REQUESTS_FIELD: [
+                "Cama tamaño Queen / Queen Mattress + Frame / 全床垫+框架"
+            ],
             EG_STATUS_FIELD: ["Mattress Delivered"],
         }
     }
@@ -200,7 +219,9 @@ def test_analyze_requests_two_levels_of_nesting_specific_timeout_tag():
             FURNITURE_REQUESTS_FIELD: [
                 "Cama / Bed / 床",
             ],
-            BED_REQUESTS_FIELD: ["Cama tamaño Queen / Queen Mattress + Frame / 全床垫+框架"],
+            BED_REQUESTS_FIELD: [
+                "Cama tamaño Queen / Queen Mattress + Frame / 全床垫+框架"
+            ],
             EG_STATUS_FIELD: ["Queen Bed Set Timeout"],
         }
     }
@@ -218,7 +239,9 @@ def test_analyze_requests_two_levels_of_nesting_parent_timeout_tag():
         FURNITURE_REQUESTS_FIELD: [
             "Cama / Bed / 床",
         ],
-        BED_REQUESTS_FIELD: ["Cama tamaño Queen / Queen Mattress + Frame / 全床垫+框架"],
+        BED_REQUESTS_FIELD: [
+            "Cama tamaño Queen / Queen Mattress + Frame / 全床垫+框架"
+        ],
         EG_STATUS_FIELD: ["Mattress Timeout"],
     }
     analysis = Airtable.analyze_requests(record)
@@ -236,7 +259,9 @@ def test_analyze_requests_two_levels_of_nesting_grandparent_timeout_tag():
             FURNITURE_REQUESTS_FIELD: [
                 "Cama / Bed / 床",
             ],
-            BED_REQUESTS_FIELD: ["Cama tamaño Queen / Queen Mattress + Frame / 全床垫+框架"],
+            BED_REQUESTS_FIELD: [
+                "Cama tamaño Queen / Queen Mattress + Frame / 全床垫+框架"
+            ],
             EG_STATUS_FIELD: ["Furniture Timeout"],
         }
     }

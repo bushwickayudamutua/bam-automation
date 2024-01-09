@@ -6,6 +6,8 @@ from typing import Any, Dict, List, Optional
 from bam_core.lib.airtable import Airtable
 from bam_core.lib.mailjet import Mailjet
 from bam_core.lib.s3 import S3
+from bam_core.lib.google import GoogleMaps
+from bam_core.lib.nyc_planning_labs import NycPlanningLabs
 
 log = logging.getLogger(__name__)
 
@@ -18,6 +20,8 @@ class Function(object):
     mailjet = Mailjet()
     airtable = Airtable()
     s3 = S3()
+    gmaps = GoogleMaps()
+    nycpl = NycPlanningLabs()
 
     def __init__(self, parser: Optional[ArgumentParser] = None):
         self.parser = parser or ArgumentParser(

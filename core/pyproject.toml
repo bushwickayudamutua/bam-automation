@@ -15,6 +15,7 @@ dependencies = [
     "email-validator==2.0.0.post2",
     "charset-normalizer==3.2.0",
     "pytz==2023.3.post1",
+    "googlemaps==4.10.0",
 ]
 
 [build-system]

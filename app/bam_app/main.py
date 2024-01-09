@@ -5,6 +5,7 @@ from fastapi.security import OAuth2PasswordBearer
 
 from bam_core.utils.phone import format_phone_number
 from bam_core.utils.email import format_email
+from bam_core.utils.geo import format_address
 
 
 app = FastAPI()
@@ -28,6 +29,8 @@ def clean_record(
     email: str = None,
     dns_check: bool = False,
     address: str = None,
+    city_state: str = "",
+    zip_code: str = "",
 ):
     """
     :param phone_number: The phone number to validate
@@ -60,8 +63,10 @@ def clean_record(
 
     # validate mailing address
     if address:
-        # TOOO: add address cleaning
-        pass
+        address_response = format_address(
+            address=address, city_state=city_state, zipcode=zip_code
+        )
+        response.update(address_response)
     return response
 
 
