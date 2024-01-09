@@ -7,10 +7,21 @@ COMMON_ZIPCODE_MISTAKES = {
     "112007": "11207",
 }
 # default bin response from nyc planning labs
-DEFAULT_BIN_RESPONSES = [
-    "3000000",
-    "1000000"
-]
+DEFAULT_BIN_RESPONSES = ["3000000", "1000000"]
+
+
+def _fix_address(address: str) -> str:
+    """
+    Attempt to fix common mistakes in addresses
+    """
+    address = address.upper().strip()
+    address = address.replace("PISO", "FLOOR")
+    address = address.replace("APARTAMENTO", "APT")
+    address = address.replace("APTO", "APT")
+
+    if address.endswith("#"):
+        address = address[:-1].strip()
+    return address
 
 
 def _fix_zip_code(zip_code: Optional[str]) -> str:
@@ -48,6 +59,9 @@ def format_address(
     # don't do anything for missing addresses
     if not address or not address.strip():
         return response
+
+    # common address mistakes/translations
+    address = _fix_address(address)
 
     # format address for query
     address_query = f"{address.strip()} {city_state.strip() or 'New York'} {_fix_zip_code(zipcode.strip())}".strip().upper()
