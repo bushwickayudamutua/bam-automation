@@ -220,4 +220,3 @@ def format_email(email: str, dns_check: bool = False) -> Dict[str, str]:
         return {"email": email_info.normalized, "error": ""}
     except EmailNotValidError as e:
         return {"email": email, "error": str(e)}
-    

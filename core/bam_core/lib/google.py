@@ -6,7 +6,11 @@ from bam_core.constants import MAYDAY_LOCATION, MAYDAY_RADIUS
 
 class GoogleMaps(object):
     def __init__(self, api_key=GOOGLE_MAPS_API_KEY):
-        self.client = googlemaps.Client(key=api_key)
+        self.api_key = api_key
+
+    @property
+    def client(self):
+        return googlemaps.Client(key=self.api_key)
 
     def get_place(
         self,

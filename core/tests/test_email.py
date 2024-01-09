@@ -221,6 +221,7 @@ def test_dot_instead_of_at_symbol():
     result = format_email(email)
     assert result["email"] == "another.person@gmail.com"
 
+
 def test_dot_col():
     email = "test@gmail.col"
     result = format_email(email)

@@ -586,5 +586,5 @@ VIEWS: list[View] = (
 # Geolocation constants
 
 # location of mayday used to help lookup addresses
-MAYDAY_LOCATION = {'lat': 40.7041015, 'lng': -73.9163523}
-MAYDAY_RADIUS = 16093.44 # 10 miles in meters
+MAYDAY_LOCATION = {"lat": 40.7041015, "lng": -73.9163523}
+MAYDAY_RADIUS = 16093.44  # 10 miles in meters

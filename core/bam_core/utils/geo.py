@@ -31,7 +31,7 @@ def format_address(
     # connect to APIs
     gmaps = GoogleMaps()
     nycpl = NycPlanningLabs()
-    
+
     response = {
         "cleaned_address": "",
         "bin": "",

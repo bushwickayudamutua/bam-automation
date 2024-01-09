@@ -63,7 +63,9 @@ class Airtable(object):
         :param table_name: The name of the table to get
         :return Table
         """
-        records = self.get_view(table_name=table, view_name=view, fields=fields)
+        records = self.get_view(
+            table_name=table, view_name=view, fields=fields
+        )
         if unique and len(fields) and len(records):
             uniques = set()
             for r in records:
@@ -243,7 +245,9 @@ class Airtable(object):
                     )
                     continue
 
-                delivered_tags = to_list(request_tag_schema.get("delivered", []))
+                delivered_tags = to_list(
+                    request_tag_schema.get("delivered", [])
+                )
                 timeout_tags = to_list(request_tag_schema.get("timeout", []))
                 invalid_tags = to_list(request_tag_schema.get("invalid", []))
                 missed_tag = request_tag_schema.get("missed", None)
@@ -291,9 +295,13 @@ class Airtable(object):
                         sub_invalid_tags = to_list(
                             sub_request_tag_schema.get("invalid", [])
                         )
-                        sub_missed_tag = sub_request_tag_schema.get("missed", None)
+                        sub_missed_tag = sub_request_tag_schema.get(
+                            "missed", None
+                        )
 
-                        sub_sub_item_schema = sub_request_tag_schema.get("items", None)
+                        sub_sub_item_schema = sub_request_tag_schema.get(
+                            "items", None
+                        )
 
                         if not sub_sub_item_schema:
                             analysis = cls._perform_request_analysis(
@@ -313,15 +321,25 @@ class Airtable(object):
                             #########################
 
                             # handle doubly nested requests
-                            sub_sub_request_field = sub_sub_item_schema["request_field"]
-                            sub_sub_status_field = sub_sub_item_schema["status_field"]
-                            sub_sub_request_tags = record.get(sub_sub_request_field, [])
-                            sub_sub_status_tags = record.get(sub_sub_status_field, [])
+                            sub_sub_request_field = sub_sub_item_schema[
+                                "request_field"
+                            ]
+                            sub_sub_status_field = sub_sub_item_schema[
+                                "status_field"
+                            ]
+                            sub_sub_request_tags = record.get(
+                                sub_sub_request_field, []
+                            )
+                            sub_sub_status_tags = record.get(
+                                sub_sub_status_field, []
+                            )
 
                             for sub_sub_request_tag in sub_sub_request_tags:
-                                sub_sub_request_tag_schema = sub_sub_item_schema[
-                                    "items"
-                                ].get(sub_sub_request_tag, None)
+                                sub_sub_request_tag_schema = (
+                                    sub_sub_item_schema["items"].get(
+                                        sub_sub_request_tag, None
+                                    )
+                                )
                                 if not sub_sub_request_tag_schema:
                                     log.warning(
                                         f"Unknown request tag '{sub_sub_request_tag}' for field '{sub_sub_request_field}'"
@@ -329,16 +347,24 @@ class Airtable(object):
                                     continue
 
                                 sub_sub_delivered_tags = to_list(
-                                    sub_sub_request_tag_schema.get("delivered", [])
+                                    sub_sub_request_tag_schema.get(
+                                        "delivered", []
+                                    )
                                 )
                                 sub_sub_timeout_tags = to_list(
-                                    sub_sub_request_tag_schema.get("timeout", [])
+                                    sub_sub_request_tag_schema.get(
+                                        "timeout", []
+                                    )
                                 )
                                 sub_sub_invalid_tags = to_list(
-                                    sub_sub_request_tag_schema.get("invalid", [])
+                                    sub_sub_request_tag_schema.get(
+                                        "invalid", []
+                                    )
                                 )
-                                sub_sub_missed_tag = sub_sub_request_tag_schema.get(
-                                    "missed", None
+                                sub_sub_missed_tag = (
+                                    sub_sub_request_tag_schema.get(
+                                        "missed", None
+                                    )
                                 )
 
                                 analysis = cls._perform_request_analysis(
@@ -347,7 +373,8 @@ class Airtable(object):
                                     sub_sub_request_tag,
                                     sub_sub_status_tags,
                                     # respect delivered tags from one level up (only relevant for Beds)
-                                    sub_delivered_tags + sub_sub_delivered_tags,
+                                    sub_delivered_tags
+                                    + sub_sub_delivered_tags,
                                     sub_sub_timeout_tags
                                     + sub_timeout_tags
                                     + timeout_tags,
