@@ -6,6 +6,8 @@ from bam_core.lib.nyc_planning_labs import NycPlanningLabs
 COMMON_ZIPCODE_MISTAKES = {
     "112007": "11207",
 }
+# default bin response from nyc planning labs
+DEFAULT_BIN_RESPONSE = "3000000"
 
 
 def _fix_zip_code(zip_code: Optional[str]) -> str:
@@ -72,9 +74,10 @@ def format_address(
     if no_place_response:
         # if no place response, use granularity from the norm address response
         granularity = norm_address.get("verdict", {}).get("validationGranularity", "")
+        input_granularity = norm_address.get("verdict", {}).get("inputGranularity", "")
         if granularity == "SUB_PREMISE":
             response["cleaned_address_accuracy"] = "Apartment"
-        elif granularity == "PREMISE":
+        elif granularity == "PREMISE" or input_granularity == "PREMISE":
             response["cleaned_address_accuracy"] = "Building"
 
     usps_data = norm_address.get("uspsData", {}).get("standardizedAddress", {})
@@ -91,17 +94,22 @@ def format_address(
         # if no formatted address, use the place address
         if not cleaned_address:
             cleaned_address = place_address.upper()
-    response["cleaned_address"] = cleaned_address
 
+    # return the cleaned address and
     # lookup the bin using the nyc planning labs api
-    nycpl_response = nycpl.search(cleaned_address)
-    response["bin"] = (
-        nycpl_response.get("features", [{}])[0]
-        .get("properties", {})
-        .get("addendum", {})
-        .get("pad", {})
-        .get("bin", "")
-    )
+    # only if the granularity is returned
+    if response["cleaned_address_accuracy"] != "No result":
+        response["cleaned_address"] = cleaned_address
+        nycpl_response = nycpl.search(cleaned_address)
+        bin = (
+            nycpl_response.get("features", [{}])[0]
+            .get("properties", {})
+            .get("addendum", {})
+            .get("pad", {})
+            .get("bin", "")
+        )
+        if bin and bin != DEFAULT_BIN_RESPONSE:
+            response["bin"] = bin
     return response
 
 
