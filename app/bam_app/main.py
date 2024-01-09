@@ -27,10 +27,10 @@ def clean_record(
     apikey: str,
     phone: str = None,
     email: str = None,
+    dns_check: bool = False,
     address: str = None,
     city_state: str = "",
     zip_code: str = "",
-    dns_check: bool = False,
 ):
     """
     :param phone_number: The phone number to validate
