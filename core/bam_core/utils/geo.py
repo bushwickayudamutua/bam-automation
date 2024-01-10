@@ -9,15 +9,19 @@ COMMON_ZIPCODE_MISTAKES = {
 # default bin response from nyc planning labs
 DEFAULT_BIN_RESPONSES = ["3000000", "1000000"]
 
+DEFAULT_CITY_STATE = "Brooklyn, NY"
+
 
 def _fix_address(address: str) -> str:
     """
     Attempt to fix common mistakes in addresses
     """
     address = address.upper().strip()
-    address = address.replace("PISO", "FLOOR")
-    address = address.replace("APARTAMENTO", "APT")
-    address = address.replace("APTO", "APT")
+    address = address.replace(" PISO", " FLOOR")
+    address = address.replace(" APARTAMENTO", " APT")
+    address = address.replace(" APTO", " APT")
+    address = address.replace(" APRT", " APT")
+    address = address.replace(" DE ", " ")
 
     if address.endswith("#"):
         address = address[:-1].strip()
@@ -64,7 +68,7 @@ def format_address(
     address = _fix_address(address)
 
     # format address for query
-    address_query = f"{address.strip()}, {city_state.strip() or 'Brooklyn, New York'} {_fix_zip_code(zipcode.strip())}".strip().upper()
+    address_query = f"{address.strip()}, {city_state.strip() or DEFAULT_CITY_STATE} {_fix_zip_code(zipcode.strip())}".strip().upper()
 
     # lookup address using Google Maps Places API
     place_response = gmaps.get_place(
