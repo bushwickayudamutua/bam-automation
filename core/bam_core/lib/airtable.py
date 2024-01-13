@@ -240,7 +240,7 @@ class Airtable(object):
                 request_tag_schema = item_schema.get(request_tag, None)
 
                 if not request_tag_schema:
-                    log.warning(
+                    log.debug(
                         f"Unknown request tag '{request_tag}' for field '{request_field}'"
                     )
                     continue
@@ -281,7 +281,7 @@ class Airtable(object):
                             sub_request_tag, None
                         )
                         if not sub_request_tag_schema:
-                            log.warning(
+                            log.debug(
                                 f"Unknown request tag '{sub_request_tag}' for field '{sub_request_field}'"
                             )
                             continue
@@ -341,7 +341,7 @@ class Airtable(object):
                                     )
                                 )
                                 if not sub_sub_request_tag_schema:
-                                    log.warning(
+                                    log.debug(
                                         f"Unknown request tag '{sub_sub_request_tag}' for field '{sub_sub_request_field}'"
                                     )
                                     continue
