@@ -119,6 +119,9 @@ def format_address(
         cleaned_address = (
             norm_address.get("address", {}).get("formattedAddress", "").upper()
         )
+        # perform some standardization on the formatted address
+        cleaned_address = cleaned_address.replace(" # ", " APT ")
+
         # if no formatted address, use the place address
         if not cleaned_address:
             cleaned_address = place_address.upper()
