@@ -226,3 +226,8 @@ def test_dot_col():
     email = "test@gmail.col"
     result = format_email(email)
     assert result["email"] == "test@gmail.com"
+
+def test_dot_comp():
+    email = "test@gmail.comp"
+    result = format_email(email)
+    assert result["email"] == "test@gmail.com"

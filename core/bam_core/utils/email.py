@@ -116,6 +116,10 @@ def clean_email(email: str) -> str:
     if email.endswith(".col"):
         email = email[:-4] + ".com"
 
+    # check for .comp typos
+    if email.endswith(".comp"):
+        email = email[:-5] + ".com"
+
     # check for @com typos
     if email.endswith("@com"):
         email = email[:-4] + ".com"
