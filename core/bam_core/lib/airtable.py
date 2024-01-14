@@ -11,6 +11,7 @@ from bam_core.constants import (
     AIRTABLE_DATETIME_FORMAT,
     PHONE_FIELD,
     ASSISTANCE_REQUESTS_TABLE_NAME,
+    FULFILLED_REQUESTS_TABLE_NAME,
     ESSENTIAL_GOODS_TABLE_NAME,
     VOLUNTEERS_TABLE_NAME,
     MESH_VIEW_NAME,
@@ -84,6 +85,10 @@ class Airtable(object):
     @property
     def assistance_requests(self) -> Table:
         return self.get_table(ASSISTANCE_REQUESTS_TABLE_NAME)
+
+    @property
+    def fulfilled_requests(self) -> Table:
+        return self.get_table(FULFILLED_REQUESTS_TABLE_NAME)
 
     @property
     def essential_goods(self) -> Table:

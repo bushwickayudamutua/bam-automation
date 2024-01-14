@@ -13,7 +13,7 @@ SNAPSHOT_DATE_FORMAT = r"%Y-%m-%d-%H-%M-%S"
 SNAPSHOT_FIELD = "Snapshot Date"
 
 
-class AnalyzeRequestSnapshots(Function):
+class AnalyzeFulfilledRequests(Function):
     def add_options(self):
         self.parser.add_argument(
             "-d",
@@ -57,18 +57,16 @@ class AnalyzeRequestSnapshots(Function):
         self, grouped_records: Dict[str, List[Dict[str, Any]]]
     ) -> List[Dict[str, Any]]:
         """
-        Analyze grouped records and return a list of delivered items
+        Analyze grouped records and return a list of fulfilled requests
         """
-        delivered_items = []
+        fulfilled_requests = []
         # iterate through list of snapshots for each record id
         for request_id, group_records in grouped_records.items():
             if len(group_records) < 2:
                 continue
             last_statuses = {}
             # iterate through snapshots for this record id
-            for record in sorted(
-                group_records, key=lambda r: r[SNAPSHOT_FIELD]
-            ):
+            for record in sorted(group_records, key=lambda r: r[SNAPSHOT_FIELD]):
                 these_statuses = Airtable.analyze_requests(record)
                 # iterate through tag types
                 for tag_type, these_tag_statuses in these_statuses.items():
@@ -79,27 +77,38 @@ class AnalyzeRequestSnapshots(Function):
                         # if this item is now has a delivered status
                         # mark it as delivered
                         if item in these_tag_statuses.get("delivered", []):
-                            delivered_items.append(
+                            fulfilled_requests.append(
                                 {
-                                    "request_id": request_id,
-                                    "type": tag_type,
-                                    "item": item,
-                                    "snapshot_date": record["Snapshot Date"],
+                                    "fields": {
+                                        "Date / Delivered Item": f"{record['Snapshot Date']}: {item}",
+                                        "Assistance Request": [request_id],
+                                        "Type": tag_type,
+                                        "Delivered Item": item,
+                                        "Date Delivered": record["Snapshot Date"],
+                                        "Unique ID": f"{request_id}-{tag_type}-{item}",
+                                    }
                                 }
                             )
                 last_statuses = these_statuses
-        return delivered_items
+        return fulfilled_requests
 
     def run(self, event, context):
         """
-        Analyze airtable snapshots to identify delivered items
+        Analyze airtable snapshots to identify fulfilled requests
         """
         # fetch records and group by ID
         grouped_records = self.get_grouped_records()
-        delivered_items = self.analyze_grouped_records(grouped_records)
-        log.info(f"Found {len(delivered_items)} delivered items")
-        return delivered_items
+        fulfilled_requests = self.analyze_grouped_records(grouped_records)
+        log.info(f"Found {len(fulfilled_requests)} fulfilled requests")
+        if not event.get("DRY_RUN", False):
+            log.info("Writing fulfilled requests to Airtable...")
+            self.airtable.fulfilled_requests.batch_upsert(
+                fulfilled_requests, key_fields=["Unique ID"]
+            )
+        else:
+            log.info("Dry run, not writing fulfilled requests to Airtable")
+        return {"num_fulfilled_requests": len(fulfilled_requests)}
 
 
 if __name__ == "__main__":
-    AnalyzeRequestSnapshots().cli()
+    AnalyzeFulfilledRequests().cli()

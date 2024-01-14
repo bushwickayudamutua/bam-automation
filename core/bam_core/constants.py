@@ -7,6 +7,7 @@ AIRTABLE_DATETIME_FORMAT = r"%Y-%m-%dT%H:%M:%S.%fZ"
 ASSISTANCE_REQUESTS_TABLE_NAME = "Assistance Requests: Main"
 VOLUNTEERS_TABLE_NAME = "Volunteers: Main"
 ESSENTIAL_GOODS_TABLE_NAME = "Essential Good Donations: Main"
+FULFILLED_REQUESTS_TABLE_NAME = "Fulfilled Requests: Main"
 
 # Airtable field name for phone numbers
 PHONE_FIELD = "Phone Number"
