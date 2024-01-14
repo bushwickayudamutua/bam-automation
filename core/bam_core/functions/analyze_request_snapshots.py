@@ -66,7 +66,9 @@ class AnalyzeRequestSnapshots(Function):
                 continue
             last_statuses = {}
             # iterate through snapshots for this record id
-            for record in sorted(group_records, key=lambda r: r[SNAPSHOT_FIELD]):
+            for record in sorted(
+                group_records, key=lambda r: r[SNAPSHOT_FIELD]
+            ):
                 these_statuses = Airtable.analyze_requests(record)
                 # iterate through tag types
                 for tag_type, these_tag_statuses in these_statuses.items():
@@ -83,7 +85,6 @@ class AnalyzeRequestSnapshots(Function):
                                     "type": tag_type,
                                     "item": item,
                                     "snapshot_date": record["Snapshot Date"],
-                                    "last_modified": record["Last Modified"],
                                 }
                             )
                 last_statuses = these_statuses
@@ -97,10 +98,8 @@ class AnalyzeRequestSnapshots(Function):
         grouped_records = self.get_grouped_records()
         delivered_items = self.analyze_grouped_records(grouped_records)
         log.info(f"Found {len(delivered_items)} delivered items")
-        print(delivered_items[-1])
         return delivered_items
 
 
 if __name__ == "__main__":
     AnalyzeRequestSnapshots().cli()
-
