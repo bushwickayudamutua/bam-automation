@@ -11,6 +11,7 @@ from bam_core.constants import (
     AIRTABLE_DATETIME_FORMAT,
     PHONE_FIELD,
     ASSISTANCE_REQUESTS_TABLE_NAME,
+    FULFILLED_REQUESTS_TABLE_NAME,
     ESSENTIAL_GOODS_TABLE_NAME,
     VOLUNTEERS_TABLE_NAME,
     MESH_VIEW_NAME,
@@ -84,6 +85,10 @@ class Airtable(object):
     @property
     def assistance_requests(self) -> Table:
         return self.get_table(ASSISTANCE_REQUESTS_TABLE_NAME)
+
+    @property
+    def fulfilled_requests(self) -> Table:
+        return self.get_table(FULFILLED_REQUESTS_TABLE_NAME)
 
     @property
     def essential_goods(self) -> Table:
@@ -240,7 +245,7 @@ class Airtable(object):
                 request_tag_schema = item_schema.get(request_tag, None)
 
                 if not request_tag_schema:
-                    log.warning(
+                    log.debug(
                         f"Unknown request tag '{request_tag}' for field '{request_field}'"
                     )
                     continue
@@ -281,7 +286,7 @@ class Airtable(object):
                             sub_request_tag, None
                         )
                         if not sub_request_tag_schema:
-                            log.warning(
+                            log.debug(
                                 f"Unknown request tag '{sub_request_tag}' for field '{sub_request_field}'"
                             )
                             continue
@@ -341,7 +346,7 @@ class Airtable(object):
                                     )
                                 )
                                 if not sub_sub_request_tag_schema:
-                                    log.warning(
+                                    log.debug(
                                         f"Unknown request tag '{sub_sub_request_tag}' for field '{sub_sub_request_field}'"
                                     )
                                     continue
