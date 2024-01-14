@@ -10,7 +10,7 @@ from bam_core.lib.airtable import Airtable
 log = logging.getLogger(__name__)
 
 SNAPSHOT_DATE_FORMAT = r"%Y-%m-%d-%H-%M-%S"
-SNAPSHOT_FIELD = "Snapshot Date"
+SNAPSHOT_DATE_FIELD = "Snapshot Date"
 
 
 class AnalyzeFulfilledRequests(Function):
@@ -49,7 +49,7 @@ class AnalyzeFulfilledRequests(Function):
             if contents:
                 file_records = json_to_obj(contents)
                 for record in file_records:
-                    record[SNAPSHOT_FIELD] = snapshot_date.date().isoformat()
+                    record[SNAPSHOT_DATE_FIELD] = snapshot_date.date().isoformat()
                     grouped_records[record["id"]].append(record)
         return grouped_records
 
@@ -66,7 +66,7 @@ class AnalyzeFulfilledRequests(Function):
                 continue
             last_statuses = {}
             # iterate through snapshots for this record id
-            for record in sorted(group_records, key=lambda r: r[SNAPSHOT_FIELD]):
+            for record in sorted(group_records, key=lambda r: r[SNAPSHOT_DATE_FIELD]):
                 these_statuses = Airtable.analyze_requests(record)
                 # iterate through tag types
                 for tag_type, these_tag_statuses in these_statuses.items():
@@ -80,11 +80,11 @@ class AnalyzeFulfilledRequests(Function):
                             fulfilled_requests.append(
                                 {
                                     "fields": {
-                                        "Date / Delivered Item": f"{record['Snapshot Date']}: {item}",
+                                        "Date / Delivered Item": f"{record[SNAPSHOT_DATE_FIELD]}: {item}",
                                         "Assistance Request": [request_id],
                                         "Type": tag_type,
                                         "Delivered Item": item,
-                                        "Date Delivered": record["Snapshot Date"],
+                                        "Date Delivered": record[SNAPSHOT_DATE_FIELD],
                                         "Unique ID": f"{request_id}-{tag_type}-{item}",
                                     }
                                 }
