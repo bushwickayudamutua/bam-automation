@@ -80,6 +80,7 @@ class SnapshotAirtableViews(Function):
     def get_date_slug(self):
         """
         Get a date slug
+        NOTE: This is in EST, when we parse this datetime in `analyze_fulfilled_requests.py`, we convert it to UTC.
         """
         return now_est().strftime(r"%Y-%m-%d-%H-%M-%S")
 

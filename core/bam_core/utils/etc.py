@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from typing import Any, List, NewType, Union
 
 import pytz
@@ -42,7 +43,7 @@ def now_est():
     Get the current time in EST
     :return datetime
     """
-    return datetime.now(pytz.timezone("US/Eastern"))
+    return datetime.now(ZoneInfo("America/New_York"))
 
 
 def to_list(value: Union[Any, List[Any]]) -> List[Any]:

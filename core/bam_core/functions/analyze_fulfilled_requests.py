@@ -2,6 +2,7 @@ from datetime import datetime
 import logging
 from collections import defaultdict
 from typing import Any, Dict, List
+from zoneinfo import ZoneInfo
 
 from .base import Function
 from bam_core.utils.serde import json_to_obj
@@ -25,12 +26,16 @@ class AnalyzeFulfilledRequests(Function):
 
     def get_snapshot_date(self, filepath):
         """
-        Get snapshot date from filepath
+        Get snapshot date from filepath.
+        NOTE: This date in the filepath is in EST
         """
-        return datetime.strptime(
+        dt = datetime.strptime(
             filepath.split("/assistance-requests-main-")[-1].split(".")[0],
             SNAPSHOT_DATE_FORMAT,
         )
+        dt = dt.replace(tzinfo=ZoneInfo("America/New_York"))
+        dt = dt.astimezone(ZoneInfo("UTC"))
+        return dt.date().isoformat()
 
     def get_grouped_records(self):
         """
@@ -49,9 +54,7 @@ class AnalyzeFulfilledRequests(Function):
             if contents:
                 file_records = json_to_obj(contents)
                 for record in file_records:
-                    record[
-                        SNAPSHOT_DATE_FIELD
-                    ] = snapshot_date.date().isoformat()
+                    record[SNAPSHOT_DATE_FIELD] = snapshot_date
                     grouped_records[record["id"]].append(record)
         return grouped_records
 
@@ -64,13 +67,12 @@ class AnalyzeFulfilledRequests(Function):
         fulfilled_requests = []
         # iterate through list of snapshots for each record id
         for request_id, group_records in grouped_records.items():
+            # If there is only one snapshot for this record id, skip it
             if len(group_records) < 2:
                 continue
             last_statuses = {}
             # iterate through snapshots for this record id
-            for record in sorted(
-                group_records, key=lambda r: r[SNAPSHOT_DATE_FIELD]
-            ):
+            for record in sorted(group_records, key=lambda r: r[SNAPSHOT_DATE_FIELD]):
                 these_statuses = Airtable.analyze_requests(record)
                 # iterate through tag types
                 for tag_type, these_tag_statuses in these_statuses.items():
@@ -88,9 +90,7 @@ class AnalyzeFulfilledRequests(Function):
                                         "Assistance Request": [request_id],
                                         "Type": tag_type,
                                         "Delivered Item": item,
-                                        "Date Delivered": record[
-                                            SNAPSHOT_DATE_FIELD
-                                        ],
+                                        "Date Delivered": record[SNAPSHOT_DATE_FIELD],
                                         "Unique ID": f"{request_id}-{tag_type}-{item}",
                                     }
                                 }
