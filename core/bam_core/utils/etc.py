@@ -3,12 +3,8 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Any, List, NewType, Union
 
-import pytz
 
-Filepath = NewType("Filepath", str)  # A filepath string
-
-
-def list_files(path: Filepath, ignore_hidden: bool = False) -> List[str]:
+def list_files(path: str, ignore_hidden: bool = False) -> List[str]:
     f"""
     Recursively list files under a directory.
     :param path: A filepath as a string
@@ -25,7 +21,7 @@ def list_files(path: Filepath, ignore_hidden: bool = False) -> List[str]:
     )
 
 
-def get_full(path: Filepath) -> str:
+def get_full(path: str) -> str:
     f"""
     Get a full path
     :param path: A filepath as a string

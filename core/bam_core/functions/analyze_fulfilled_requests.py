@@ -72,7 +72,9 @@ class AnalyzeFulfilledRequests(Function):
                 continue
             last_statuses = {}
             # iterate through snapshots for this record id
-            for record in sorted(group_records, key=lambda r: r[SNAPSHOT_DATE_FIELD]):
+            for record in sorted(
+                group_records, key=lambda r: r[SNAPSHOT_DATE_FIELD]
+            ):
                 these_statuses = Airtable.analyze_requests(record)
                 # iterate through tag types
                 for tag_type, these_tag_statuses in these_statuses.items():
@@ -90,7 +92,9 @@ class AnalyzeFulfilledRequests(Function):
                                         "Assistance Request": [request_id],
                                         "Type": tag_type,
                                         "Delivered Item": item,
-                                        "Date Delivered": record[SNAPSHOT_DATE_FIELD],
+                                        "Date Delivered": record[
+                                            SNAPSHOT_DATE_FIELD
+                                        ],
                                         "Unique ID": f"{request_id}-{tag_type}-{item}",
                                     }
                                 }
