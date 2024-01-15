@@ -71,7 +71,9 @@ def format_address(
     address_query = f"{address.strip()}, {city_state.strip() or DEFAULT_CITY_STATE} {_fix_zip_code(zipcode.strip())}".strip().upper()
 
     # lookup address using Google Maps Places API
-    place_response = gmaps.get_place(address_query, strict_bounds=strict_bounds)
+    place_response = gmaps.get_place(
+        address_query, strict_bounds=strict_bounds
+    )
     if len(place_response):
         no_place_response = False
         place_address = place_response[0]["description"]
@@ -94,8 +96,12 @@ def format_address(
     norm_address = norm_address_result.get("result", {})
     if no_place_response:
         # if no place response, use granularity from the norm address response
-        granularity = norm_address.get("verdict", {}).get("validationGranularity", "")
-        input_granularity = norm_address.get("verdict", {}).get("inputGranularity", "")
+        granularity = norm_address.get("verdict", {}).get(
+            "validationGranularity", ""
+        )
+        input_granularity = norm_address.get("verdict", {}).get(
+            "inputGranularity", ""
+        )
         if granularity == "SUB_PREMISE":
             response["cleaned_address_accuracy"] = "Apartment"
         # never confirm apartment-level granularity based on input-level granularity
@@ -113,12 +119,13 @@ def format_address(
         cleaned_address = (
             norm_address.get("address", {}).get("formattedAddress", "").upper()
         )
-        # perform some standardization on the formatted address
-        cleaned_address = cleaned_address.replace(" # ", " APT ")
 
         # if no formatted address, use the place address
         if not cleaned_address:
             cleaned_address = place_address.upper()
+
+    # perform some standardization on the formatted address
+    cleaned_address = cleaned_address.replace(" # ", " APT ")
 
     # return the cleaned address and
     # lookup the bin using the nyc planning labs api
@@ -149,7 +156,9 @@ if __name__ == "__main__":
         help="The city and state to use.",
         default="New York",
     )
-    parser.add_argument("-z", "--zipcode", help="The zipcode to use.", default="")
+    parser.add_argument(
+        "-z", "--zipcode", help="The zipcode to use.", default=""
+    )
     parser.add_argument(
         "-ns",
         "--no-strict-bounds",
