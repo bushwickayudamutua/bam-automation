@@ -7,7 +7,7 @@ COMMON_ZIPCODE_MISTAKES = {
     "112007": "11207",
 }
 # default bin response from nyc planning labs
-DEFAULT_BIN_RESPONSES = [3000000, 1000000]
+DEFAULT_BIN_RESPONSES = ["3000000", "1000000"]
 
 DEFAULT_CITY_STATE = "Brooklyn, NY"
 
@@ -142,7 +142,7 @@ def format_address(
                 .get("pad", {})
                 .get("bin", "")
             )
-            if bin and bin not in DEFAULT_BIN_RESPONSES:
+            if bin and str(bin) not in DEFAULT_BIN_RESPONSES:
                 response["bin"] = bin
     return response
 
