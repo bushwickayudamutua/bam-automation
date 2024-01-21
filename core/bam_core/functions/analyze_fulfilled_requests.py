@@ -112,9 +112,13 @@ class AnalyzeFulfilledRequests(Function):
         log.info(f"Found {len(fulfilled_requests)} fulfilled requests")
         if not event.get("DRY_RUN", False):
             log.info("Writing fulfilled requests to Airtable...")
-            self.airtable.fulfilled_requests.batch_upsert(
-                fulfilled_requests, key_fields=["Unique ID"]
-            )
+            for request in fulfilled_requests:
+                try:
+                    self.airtable.fulfilled_requests.batch_upsert(
+                        [request], key_fields=["Unique ID"]
+                    )
+                except Exception as e:
+                    log.warning(f"Failed to write fulfilled request: {e}")
         else:
             log.info("Dry run, not writing fulfilled requests to Airtable")
         return {"num_fulfilled_requests": len(fulfilled_requests)}
