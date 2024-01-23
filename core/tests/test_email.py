@@ -232,3 +232,8 @@ def test_dot_comp():
     email = "test@gmail.comp"
     result = format_email(email)
     assert result["email"] == "test@gmail.com"
+
+def test_gomail_dot_com():
+    email = "test@gomail.comp"
+    result = format_email(email)
+    assert result["email"] == "test@gmail.com"

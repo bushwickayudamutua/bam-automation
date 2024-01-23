@@ -19,6 +19,7 @@ COMMON_DOMAIN_MISSPELLINGS = {
     "gmailcon": "gmail.com",
     "gmil.cpor": "gmail.com",
     "gimel": "gmail.com",
+    "gomail": "gmail.com",
     "hamel": "gmail.com",
     "gmalil": "gmail.com",
     "gamial": "gmail.com",
