@@ -137,6 +137,10 @@ def clean_email(email: str) -> str:
     if email.endswith("..com"):
         email = email[:-5] + ".com"
 
+    # check for doubled .com typos
+    if email.endswith(".com.com"):
+        email = email[:-8] + ".com"
+
     # check for numbers after .com via regular expression
     if re.search(r"\.com[0-9]$", email):
         email = email[:-5] + ".com"
