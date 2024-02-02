@@ -21,7 +21,7 @@ echo 'Pads -> EG Citas'
 echo '**************************'
 
 python -m bam_core.functions.consolidate_eg_requests \
-    -r 'Productos Femenino - Toallitas / Feminine Products - Pads / 卫生巾' \
+    -r 'Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾' \
     -s 'Essential Goods: Pads' \
     -t 'BAM Citas 1/6' 
 
@@ -39,7 +39,7 @@ echo 'School Supplies -> EG Citas'
 echo '**************************'
 
 python -m bam_core.functions.consolidate_eg_requests \
-    -r 'Cosas de Escuela / School Supplies / 学校用品' \
+    -r 'Cosas de Escuela / School Supplies / 學校用品' \
     -s 'Essential Goods: School Supplies' \
     -t 'BAM Citas 1/6' 
 
@@ -57,7 +57,7 @@ echo 'Adult Diapers -> EG Citas'
 echo '**************************'
 
 python -m bam_core.functions.consolidate_eg_requests \
-    -r 'Pañales de adultos / Adult Diapers / 成人纸尿裤' \
+    -r 'Pañales de adultos / Adult Diapers / 成人紙尿褲' \
     -s 'Essential Goods: Adult Diapers' \
     -t 'BAM Citas 1/6' 
 
@@ -74,16 +74,16 @@ echo '**************************'
 python -m bam_core.functions.consolidate_eg_requests \
     -r 'Ropa / Clothing / 服装协助' \
     -s 'Essential Goods: Clothing Requests' \
-    -t 'Food Distro- 01/06  Citas Confirmadas' 
+    -t 'Food Distro- 02/03  Citas Confirmadas' 
 
 echo '**************************'
 echo 'Pads -> Food Citas'
 echo '**************************'
 
 python -m bam_core.functions.consolidate_eg_requests \
-    -r 'Productos Femenino - Toallitas / Feminine Products - Pads / 卫生巾' \
+    -r 'Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾' \
     -s 'Essential Goods: Pads' \
-    -t 'Food Distro- 01/06  Citas Confirmadas' 
+    -t 'Food Distro- 02/03  Citas Confirmadas' 
 
 echo '**************************'
 echo 'Soap -> Food Citas'
@@ -92,16 +92,16 @@ echo '**************************'
 python -m bam_core.functions.consolidate_eg_requests \
     -r 'Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品' \
     -s 'Essential Goods: Soap & Shower Products' \
-    -t 'Food Distro- 01/06  Citas Confirmadas' 
+    -t 'Food Distro- 02/03  Citas Confirmadas' 
 
 echo '**************************'
 echo 'School Supplies -> Food Citas'
 echo '**************************'
 
 python -m bam_core.functions.consolidate_eg_requests \
-    -r 'Cosas de Escuela / School Supplies / 学校用品' \
+    -r 'Cosas de Escuela / School Supplies / 學校用品' \
     -s 'Essential Goods: School Supplies' \
-    -t 'Food Distro- 01/06  Citas Confirmadas' 
+    -t 'Food Distro- 02/03  Citas Confirmadas' 
 
 echo '**************************'
 echo 'Baby Diapers -> Food Citas'
@@ -110,16 +110,16 @@ echo '**************************'
 python -m bam_core.functions.consolidate_eg_requests \
     -r 'Pañales / Baby Diapers / 婴儿纸尿裤' \
     -s 'Essential Goods: Baby Diapers' \
-    -t 'Food Distro- 01/06  Citas Confirmadas' 
+    -t 'Food Distro- 02/03  Citas Confirmadas' 
 
 echo '**************************'
 echo 'Adult Diapers -> Food Citas'
 echo '**************************'
 
 python -m bam_core.functions.consolidate_eg_requests \
-    -r 'Pañales de adultos / Adult Diapers / 成人纸尿裤' \
+    -r 'Pañales de adultos / Adult Diapers / 成人紙尿褲' \
     -s 'Essential Goods: Adult Diapers' \
-    -t 'Food Distro- 01/06  Citas Confirmadas' 
+    -t 'Food Distro- 02/03  Citas Confirmadas' 
 
 echo '###################################################'
 echo '###################################################'
@@ -140,7 +140,7 @@ echo 'timing out Pads'
 echo '**************************'
 
 python -m bam_core.functions.timeout_eg_requests \
-    -r 'Productos Femenino - Toallitas / Feminine Products - Pads / 卫生巾' 
+    -r 'Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾' 
 
 echo '**************************'
 echo 'timing out Soap'
@@ -168,4 +168,4 @@ echo 'timing out Adult Diapers'
 echo '**************************'
 
 python -m bam_core.functions.timeout_eg_requests \
-    -r 'Pañales de adultos / Adult Diapers / 成人纸尿裤' 
+    -r 'Pañales de adultos / Adult Diapers / 成人紙尿褲' 

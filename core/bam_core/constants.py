@@ -217,7 +217,7 @@ EG_REQUESTS_SCHEMA = {
             "timeout": "Soap & Shower Products Timeout",
             "missed": EG_MISSED_APPT_STATUS,
         },
-        "Productos Femenino - Toallitas / Feminine Products - Pads / 卫生巾": {
+        "Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾": {
             "delivered": "Pads Delivered",
             "timeout": "Pads Timeout",
             "missed": EG_MISSED_APPT_STATUS,
@@ -227,7 +227,7 @@ EG_REQUESTS_SCHEMA = {
             "timeout": "Baby Diapers Timeout",
             "missed": EG_MISSED_APPT_STATUS,
         },
-        "Pañales de adultos / Adult Diapers / 成人纸尿裤": {
+        "Pañales de adultos / Adult Diapers / 成人紙尿褲": {
             "delivered": "Adult Diapers Delivered",
             "timeout": "Adult Diapers Timeout",
             "missed": EG_MISSED_APPT_STATUS,
@@ -237,7 +237,7 @@ EG_REQUESTS_SCHEMA = {
             "timeout": "Clothing Assistance Timeout",
             "missed": EG_MISSED_APPT_STATUS,
         },
-        "Cosas de Escuela / School Supplies / 学校用品": {
+        "Cosas de Escuela / School Supplies / 學校用品": {
             "delivered": "School Supplies Delivered",
             "timeout": "School Supplies Timeout",
             "missed": EG_MISSED_APPT_STATUS,
