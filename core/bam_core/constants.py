@@ -212,7 +212,7 @@ EG_REQUESTS_SCHEMA = {
     "request_field": EG_REQUESTS_FIELD,
     "status_field": EG_STATUS_FIELD,
     "items": {
-        "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品": {
+        "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品": {
             "delivered": "Soap & Shower Products Delivered",
             "timeout": "Soap & Shower Products Timeout",
             "missed": EG_MISSED_APPT_STATUS,
@@ -222,7 +222,7 @@ EG_REQUESTS_SCHEMA = {
             "timeout": "Pads Timeout",
             "missed": EG_MISSED_APPT_STATUS,
         },
-        "Pañales / Baby Diapers / 婴儿纸尿裤": {
+        "Pañales / Baby Diapers / 嬰兒紙尿褲": {
             "delivered": "Baby Diapers Delivered",
             "timeout": "Baby Diapers Timeout",
             "missed": EG_MISSED_APPT_STATUS,
@@ -232,7 +232,7 @@ EG_REQUESTS_SCHEMA = {
             "timeout": "Adult Diapers Timeout",
             "missed": EG_MISSED_APPT_STATUS,
         },
-        "Ropa / Clothing / 服装协助": {
+        "Ropa / Clothing / 服裝": {
             "delivered": "Clothing Assistance Delivered",
             "timeout": "Clothing Assistance Timeout",
             "missed": EG_MISSED_APPT_STATUS,
