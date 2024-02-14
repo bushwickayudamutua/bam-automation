@@ -390,6 +390,10 @@ REQUESTS_SCHEMA = [
     SOCIAL_SERVICES_REQUESTS_SCHEMA,
 ]
 
+OLD_REQUEST_TAGS = {
+    "Colchón matrimonio / Full Mattress / 全床垫": "New Full Mattress Tag"
+}
+
 # Airtable Views
 # These are used in the dedupe_views automation.
 

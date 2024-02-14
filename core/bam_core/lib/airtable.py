@@ -17,6 +17,7 @@ from bam_core.constants import (
     MESH_VIEW_NAME,
     REQUESTS_SCHEMA,
     REQUEST_FIELDS,
+    OLD_REQUEST_TAGS
 )
 
 
@@ -242,6 +243,7 @@ class Airtable(object):
             item_schema = schema["items"]
 
             for request_tag in request_tags:
+                request_tag = OLD_REQUEST_TAGS.get(request_tag, request_tag)
                 request_tag_schema = item_schema.get(request_tag, None)
 
                 if not request_tag_schema:
@@ -282,6 +284,7 @@ class Airtable(object):
                     sub_status_tags = record.get(sub_status_field, [])
 
                     for sub_request_tag in sub_request_tags:
+                        sub_request_tag = OLD_REQUEST_TAGS.get(sub_request_tag, sub_request_tag)
                         sub_request_tag_schema = sub_item_schema["items"].get(
                             sub_request_tag, None
                         )
@@ -340,6 +343,7 @@ class Airtable(object):
                             )
 
                             for sub_sub_request_tag in sub_sub_request_tags:
+                                sub_sub_request_tag = OLD_REQUEST_TAGS.get(sub_sub_request_tag, sub_sub_request_tag)
                                 sub_sub_request_tag_schema = (
                                     sub_sub_item_schema["items"].get(
                                         sub_sub_request_tag, None
