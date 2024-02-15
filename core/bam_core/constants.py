@@ -127,11 +127,11 @@ FURNITURE_REQUESTS_SCHEMA = {
             "delivered": "Sofa Delivered",
             "timeout": "Sofa Timeout",
         },
-        "Cajonera / Clothes Dresser / 衣服梳妆台": {
+        "Cajonera / Clothes Dresser / 衣櫃": {
             "delivered": "Dresser Delivered",
             "timeout": "Dresser Timeout",
         },
-        "Escritorio / Desk /  书桌": {
+        "Escritorio / Desk /  書桌": {
             "delivered": "Desk Delivered",
             "timeout": "Desk Timeout",
         },
@@ -143,7 +143,7 @@ FURNITURE_REQUESTS_SCHEMA = {
             "delivered": "Chairs Delivered",
             "timeout": "Chairs Timeout",
         },
-        "Almacenamiento / Storage / 存储": {
+        "Almacenamiento / Storage / 儲物櫃": {
             "delivered": "Storage Delivered",
             "timeout": "Storage Timeout",
         },
@@ -155,11 +155,11 @@ FURNITURE_REQUESTS_SCHEMA = {
             "delivered": "Fridge Delivered",
             "timeout": "Fridge Timeout",
         },
-        "Aire conditionador / Air Conditioner / 冷气机": {
+        "Aire conditionador / Air Conditioner / 空調": {
             "delivered": "AC Delivered",
             "timeout": "AC Timeout",
         },
-        "Otras / Other / 其他东西": {
+        "Otras / Other / 其他家具": {
             "delivered": "Other Furniture Delivered",
             "timeout": "Other Furniture Timeout",
         },
@@ -171,19 +171,19 @@ KITCHEN_REQUESTS_SCHEMA = {
     "request_field": KITCHEN_REQUESTS_FIELD,
     "status_field": EG_STATUS_FIELD,
     "items": {
-        "Microondas / Microwave / 微波": {
+        "Microondas / Microwave / 微波爐": {
             "delivered": "Microwave Delivered",
             "timeout": "Microwave Timeout",
         },
-        "Ollas y Sartenes / Pots & Pans / 锅碗瓢盆": {
+        "Ollas y Sartenes / Pots & Pans / 鍋碗瓢盆": {
             "delivered": "Pots & Pans Delivered",
             "timeout": "Pots & Pans Timeout",
         },
-        "Platos / Plates / 板块": {
+        "Platos / Plates / 盤子": {
             "delivered": "Plates Delivered",
             "timeout": "Plates Timeout",
         },
-        "Tazas / Cups / 杯具": {
+        "Tazas / Cups / 杯子": {
             "delivered": "Cups Delivered",
             "timeout": "Cups Timeout",
         },
@@ -191,11 +191,11 @@ KITCHEN_REQUESTS_SCHEMA = {
             "delivered": "Utensils Delivered",
             "timeout": "Utensils Timeout",
         },
-        "Cafetera / Coffee Maker / 咖啡机": {
+        "Cafetera / Coffee Maker / 咖啡機": {
             "delivered": "Coffee Maker Delivered",
             "timeout": "Coffee Maker Timeout",
         },
-        "Otras / Other / 其他东西": {
+        "Otras / Other / 其他家具": {
             "delivered": "Kitchen Supplies Delivered",
             "timeout": "Kitchen Supplies Timeout",
         },
@@ -242,13 +242,13 @@ EG_REQUESTS_SCHEMA = {
             "timeout": "School Supplies Timeout",
             "missed": EG_MISSED_APPT_STATUS,
         },
-        "Cosas de Cocina / Kitchen Supplies / 厨房用品": {
+        "Cosas de Cocina / Kitchen Supplies / 廚房用品": {
             "delivered": "Kitchen Supplies Delivered",
             "timeout": "Kitchen Supplies Timeout",
             "missed": EG_MISSED_APPT_STATUS,
             "items": KITCHEN_REQUESTS_SCHEMA,
         },
-        "Muebles / Furniture / 家俱": {
+        "Muebles / Furniture / 家具": {
             "delivered": "Furniture Delivered",
             "timeout": "Furniture Timeout",
             "missed": EG_MISSED_APPT_STATUS,
@@ -283,7 +283,7 @@ FOOD_REQUESTS_SCHEMA = {
     "request_field": FOOD_REQUESTS_FIELD,
     "status_field": FOOD_STATUS_FIELD,
     "items": {
-        "Alimentos / Groceries / 杂货": {
+        "Alimentos / Groceries / 食品": {
             "delivered": "Groceries Delivered",
             "timeout": "Groceries Request Timeout",
             "missed": FOOD_MISSED_APPT_STATUS,
@@ -299,23 +299,23 @@ SOCIAL_SERVICES_REQUESTS_SCHEMA = {
     "request_field": SOCIAL_SERVICES_REQUESTS_FIELD,
     "status_field": SOCIAL_SERVICES_STATUS_FIELD,
     "items": {
-        "Asistencia legal de inmigración / Immigration legal assistance / 移民法律援助": {
+        "Asistencia legal de inmigración / Immigration legal assistance / 移民法律協助": {
             "delivered": "Immigration Assistance Delivered",
             "timeout": "Immigration Assistance Timeout",
         },
-        "Asistencia legal de inquilinos / Tenant legal assistance / 租户法律援助": {
+        "Asistencia legal de inquilinos / Tenant legal assistance / 租戶法律協助": {
             "delivered": "Tenant Support Delivered - CUFFH",
             "timeout": "Tenant Legal Assistance Timeout",
         },
-        "Asistencia con servicios escolares / Assistance with in-school services / 公立学校入学": {
+        "Asistencia con servicios escolares / Assistance with in-school services / 學校服務協助": {
             "delivered": "In School Services Assistance Delivered",
             "timeout": "In School Services Assistance Timeout",
         },
-        "Tutoría estudiantil / Tutoring for students / 学生辅导": {
+        "Tutoría estudiantil / Tutoring for students / 學生輔導": {
             "delivered": "Tutoring Assigned (K-12)",
             "timeout": "Tutoring Assistance Timeout",
         },
-        "Clases de inglés / English Classes / 英语课": {
+        "Clases de inglés / English Classes / 英語課": {
             "delivered": [
                 "Referred to FeLT for English Classes",
                 "English Classes Signup, Confirmed by OBT",
@@ -326,14 +326,14 @@ SOCIAL_SERVICES_REQUESTS_SCHEMA = {
             "timeout": "English Classes Timeout",
             "invalid": ["No Longer Interested - English Classes"],
         },
-        "Asistencia asegurando vivienda/ Securing housing / 住房援助": {
+        "Asistencia asegurando vivienda/ Securing housing / 住房協助": {
             "delivered": [
                 "Referred to Riseboro for Housing Assistance",
                 "ContraCovid - Housing Intake Scheduled",
             ],
             "timeout": "Securing Housing Timeout",
         },
-        "Asistencia con seguro médico / Medical insurance support / 医疗保健": {
+        "Asistencia con seguro médico / Medical insurance support / 醫療保險協助": {
             "delivered": [
                 "Enrolled in Health Insurance - Metroplus",
                 "Health Insurance Secured - HFNYC",
@@ -342,15 +342,15 @@ SOCIAL_SERVICES_REQUESTS_SCHEMA = {
             "timeout": "Health Insurance Assistance Timeout",
             "invalid": ["Already has Health Insurance"],
         },
-        "Asistencia de Negocios / Small Business Support / 小型企业支持": {
+        "Asistencia de Negocios / Small Business Support / 小型企業協助": {
             "delivered": "Small Business Support Delivered",
             "timeout": "Small Business Support Timeout",
         },
-        "Internet de bajo costo en casa / Low-Cost Internet at home / 在家上网": {
+        "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助": {
             "delivered": "Low-Cost Internet Access Delivered",
             "timeout": "Low-Cost Internet Access TImeout",
         },
-        "Asistencia con beneficios de comida / Assistance with food benefits / 协助 - WIC, SNAP, P-EBT": {
+        "Asistencia con beneficios de comida / Assistance with food benefits / 食品福利協助（WIC, SNAP, P-EBT）": {
             "delivered": [
                 "SNAP Signup Completed through WSCAH",
                 "WIC Signup Completed through WSCAH",
@@ -368,15 +368,15 @@ SOCIAL_SERVICES_REQUESTS_SCHEMA = {
                 "Cannot Sign Up for Food Benefits - HFNYC",
             ],
         },
-        "Asistencia con Transporte / Transportation Assistance": {
+        "Asistencia con Transporte / Transportation Assistance / 交通運輸協助": {
             "delivered": "MetroCard Delivered",
             "timeout": "MetroCard Request Timeout",
         },
-        "Asistencia para niños discapacitados / Assistance for disabled children / 残疾儿童援助": {
+        "Asistencia para niños discapacitados / Assistance for disabled children / 殘疾兒童協助": {
             "delivered": "Child Disability Assistance Delivered",
             "timeout": "Child Disability Assistance Timeout",
         },
-        "Asistencia para mascotas / Pet Assistance / 宠物协助": {
+        "Asistencia para mascotas / Pet Assistance / 寵物協助": {
             "delivered": "Pet Assistance Delivered",
             "timeout": "Pet Assistance Timeout",
         },
@@ -389,6 +389,43 @@ REQUESTS_SCHEMA = [
     EG_REQUESTS_SCHEMA,
     SOCIAL_SERVICES_REQUESTS_SCHEMA,
 ]
+
+OLD_REQUEST_TAGS = {
+    "Alimentos / Groceries / 杂货": "Alimentos / Groceries / 食品",
+    "Pañales / Baby Diapers / 婴儿纸尿裤": "Pañales / Baby Diapers / 嬰兒紙尿褲",
+    "Pañales de adultos / Adult Diapers / 成人纸尿裤": "Pañales de adultos / Adult Diapers / 成人紙尿褲",
+    "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品": "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品",
+    "Productos Femenino - Toallitas / Feminine Products - Pads / 卫生巾": "Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾",
+    "Cosas de Escuela / School Supplies / 学校用品": "Cosas de Escuela / School Supplies / 學校用品",
+    "Ropa / Clothing / 服装协助": "Ropa / Clothing / 服裝",
+    "Muebles / Furniture / 家俱": "Muebles / Furniture / 家具",
+    "Cosas de Cocina / Kitchen Supplies / 厨房用品": "Cosas de Cocina / Kitchen Supplies / 廚房用品",
+    "Comida de mascota / Pet Food / 寵物食品": "Comida de mascota / Pet Food / 寵物食品",
+    "Cajonera / Clothes Dresser / 衣服梳妆台": "Cajonera / Clothes Dresser / 衣櫃",
+    "Escritorio / Desk /  书桌": "Escritorio / Desk /  書桌",
+    "Almacenamiento / Storage / 存储": "Almacenamiento / Storage / 儲物櫃",
+    "Aire conditionador / Air Conditioner / 冷气机": "Aire conditionador / Air Conditioner / 空調",
+    "Otras / Other / 其他东西": "Otras / Other / 其他家具",
+    "Microondas / Microwave / 微波": "Microondas / Microwave / 微波爐",
+    "Ollas y Sartenes / Pots & Pans / 锅碗瓢盆": "Ollas y Sartenes / Pots & Pans / 鍋碗瓢盆",
+    "Platos / Plates / 板块": "Platos / Plates / 盤子",
+    "Tazas / Cups / 杯具": "Tazas / Cups / 杯子",
+    "Cafetera / Coffee Maker / 咖啡机": "Cafetera / Coffee Maker / 咖啡機",
+    "Otras / Other / 其他东西": "Otras / Other / 其他廚房用品",
+    "Asistencia legal de inmigración / Immigration legal assistance / 移民法律援助": "Asistencia legal de inmigración / Immigration legal assistance / 移民法律協助",
+    "Asistencia legal de inquilinos / Tenant legal assistance / 租户法律援助": "Asistencia legal de inquilinos / Tenant legal assistance / 租戶法律協助",
+    "Asistencia con servicios escolares / Assistance with in-school services / 公立学校入学": "Asistencia con servicios escolares / Assistance with in-school services / 學校服務協助",
+    "Tutoría estudiantil / Tutoring for students / 学生辅导": "Tutoría estudiantil / Tutoring for students / 學生輔導",
+    "Clases de inglés / English Classes / 英语课": "Clases de inglés / English Classes / 英語課",
+    "Asistencia asegurando vivienda/ Securing housing / 住房援助": "Asistencia asegurando vivienda/ Securing housing / 住房協助",
+    "Asistencia con seguro médico / Medical insurance support / 医疗保健": "Asistencia con seguro médico / Medical insurance support / 醫療保險協助",
+    "Asistencia de Negocios / Small Business Support / 小型企业支持": "Asistencia de Negocios / Small Business Support / 小型企業協助",
+    "Internet de bajo costo en casa / Low-Cost Internet at home / 在家上网": "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助",
+    "Asistencia con beneficios de comida / Assistance with food benefits / 协助 - WIC, SNAP, P-EBT": "Asistencia con beneficios de comida / Assistance with food benefits / 食品福利協助（WIC, SNAP, P-EBT）",
+    "Asistencia con Transporte / Transportation Assistance": "Asistencia con Transporte / Transportation Assistance / 交通運輸協助",
+    "Asistencia para niños discapacitados / Assistance for disabled children / 残疾儿童援助": "Asistencia para niños discapacitados / Assistance for disabled children / 殘疾兒童協助",
+    "Asistencia para mascotas / Pet Assistance / 宠物协助": "Asistencia para mascotas / Pet Assistance / 寵物協助",
+}
 
 # Airtable Views
 # These are used in the dedupe_views automation.
