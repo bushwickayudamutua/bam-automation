@@ -18,7 +18,7 @@ def test_analyze_requests_simple():
     record = {
         "fields": {
             FOOD_REQUESTS_FIELD: [
-                "Alimentos / Groceries / 杂货",
+                "Alimentos / Groceries / 食品",
                 "Comida caliente / Hot meals / 热食",
             ],
             FOOD_STATUS_FIELD: [
@@ -26,9 +26,9 @@ def test_analyze_requests_simple():
                 "Hot Food Request Timeout",
             ],
             EG_REQUESTS_FIELD: [
-                "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品",
-                "Productos Femenino - Toallitas / Feminine Products - Pads / 卫生巾",
-                "Pañales / Baby Diapers / 婴儿纸尿裤",
+                "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品",
+                "Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾",
+                "Pañales / Baby Diapers / 嬰兒紙尿褲",
             ],
             EG_STATUS_FIELD: [
                 "Soap & Shower Products Delivered",
@@ -36,9 +36,9 @@ def test_analyze_requests_simple():
                 "Pads Timeout",
             ],
             SOCIAL_SERVICES_REQUESTS_FIELD: [
-                "Clases de inglés / English Classes / 英语课",
-                "Asistencia con beneficios de comida / Assistance with food benefits / 协助 - WIC, SNAP, P-EBT",
-                "Asistencia asegurando vivienda/ Securing housing / 住房援助",
+                "Clases de inglés / English Classes / 英語課",
+                "Asistencia con beneficios de comida / Assistance with food benefits / 食品福利協助（WIC, SNAP, P-EBT）",
+                "Asistencia asegurando vivienda/ Securing housing / 住房協助",
             ],
             SOCIAL_SERVICES_STATUS_FIELD: [
                 "English Classes Signup, Confirmed by OBT",
@@ -50,28 +50,28 @@ def test_analyze_requests_simple():
 
     analysis = Airtable.analyze_requests(record)
     assert analysis[EG_REQUESTS_FIELD]["timeout"] == [
-        "Productos Femenino - Toallitas / Feminine Products - Pads / 卫生巾"
+        "Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾"
     ]
     assert analysis[EG_REQUESTS_FIELD]["delivered"] == [
-        "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品"
+        "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品"
     ]
     assert analysis[FOOD_REQUESTS_FIELD]["timeout"] == [
         "Comida caliente / Hot meals / 热食"
     ]
     assert analysis[EG_REQUESTS_FIELD]["open"] == [
-        "Pañales / Baby Diapers / 婴儿纸尿裤"
+        "Pañales / Baby Diapers / 嬰兒紙尿褲"
     ]
     assert analysis[FOOD_REQUESTS_FIELD]["delivered"] == [
-        "Alimentos / Groceries / 杂货"
+        "Alimentos / Groceries / 食品"
     ]
     assert analysis[SOCIAL_SERVICES_REQUESTS_FIELD]["timeout"] == [
-        "Asistencia asegurando vivienda/ Securing housing / 住房援助"
+        "Asistencia asegurando vivienda/ Securing housing / 住房協助"
     ]
     assert analysis[SOCIAL_SERVICES_REQUESTS_FIELD]["delivered"] == [
-        "Clases de inglés / English Classes / 英语课"
+        "Clases de inglés / English Classes / 英語課"
     ]
     assert analysis[SOCIAL_SERVICES_REQUESTS_FIELD]["invalid"] == [
-        "Asistencia con beneficios de comida / Assistance with food benefits / 协助 - WIC, SNAP, P-EBT"
+        "Asistencia con beneficios de comida / Assistance with food benefits / 食品福利協助（WIC, SNAP, P-EBT）"
     ]
 
 
@@ -79,12 +79,12 @@ def test_analyze_requests_missed_appt():
     record = {
         "fields": {
             FOOD_REQUESTS_FIELD: [
-                "Alimentos / Groceries / 杂货",
+                "Alimentos / Groceries / 食品",
             ],
             FOOD_STATUS_FIELD: [FOOD_MISSED_APPT_STATUS],
             EG_REQUESTS_FIELD: [
-                "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品",
-                "Productos Femenino - Toallitas / Feminine Products - Pads / 卫生巾",
+                "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品",
+                "Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾",
             ],
             EG_STATUS_FIELD: [
                 EG_MISSED_APPT_STATUS,
@@ -93,18 +93,18 @@ def test_analyze_requests_missed_appt():
     }
     analysis = Airtable.analyze_requests(record)
     assert analysis[EG_REQUESTS_FIELD]["missed"] == [
-        "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品",
-        "Productos Femenino - Toallitas / Feminine Products - Pads / 卫生巾",
+        "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品",
+        "Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾",
     ]
     assert analysis[FOOD_REQUESTS_FIELD]["missed"] == [
-        "Alimentos / Groceries / 杂货"
+        "Alimentos / Groceries / 食品"
     ]
     assert analysis[EG_REQUESTS_FIELD]["open"] == [
-        "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品",
-        "Productos Femenino - Toallitas / Feminine Products - Pads / 卫生巾",
+        "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品",
+        "Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾",
     ]
     assert analysis[FOOD_REQUESTS_FIELD]["open"] == [
-        "Alimentos / Groceries / 杂货"
+        "Alimentos / Groceries / 食品"
     ]
 
 
@@ -112,21 +112,21 @@ def test_analyze_requests_no_status():
     record = {
         "fields": {
             FOOD_REQUESTS_FIELD: [
-                "Alimentos / Groceries / 杂货",
+                "Alimentos / Groceries / 食品",
             ],
             EG_REQUESTS_FIELD: [
-                "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品",
-                "Productos Femenino - Toallitas / Feminine Products - Pads / 卫生巾",
+                "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品",
+                "Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾",
             ],
         }
     }
     analysis = Airtable.analyze_requests(record)
     assert analysis[EG_REQUESTS_FIELD]["open"] == [
-        "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品",
-        "Productos Femenino - Toallitas / Feminine Products - Pads / 卫生巾",
+        "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品",
+        "Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾",
     ]
     assert analysis[FOOD_REQUESTS_FIELD]["open"] == [
-        "Alimentos / Groceries / 杂货"
+        "Alimentos / Groceries / 食品"
     ]
 
 
@@ -134,16 +134,16 @@ def test_analyze_requests_one_level_of_nesting():
     record = {
         "fields": {
             EG_REQUESTS_FIELD: [
-                "Muebles / Furniture / 家俱",
-                "Cosas de Cocina / Kitchen Supplies / 厨房用品",
+                "Muebles / Furniture / 家具",
+                "Cosas de Cocina / Kitchen Supplies / 廚房用品",
             ],
             FURNITURE_REQUESTS_FIELD: [
-                "Cajonera / Clothes Dresser / 衣服梳妆台",
+                "Cajonera / Clothes Dresser / 衣櫃",
                 "Mesa Para Comedor / Dining Room Table / 餐桌",
             ],
             KITCHEN_REQUESTS_FIELD: [
-                "Ollas y Sartenes / Pots & Pans / 锅碗瓢盆",
-                "Platos / Plates / 板块",
+                "Ollas y Sartenes / Pots & Pans / 鍋碗瓢盆",
+                "Platos / Plates / 盤子",
             ],
             EG_STATUS_FIELD: [
                 "Plates Timeout",
@@ -158,13 +158,13 @@ def test_analyze_requests_one_level_of_nesting():
         "Mesa Para Comedor / Dining Room Table / 餐桌"
     ]
     assert analysis[FURNITURE_REQUESTS_FIELD]["delivered"] == [
-        "Cajonera / Clothes Dresser / 衣服梳妆台"
+        "Cajonera / Clothes Dresser / 衣櫃"
     ]
     assert analysis[KITCHEN_REQUESTS_FIELD]["timeout"] == [
-        "Platos / Plates / 板块"
+        "Platos / Plates / 盤子"
     ]
     assert analysis[KITCHEN_REQUESTS_FIELD]["delivered"] == [
-        "Ollas y Sartenes / Pots & Pans / 锅碗瓢盆"
+        "Ollas y Sartenes / Pots & Pans / 鍋碗瓢盆"
     ]
 
 
@@ -172,7 +172,7 @@ def test_analyze_requests_two_levels_of_nesting_specific_delivered_tag():
     record = {
         "fields": {
             EG_REQUESTS_FIELD: [
-                "Muebles / Furniture / 家俱",
+                "Muebles / Furniture / 家具",
             ],
             FURNITURE_REQUESTS_FIELD: [
                 "Cama / Bed / 床",
@@ -193,7 +193,7 @@ def test_analyze_requests_two_levels_of_nesting_parent_delivered_tag():
     record = {
         "fields": {
             EG_REQUESTS_FIELD: [
-                "Muebles / Furniture / 家俱",
+                "Muebles / Furniture / 家具",
             ],
             FURNITURE_REQUESTS_FIELD: [
                 "Cama / Bed / 床",
@@ -214,7 +214,7 @@ def test_analyze_requests_two_levels_of_nesting_specific_timeout_tag():
     record = {
         "fields": {
             EG_REQUESTS_FIELD: [
-                "Muebles / Furniture / 家俱",
+                "Muebles / Furniture / 家具",
             ],
             FURNITURE_REQUESTS_FIELD: [
                 "Cama / Bed / 床",
@@ -234,7 +234,7 @@ def test_analyze_requests_two_levels_of_nesting_specific_timeout_tag():
 def test_analyze_requests_two_levels_of_nesting_parent_timeout_tag():
     record = {
         EG_REQUESTS_FIELD: [
-            "Muebles / Furniture / 家俱",
+            "Muebles / Furniture / 家具",
         ],
         FURNITURE_REQUESTS_FIELD: [
             "Cama / Bed / 床",
@@ -254,7 +254,7 @@ def test_analyze_requests_two_levels_of_nesting_grandparent_timeout_tag():
     record = {
         "fields": {
             EG_REQUESTS_FIELD: [
-                "Muebles / Furniture / 家俱",
+                "Muebles / Furniture / 家具",
             ],
             FURNITURE_REQUESTS_FIELD: [
                 "Cama / Bed / 床",
