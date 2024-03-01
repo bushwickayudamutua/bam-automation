@@ -581,7 +581,7 @@ SOCIAL_SERVICES_VIEWS = [
     View(
         name="Social Services: Low-Cost Internet Access",
         status_field_name="Social Services Request Status",
-        timeout_flag_value="Low-Cost Internet Access TImeout",
+        timeout_flag_value="Low-Cost Internet Access Timeout",
     ),
     View(
         name="Social Services: Small Business Support",
@@ -608,8 +608,8 @@ VIEWS: list[View] = (
     + TOILETRIES_VIEWS
     + SOCIAL_SERVICES_VIEWS
     + SCHOOL_SUPPLIES_VIEWS
-    # + OTHER_VIEWS
 )
+
 
 # # Uncomment to test with a single view
 # VIEWS: list[View] = [
