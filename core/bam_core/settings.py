@@ -16,6 +16,9 @@ MAILJET_API_SECRET = os.getenv("BAM_MAILJET_API_SECRET", None)
 # google settings
 GOOGLE_MAPS_API_KEY = os.getenv("BAM_GOOGLE_MAPS_API_KEY", None)
 
+# open collective settings
+OPEN_COLLECTIVE_ACCESS_TOKEN = os.getenv("BAM_OPEN_COLLECTIVE_ACCESS_TOKEN", None)
+
 # s3 settings
 DO_TOKEN = os.getenv("BAM_DO_TOKEN", None)
 S3_BASE_URL = os.getenv(
