@@ -13,6 +13,7 @@ class Mailjet(object):
         "All Contacts": 10332279,
         "Families": 10331737,
         "Volunteers": 10331731,
+        "Open Collective Donors": 10428762
     }
 
     ACTION_ADD = "addnoforce"
