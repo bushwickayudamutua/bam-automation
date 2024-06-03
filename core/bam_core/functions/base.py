@@ -70,16 +70,17 @@ class Function(object):
         failures = []
         output = {}
         for function in functions:
-            log.info(f"Running {function.__name__}\n{'*' * 80}")
+            fn = function.__name__
+            log.info(f"Running {fn}\n{'*' * 80}")
             try:
-                output[function.__name__] = function().main(event, context)
+                output[fn] = function().main(event, context)
             except Exception as e:
-                log.error(f"Error running {function}")
+                log.error(f"Error running {fn}")
                 log.error(e)
                 traceback.print_exc()
-                failures.append(function.__name__)
-            log.info(f"Finished {function.__name__}\n{'*' * 80}")
+                failures.append(fn)
+            log.info(f"Finished {fn}\n{'*' * 80}")
         if failures:
-            raise Exception(f"Errors running: {failures}")
+            raise Exception(f"Errors running {fn}: {failures}")
 
         return output
