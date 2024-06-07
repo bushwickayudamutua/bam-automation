@@ -22,6 +22,9 @@ class NycPlanningLabs(object):
         """
         url = f"{self.base_url}/search"
         params = {"text": text, "size": size}
-        response = self.session.get(url, params=params)
-        response.raise_for_status
-        return response.json()
+        try:
+            response = self.session.get(url, params=params)
+            response.raise_for_status()
+            return response.json()
+        except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError)  as e:
+            return {"error": str(e)}
