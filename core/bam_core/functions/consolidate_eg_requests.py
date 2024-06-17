@@ -9,38 +9,62 @@ from .base import Function
 from bam_core.constants import (
     EG_REQUESTS_SCHEMA,
     EG_REQUESTS_FIELD,
+    KITCHEN_REQUESTS_SCHEMA,
+    KITCHEN_REQUESTS_FIELD,
+    FURNITURE_REQUESTS_SCHEMA,
+    FURNITURE_REQUESTS_FIELD,
     EG_STATUS_FIELD,
     PHONE_FIELD,
 )
 
 log = logging.getLogger(__name__)
 
-# fields to request per view
-VIEW_FIELDS = [PHONE_FIELD, EG_REQUESTS_FIELD, EG_STATUS_FIELD]
+# minimum set of fields to request per view
+BASE_VIEW_FIELDS = [PHONE_FIELD, EG_STATUS_FIELD]
+
+# handling for request field parameter
+REQUEST_SCHEMA_MAP = {
+    'eg': EG_REQUESTS_SCHEMA,
+    'kitchen': KITCHEN_REQUESTS_SCHEMA,
+    'furniture': FURNITURE_REQUESTS_SCHEMA,
+}
+REQUEST_FIELD_MAP = {
+    'eg': EG_REQUESTS_FIELD,
+    'kitchen': KITCHEN_REQUESTS_FIELD,
+    'furniture': FURNITURE_REQUESTS_FIELD,
+}
 
 
 class ConsolidateEssentialGoodsRequests(Function):
     """
     Given:
-        * an `ESSENTIAL_GOODS_REQUEST` item
+        * a `REQUEST_FIELD`
+            - (eg `eg`)
+        * an `REQUEST_VALUE` item
             - (eg `Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品`)
         * a `SOURCE_VIEW`, or the associated view of "open" requests for this item
             - (eg `Essential Goods: Soap & Shower Products`)
         * a list of `TARGET_VIEWS`, or other views of "open" requests
             - (eg `["Essential Goods: Pads", "Essential Goods: Baby Diapers"]`)
     For each of the `TARGET_VIEWS`, find any phone numbers that are also in the `SOURCE_VIEW`.
-    In the case that a matching record in the `TARGET_VIEW` has an `ESSENTIAL_GOODS_REQUEST`
+    In the case that a matching record in the `TARGET_VIEW` has a request in the specified field,
     and the status is set to "timeout", delete the "timeout" status from the record in the `TARGET_VIEW`
     and add a "timeout" status to the record in the `SOURCE_VIEW`.
-    In the case that a  matching record in the `TARGET_VIEW` does not have an `ESSENTIAL_GOODS_REQUEST`,
+    In the case that a  matching record in the `TARGET_VIEW` does not have a request of the specified type,
     add one so it opens a request for this item, and add a "timeout" flag to the record in the `SOURCE_VIEW`,
     thereby closing that request.
     """
 
     def add_options(self):
         self.parser.add_argument(
+            "-f",
+            dest="REQUEST_FIELD",
+            help="The field to consider for consolidation",
+            default="eg",
+        )
+        self.parser.add_argument(
             "-r",
-            dest="ESSENTIAL_GOODS_REQUEST",
+            dest="REQUEST_VALUE",
             help="The request to consolidate",
             required=True,
         )
@@ -79,6 +103,7 @@ class ConsolidateEssentialGoodsRequests(Function):
 
     def consolidate_view(
         self,
+        request_field: str,
         request: str,
         timeout_tag: str,
         delivered_tag: str,
@@ -96,13 +121,14 @@ class ConsolidateEssentialGoodsRequests(Function):
             log.info(
                 f"Consolidating: {request}\nFrom: {source_view} To: {target_view}"
             )
+            fields = [*BASE_VIEW_FIELDS, REQUEST_FIELD_MAP[request_field]]
             target_lookup = self.airtable.get_phone_number_to_requests_lookup(
-                target_view, fields=VIEW_FIELDS
+                target_view, fields=fields
             )
             # wait before fetching the source lookup to ensure changes are reflected
             time.sleep(5)
             source_lookup = self.airtable.get_phone_number_to_requests_lookup(
-                source_view, fields=VIEW_FIELDS
+                source_view, fields=fields
             )
 
             for phone_number, target_records in target_lookup.items():
@@ -185,18 +211,21 @@ class ConsolidateEssentialGoodsRequests(Function):
 
     def run(self, event, context):
         # validate the provided request
-        request = event["ESSENTIAL_GOODS_REQUEST"].strip()
-        if request not in EG_REQUESTS_SCHEMA["items"]:
+        request_field = event["REQUEST_FIELD"].strip()
+        request = event["REQUEST_VALUE"].strip()
+        schema = REQUEST_SCHEMA_MAP[request_field]
+        if request not in schema["items"]:
             raise ValueError(
-                f"Invalid ESSENTIAL_GOODS_REQUEST: {request}. Choose from: {EG_REQUESTS_SCHEMA['items'].keys()}"
+                f"Invalid {request_field}: {request}. Choose from: {schema['items'].keys()}"
             )
 
         # get the timeout flag from the schema
-        timeout_tag = EG_REQUESTS_SCHEMA["items"][request]["timeout"]
-        delivered_tag = EG_REQUESTS_SCHEMA["items"][request]["delivered"]
+        timeout_tag = schema["items"][request]["timeout"]
+        delivered_tag = schema["items"][request]["delivered"]
 
         # consolidate the view
         consolidate_stats = self.consolidate_view(
+            request_field=request_field,
             request=request,
             timeout_tag=timeout_tag,
             delivered_tag=delivered_tag,
