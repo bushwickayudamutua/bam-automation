@@ -20,7 +20,7 @@ from bam_core.constants import (
 log = logging.getLogger(__name__)
 
 # minimum set of fields to request per view
-BASE_VIEW_FIELDS = [PHONE_FIELD, EG_STATUS_FIELD]
+BASE_VIEW_FIELDS = [PHONE_FIELD]
 
 # handling for request field parameter
 REQUEST_SCHEMA_MAP = {
@@ -122,7 +122,7 @@ class ConsolidateEssentialGoodsRequests(Function):
             log.info(
                 f"Consolidating: {request}\nFrom: {source_view} To: {target_view}"
             )
-            fields = [*BASE_VIEW_FIELDS, request_field]
+            fields = [*BASE_VIEW_FIELDS, request_field, status_field]
             target_lookup = self.airtable.get_phone_number_to_requests_lookup(
                 target_view, fields=fields
             )
