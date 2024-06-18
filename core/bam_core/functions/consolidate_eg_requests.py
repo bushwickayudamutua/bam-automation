@@ -39,7 +39,7 @@ class ConsolidateEssentialGoodsRequests(Function):
     """
     Given:
         * a `REQUEST_FIELD`
-            - (eg `eg`)
+            - (Either `eg`, `kitchen`, `furniture`)
         * an `REQUEST_VALUE` item
             - (eg `Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品`)
         * a `SOURCE_VIEW`, or the associated view of "open" requests for this item
@@ -59,7 +59,7 @@ class ConsolidateEssentialGoodsRequests(Function):
         self.parser.add_argument(
             "-f",
             dest="REQUEST_FIELD",
-            help="The field to consider for consolidation",
+            help="The field to consider for consolidation. Either 'eg', 'kitchen', or 'furniture'",
             default="eg",
         )
         self.parser.add_argument(
@@ -109,6 +109,7 @@ class ConsolidateEssentialGoodsRequests(Function):
         delivered_tag: str,
         source_view: str,
         target_views: List[str],
+        status_field: str = EG_STATUS_FIELD,
         dry_run: bool = False,
     ) -> Dict[str, Counter]:
         """
@@ -121,7 +122,7 @@ class ConsolidateEssentialGoodsRequests(Function):
             log.info(
                 f"Consolidating: {request}\nFrom: {source_view} To: {target_view}"
             )
-            fields = [*BASE_VIEW_FIELDS, REQUEST_FIELD_MAP[request_field]]
+            fields = [*BASE_VIEW_FIELDS, request_field]
             target_lookup = self.airtable.get_phone_number_to_requests_lookup(
                 target_view, fields=fields
             )
@@ -142,8 +143,8 @@ class ConsolidateEssentialGoodsRequests(Function):
                 consolidated_id = None
                 for target_record in target_records:
                     created_at = target_record["createdTime"]
-                    status_tags = target_record.get(EG_STATUS_FIELD, [])
-                    request_tags = target_record.get(EG_REQUESTS_FIELD, [])
+                    status_tags = target_record.get(status_field, [])
+                    request_tags = target_record.get(request_field, [])
 
                     if (
                         request in request_tags
@@ -164,7 +165,7 @@ class ConsolidateEssentialGoodsRequests(Function):
                         status_tags.remove(timeout_tag)
                         self.update_record(
                             target_record["id"],
-                            {EG_STATUS_FIELD: status_tags},
+                            {status_field: status_tags},
                             dry_run,
                         )
 
@@ -178,7 +179,7 @@ class ConsolidateEssentialGoodsRequests(Function):
                         request_tags.append(request)
                         self.update_record(
                             target_record["id"],
-                            {EG_REQUESTS_FIELD: request_tags},
+                            {request_field: request_tags},
                             dry_run,
                         )
 
@@ -198,12 +199,12 @@ class ConsolidateEssentialGoodsRequests(Function):
                         f"(Source - {created_at}) Adding: {timeout_tag} To: {phone_number} In: {source_view}"
                     )
                     stats[source_view]["timeouts_added"] += 1
-                    status_tags = source_record.get(EG_STATUS_FIELD, []) + [
+                    status_tags = source_record.get(status_field, []) + [
                         timeout_tag
                     ]
                     self.update_record(
                         source_record["id"],
-                        {EG_STATUS_FIELD: status_tags},
+                        {status_field: status_tags},
                         dry_run,
                     )
 
@@ -211,9 +212,14 @@ class ConsolidateEssentialGoodsRequests(Function):
 
     def run(self, event, context):
         # validate the provided request
-        request_field = event["REQUEST_FIELD"].strip()
+        request_field_shorthand = event["REQUEST_FIELD"].strip()
+        request_field = REQUEST_FIELD_MAP.get(request_field_shorthand)
+        schema = REQUEST_SCHEMA_MAP.get(request_field_shorthand)
+        if not request_field or not schema:
+            raise ValueError(
+                f"Invalid REQUEST_FIELD: {request_field_shorthand}. Choose from: {REQUEST_SCHEMA_MAP.keys()}"
+            )
         request = event["REQUEST_VALUE"].strip()
-        schema = REQUEST_SCHEMA_MAP[request_field]
         if request not in schema["items"]:
             raise ValueError(
                 f"Invalid {request_field}: {request}. Choose from: {schema['items'].keys()}"
