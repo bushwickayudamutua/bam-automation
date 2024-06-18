@@ -452,12 +452,17 @@ FOOD_VIEWS = [
     ),
 ]
 
-CLOTHING_VIEWS = [
+EG_VIEWS = [
     View(
         name="Essential Goods: Clothing Requests",
         status_field_name="Essential Goods Requests Status",
         timeout_flag_value="Clothing Assistance Timeout",
     ),
+    View(
+        name="Essential Goods: Pet Food",
+        status_field_name="Essential Goods Requests Status",
+        timeout_flag_value="Pet Food Timeout",
+    )
 ]
 
 FURNITURE_VIEWS = [
@@ -602,7 +607,7 @@ SOCIAL_SERVICES_VIEWS = [
 
 VIEWS: list[View] = (
     FOOD_VIEWS
-    + CLOTHING_VIEWS
+    + EG_VIEWS
     + FURNITURE_VIEWS
     + KITCHEN_VIEWS
     + TOILETRIES_VIEWS
