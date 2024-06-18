@@ -68,7 +68,7 @@ class AnalyzeFulfilledRequests(Function):
         # iterate through list of snapshots for each record id
         for request_id, group_records in grouped_records.items():
             # If there is only one snapshot for this record id, skip it
-            if len(group_records) < 2:
+            if len(group_records) <= 1:
                 continue
             last_statuses = {}
             # iterate through snapshots for this record id
@@ -82,7 +82,7 @@ class AnalyzeFulfilledRequests(Function):
                     last_tag_statuses = last_statuses.get(tag_type, {})
                     # iterate through previously open items for this tag type
                     for item in last_tag_statuses.get("open", []):
-                        # if this item is now has a delivered status
+                        # if this item now has a delivered status
                         # mark it as delivered
                         if item in these_tag_statuses.get("delivered", []):
                             fulfilled_requests.append(
