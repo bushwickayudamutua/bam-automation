@@ -222,7 +222,7 @@ class ConsolidateEssentialGoodsRequests(Function):
         request = event["REQUEST_VALUE"].strip()
         if request not in schema["items"]:
             raise ValueError(
-                f"Invalid {request_field}: {request}. Choose from: {schema['items'].keys()}"
+                f"Invalid REQUEST_VALUE {request_field}: {request}. Choose from: {schema['items'].keys()}"
             )
 
         # get the timeout flag from the schema
