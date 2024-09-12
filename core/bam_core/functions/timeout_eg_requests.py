@@ -6,36 +6,71 @@ from typing import List, Dict, Any
 from pyairtable import formulas
 
 from .base import Function
+from bam_core.utils.etc import to_list
 from bam_core.constants import (
     EG_REQUESTS_SCHEMA,
     EG_REQUESTS_FIELD,
     EG_STATUS_FIELD,
     PHONE_FIELD,
+    KITCHEN_REQUESTS_SCHEMA,
+    FURNITURE_REQUESTS_SCHEMA,
+    KITCHEN_REQUESTS_FIELD,
+    FURNITURE_REQUESTS_FIELD,
 )
 
 log = logging.getLogger(__name__)
 
-# fields to request per view
-VIEW_FIELDS = [PHONE_FIELD, EG_REQUESTS_FIELD, EG_STATUS_FIELD]
+# handling for request field parameter
+REQUEST_SCHEMA_MAP = {
+    "eg": EG_REQUESTS_SCHEMA,
+    "kitchen": KITCHEN_REQUESTS_SCHEMA,
+    "furniture": FURNITURE_REQUESTS_SCHEMA,
+}
+REQUEST_FIELD_MAP = {
+    "eg": EG_REQUESTS_FIELD,
+    "kitchen": KITCHEN_REQUESTS_FIELD,
+    "furniture": FURNITURE_REQUESTS_FIELD,
+}
+
+STATUS_FIELD_MAP = {
+    "eg": EG_STATUS_FIELD,
+    "kitchen": EG_STATUS_FIELD,
+    "furniture": EG_STATUS_FIELD,
+}
 
 
 class TimeoutEssentialGoodsRequests(Function):
     """
-    For all records that have an `ESSENTIAL_GOODS_REQUEST`, add a "timeout" status to any
-    unfulfilled records for phone numbers which have at least one fulfilled request.
+    Given:
+        * a `REQUEST_FIELD`
+            - (Either `eg`, `kitchen`, `furniture`)
+        * a `REQUEST_VALUE` item
+            - (eg `Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品`)
+
+    For all records that have an `REQUEST_VALUE` in the `REQUEST_FIELD`, add an associated "timeout" status to any
+    unfulfilled records for phone numbers which have at least one later fulfilled request.
     """
 
     def add_options(self):
         self.parser.add_argument(
+            "-f",
+            "--request-field",
+            dest="REQUEST_FIELD",
+            help="The field to consider for timing out. Either 'eg', 'kitchen', or 'furniture'",
+            default="eg",
+        )
+        self.parser.add_argument(
             "-r",
-            dest="ESSENTIAL_GOODS_REQUEST",
-            help="The request to consolidate",
+            "--request-value",
+            dest="REQUEST_VALUE",
+            help="The request to timeout. E.g. 'Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品'",
             required=True,
         )
         self.parser.add_argument(
             "-d",
+            "--dry-run",
             dest="DRY_RUN",
-            help="If true, update operations will not be performed.",
+            help="If true, view which timeouts would be added without actually adding them.",
             action="store_true",
             default=False,
         )
@@ -53,19 +88,28 @@ class TimeoutEssentialGoodsRequests(Function):
                 traceback.print_exc()
 
     def timeout_requests(
-        self, request: str, timeout_tag: str, delivered_tag: str, dry_run: bool
+        self,
+        request_value: str,
+        request_field: str,
+        timeout_tags: List[str],
+        delivered_tags: List[str],
+        status_field: str = EG_STATUS_FIELD,
+        dry_run: bool = False,
     ) -> Counter:
         """
         For phone numbers which have at least one fulfilled request,
         timeout all unfulfilled requests submitted before the latest
         fulfilled request.
         """
+
         # get matching requests
+        log.info(f"Fetching records for '{request_field}' = '{request_value}'")
         request_records = self.airtable.get_phone_number_to_requests_lookup(
             formula=formulas.FIND(
-                formulas.STR_VALUE(request), formulas.FIELD(EG_REQUESTS_FIELD)
+                formulas.STR_VALUE(request_value),
+                formulas.FIELD(request_field),
             ),
-            fields=VIEW_FIELDS,
+            fields=[PHONE_FIELD, request_field, status_field],
         )
         stats = Counter()
         for phone_number, records in request_records.items():
@@ -77,17 +121,15 @@ class TimeoutEssentialGoodsRequests(Function):
             latest_delivered_request_created_time = None
             unfulfilled_requests = []
             for record in records:
-                statuses = record.get(EG_STATUS_FIELD, [])
-                if delivered_tag in statuses:
+                created_at = record["createdTime"]
+                statuses = record.get(status_field, [])
+                if any([d in statuses for d in delivered_tags]):
                     if (
                         latest_delivered_request_created_time is None
-                        or record["createdTime"]
-                        > latest_delivered_request_created_time
+                        or created_at > latest_delivered_request_created_time
                     ):
-                        latest_delivered_request_created_time = record[
-                            "createdTime"
-                        ]
-                elif timeout_tag not in statuses:
+                        latest_delivered_request_created_time = created_at
+                elif any([t not in statuses for t in timeout_tags]):
                     # build up list of unfulfilled requests to timeout
                     unfulfilled_requests.append(record)
 
@@ -99,40 +141,91 @@ class TimeoutEssentialGoodsRequests(Function):
                 continue
 
             for record in unfulfilled_requests:
+                record_id = record["id"]
                 created_at = record["createdTime"]
+                phone_number = record["Phone Number"]
                 if created_at < latest_delivered_request_created_time:
-                    statuses = record.get(EG_STATUS_FIELD, [])
-                    statuses.append(timeout_tag)
-                    stats["timedout_requests"] += 1
-                    log.info(
-                        f"Adding {timeout_tag} to: {created_at} for phone number: {record['Phone Number']}"
+                    statuses = list(
+                        set(record.get(status_field, []) + timeout_tags)
                     )
+                    stats["timedout_requests"] += 1
+                    msg = (
+                        f"{'Adding' if not dry_run else 'Would add'}"
+                        f" '{','.join(timeout_tags)}' to the '{status_field}' field for "
+                        f"'{phone_number}' (created_at: {created_at})"
+                    )
+                    log.info(msg)
                     self.update_record(
-                        record["id"], {EG_STATUS_FIELD: statuses}, dry_run
+                        record_id, {status_field: statuses}, dry_run
                     )
         return dict(stats)
 
     def run(self, event, context):
         # validate the provided request
-        request = event["ESSENTIAL_GOODS_REQUEST"]
-        if request not in EG_REQUESTS_SCHEMA["items"]:
+        request_field_shorthand = event["REQUEST_FIELD"].strip()
+        if request_field_shorthand not in REQUEST_SCHEMA_MAP:
             raise ValueError(
-                f"Invalid ESSENTIAL_GOODS_REQUEST: {request}. Choose from: {EG_REQUESTS_SCHEMA['items'].keys()}"
+                f"Invalid REQUEST_FIELD: '{request_field_shorthand}'"
+                + "\nChoose from: "
+                + ", ".join(REQUEST_SCHEMA_MAP.keys())
+            )
+
+        request_schema = REQUEST_SCHEMA_MAP[request_field_shorthand]
+        request_field = REQUEST_FIELD_MAP[request_field_shorthand]
+        request_value = event["REQUEST_VALUE"].strip()
+
+        if request_value not in request_schema["items"]:
+            raise ValueError(
+                f"Invalid {request_field_shorthand} request: '{request_value}'"
+                + "\nChoose from:\n\t"
+                + "\n\t".join(request_schema["items"].keys())
             )
 
         # get the timeout flag from the schema
-        timeout_tag = EG_REQUESTS_SCHEMA["items"][request]["timeout"]
-        delivered_tag = EG_REQUESTS_SCHEMA["items"][request]["delivered"]
+        timeout_tags = to_list(
+            request_schema["items"][request_value]["timeout"]
+        )
+        delivered_tags = to_list(
+            request_schema["items"][request_value]["delivered"]
+        )
+
+        # get the status field to update
+        status_field = STATUS_FIELD_MAP[request_field_shorthand]
+
+        # parse dry run flag
+        dry_run = event.get("DRY_RUN", False)
+        try:
+            dry_run = bool(dry_run)
+        except ValueError:
+            raise ValueError(
+                f"Invalid DRY_RUN value: {dry_run}. Must be 'true' or 'false'."
+            )
 
         # timeout requests for phone numbers with >= 1 fulfilled request
+        if dry_run:
+            log.warning("Running in DRY_RUN mode. No records will be updated.")
+        else:
+            log.info("Running in LIVE mode. Records will be updated.")
         timeout_stats = self.timeout_requests(
-            request=request,
-            timeout_tag=timeout_tag,
-            delivered_tag=delivered_tag,
-            dry_run=bool(event.get("DRY_RUN", False)),
+            request_value=request_value,
+            request_field=request_field,
+            timeout_tags=timeout_tags,
+            delivered_tags=delivered_tags,
+            status_field=status_field,
+            dry_run=dry_run,
         )
-        log.info("Timeout process finished with stats:\n")
-        pprint(timeout_stats)
+        log.info("Finished!")
+        if not timeout_stats.get("timedout_requests", 0) > 0:
+            print(
+                f"No phone numbers had unfulfilled {request_field_shorthand} requests to timeout."
+            )
+        else:
+            print(
+                f"{timeout_stats['timedout_requests']} unfulfilled requests for '{request_value}' "
+                + f"{'would have been' if dry_run else 'were'} timedout by adding '"
+                + ",".join(timeout_tags)
+                + f"' to the '{status_field}' field."
+            )
         return timeout_stats
 
 

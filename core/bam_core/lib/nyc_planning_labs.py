@@ -26,5 +26,8 @@ class NycPlanningLabs(object):
             response = self.session.get(url, params=params)
             response.raise_for_status()
             return response.json()
-        except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError)  as e:
+        except (
+            requests.exceptions.HTTPError,
+            requests.exceptions.ConnectionError,
+        ) as e:
             return {"error": str(e)}

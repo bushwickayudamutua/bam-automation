@@ -24,14 +24,14 @@ BASE_VIEW_FIELDS = [PHONE_FIELD]
 
 # handling for request field parameter
 REQUEST_SCHEMA_MAP = {
-    'eg': EG_REQUESTS_SCHEMA,
-    'kitchen': KITCHEN_REQUESTS_SCHEMA,
-    'furniture': FURNITURE_REQUESTS_SCHEMA,
+    "eg": EG_REQUESTS_SCHEMA,
+    "kitchen": KITCHEN_REQUESTS_SCHEMA,
+    "furniture": FURNITURE_REQUESTS_SCHEMA,
 }
 REQUEST_FIELD_MAP = {
-    'eg': EG_REQUESTS_FIELD,
-    'kitchen': KITCHEN_REQUESTS_FIELD,
-    'furniture': FURNITURE_REQUESTS_FIELD,
+    "eg": EG_REQUESTS_FIELD,
+    "kitchen": KITCHEN_REQUESTS_FIELD,
+    "furniture": FURNITURE_REQUESTS_FIELD,
 }
 
 
@@ -41,7 +41,7 @@ class ConsolidateEssentialGoodsRequests(Function):
         * a `REQUEST_FIELD`
             - (Either `eg`, `kitchen`, `furniture`)
         * an `REQUEST_VALUE` item
-            - (eg `Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品`)
+            - (eg `Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品`)
         * a `SOURCE_VIEW`, or the associated view of "open" requests for this item
             - (eg `Essential Goods: Soap & Shower Products`)
         * a list of `TARGET_VIEWS`, or other views of "open" requests
@@ -58,24 +58,28 @@ class ConsolidateEssentialGoodsRequests(Function):
     def add_options(self):
         self.parser.add_argument(
             "-f",
+            "--request-field",
             dest="REQUEST_FIELD",
             help="The field to consider for consolidation. Either 'eg', 'kitchen', or 'furniture'",
             default="eg",
         )
         self.parser.add_argument(
             "-r",
+            "--request-value",
             dest="REQUEST_VALUE",
-            help="The request to consolidate",
+            help="The request to consolidate. E.g. 'Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品'",
             required=True,
         )
         self.parser.add_argument(
             "-s",
+            "--source-view",
             dest="SOURCE_VIEW",
             help="The source view to consolidate requests from",
             required=True,
         )
         self.parser.add_argument(
             "-t",
+            "--target-views",
             dest="TARGET_VIEWS",
             help="The target view to consolidate requests to",
             nargs="+",
@@ -83,6 +87,7 @@ class ConsolidateEssentialGoodsRequests(Function):
         )
         self.parser.add_argument(
             "-d",
+            "--dry-run",
             dest="DRY_RUN",
             help="If true, update operations will not be performed.",
             action="store_true",
