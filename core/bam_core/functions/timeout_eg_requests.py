@@ -38,27 +38,36 @@ REQUEST_FIELD_MAP = {
 
 class TimeoutEssentialGoodsRequests(Function):
     """
-    For all records that have an `ESSENTIAL_GOODS_REQUEST`, add a "timeout" status to any
-    unfulfilled records for phone numbers which have at least one fulfilled request.
+    Given:
+        * a `REQUEST_FIELD`
+            - (Either `eg`, `kitchen`, `furniture`)
+        * a `REQUEST_VALUE` item
+            - (eg `Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品`)
+
+    For all records that have an `REQUEST_VALUE` in the `REQUEST_FIELD`, add an associated "timeout" status to any
+    unfulfilled records for phone numbers which have at least one later fulfilled request.
     """
 
     def add_options(self):
         self.parser.add_argument(
             "-f",
+            "--request-field",
             dest="REQUEST_FIELD",
-            help="The field to consider for consolidation. Either 'eg', 'kitchen', or 'furniture'",
+            help="The field to consider for timing out. Either 'eg', 'kitchen', or 'furniture'",
             default="eg",
         )
         self.parser.add_argument(
             "-r",
+            "--request-value",
             dest="REQUEST_VALUE",
-            help="The request to consolidate",
+            help="The request to timeout",
             required=True,
         )
         self.parser.add_argument(
             "-d",
+            "--dry-run",
             dest="DRY_RUN",
-            help="If true, update operations will not be performed.",
+            help="If true, view which timeouts would be added without actually adding them.",
             action="store_true",
             default=False,
         )

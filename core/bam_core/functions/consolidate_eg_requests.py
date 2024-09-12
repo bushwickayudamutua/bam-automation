@@ -58,24 +58,28 @@ class ConsolidateEssentialGoodsRequests(Function):
     def add_options(self):
         self.parser.add_argument(
             "-f",
+            "--request-field",
             dest="REQUEST_FIELD",
             help="The field to consider for consolidation. Either 'eg', 'kitchen', or 'furniture'",
             default="eg",
         )
         self.parser.add_argument(
             "-r",
+            "--request-value",
             dest="REQUEST_VALUE",
             help="The request to consolidate",
             required=True,
         )
         self.parser.add_argument(
             "-s",
+            "--source-view",
             dest="SOURCE_VIEW",
             help="The source view to consolidate requests from",
             required=True,
         )
         self.parser.add_argument(
             "-t",
+            "--target-views",
             dest="TARGET_VIEWS",
             help="The target view to consolidate requests to",
             nargs="+",
@@ -83,6 +87,7 @@ class ConsolidateEssentialGoodsRequests(Function):
         )
         self.parser.add_argument(
             "-d",
+            "--dry-run",
             dest="DRY_RUN",
             help="If true, update operations will not be performed.",
             action="store_true",
