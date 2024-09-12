@@ -162,6 +162,8 @@ class TimeoutEssentialGoodsRequests(Function):
 
     def run(self, event, context):
         # validate the provided request
+        if "REQUEST_FIELD" not in event:
+            raise ValueError("REQUEST_FIELD is required.")
         request_field_shorthand = event["REQUEST_FIELD"].strip()
         if request_field_shorthand not in REQUEST_SCHEMA_MAP:
             raise ValueError(
@@ -172,6 +174,9 @@ class TimeoutEssentialGoodsRequests(Function):
 
         request_schema = REQUEST_SCHEMA_MAP[request_field_shorthand]
         request_field = REQUEST_FIELD_MAP[request_field_shorthand]
+        
+        if "REQUEST_VALUE" not in event:
+            raise ValueError("REQUEST_VALUE is required.")
         request_value = event["REQUEST_VALUE"].strip()
 
         if request_value not in request_schema["items"]:
