@@ -115,6 +115,12 @@ class UpdateAirtableFieldValue(Function):
                     raise e
 
     def run(self, event, context):
+        if not "PHONE_NUMBERS_TO_UPDATE" in event:
+            raise ValueError("PHONE_NUMBERS_TO_UPDATE is required")
+        if not "FIELD_NAME" in event:
+            raise ValueError("FIELD_NAME is required")
+        if not "NEW_VALUE" in event:
+            raise ValueError("NEW_VALUE is required")
         text = event["PHONE_NUMBERS_TO_UPDATE"]
         phone_numbers = extract_phone_numbers(text)
         log.info(f"Found {len(phone_numbers)} phone numbers in text.")
@@ -124,7 +130,21 @@ class UpdateAirtableFieldValue(Function):
         field_name = event["FIELD_NAME"]
         new_value = event["NEW_VALUE"]
         view_name = event.get("VIEW_NAME", None)
-        dry_run = bool(event.get("DRY_RUN", False))
+
+        # parse dry run flag
+        dry_run = event.get("DRY_RUN", True)
+        try:
+            dry_run = bool(dry_run)
+        except ValueError:
+            raise ValueError(
+                f"Invalid DRY_RUN value: {dry_run}. Must be 'true' or 'false'."
+            )
+
+        if dry_run:
+            log.warning("Running in DRY_RUN mode. No records will be updated.")
+        else:
+            log.warning("Running in LIVE mode. Records will be updated.")
+
 
         self.update_field(
             phone_numbers, field_name, new_value, view_name, dry_run

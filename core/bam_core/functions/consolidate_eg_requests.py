@@ -238,7 +238,7 @@ class ConsolidateEssentialGoodsRequests(Function):
             )
 
         request_value = event["REQUEST_VALUE"].strip()
-        if request not in schema["items"]:
+        if request_value not in schema["items"]:
             raise ValueError(
                 f"Invalid REQUEST_VALUE {request_field}: {request_value}. Choose from: {schema['items'].keys()}"
             )
