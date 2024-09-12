@@ -222,7 +222,7 @@ class TimeoutEssentialGoodsRequests(Function):
         log.info("Finished!")
         if not timeout_stats.get("timedout_requests", 0) > 0:
             print(
-                f"No phone numbers had unfulfilled {request_field_shorthand} requests to timeout."
+                f"No phone numbers had unfulfilled requests for '{request_value}' to timeout."
             )
         else:
             print(
