@@ -145,7 +145,6 @@ class UpdateAirtableFieldValue(Function):
         else:
             log.warning("Running in LIVE mode. Records will be updated.")
 
-
         self.update_field(
             phone_numbers, field_name, new_value, view_name, dry_run
         )

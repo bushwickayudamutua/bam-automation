@@ -6,7 +6,7 @@ Each function makes use of common code in [`bam-core`](../core/). More detail on
 
 ## How to I deploy functions to Digital Ocean?
 
-While [Github Actions](../.github/workflows/deploy.yml) is configured to deploy any code changes on each deploy to the `main` branch, you may from time-to-time want to deploy from your local machine:
+While [Github Actions](../.github/workflows/deploy.yml) is configured to deploy any code changes on each push to the `main` branch, you may from time-to-time want to deploy from your local machine:
 
 First install the [Digital Ocean CLI](https://docs.digitalocean.com/reference/doctl/how-to/install/)
 
@@ -23,13 +23,13 @@ You should now be able to redeploy after code changes by running the following f
 make deploy-functions
 ```
 
-## How to I run functions?
+## How do I run functions?
 
 ### Locally
 
-Each [function](../core/bam_core/functions) is first written as a simple python class inside of `bam-core` which inherits from the base `bam_core.functions.base.Function` class. You can run each function locally by calling it's module, eg:
+Each [function](../core/bam_core/functions) is first written as a simple python class inside of `bam-core` which inherits from the base `bam_core.functions.base.Function` class. You can run each function locally by calling it's module from the command line, eg:
 
-```
+```bash
 python -m bam_core.functions.update_website_request_data -h
 ```
 
@@ -49,7 +49,8 @@ You can also run functions from within [the cloud interface](https://cloud.digit
 ## How do I develop a new function?
 
 To develop a new function, you can start by copying from an existing example, for instance [`website/update_request_data`](packages/website/update_request_data/):
-```
+
+```bash
 git checkout -b feature/my-new-function
 mkdir -p packages/airtable/my_new_function
 cp -R packages/website/update_request_data  packages/airtable/my_new_function
@@ -57,22 +58,22 @@ chmod +X packages/airtable/my_new_function/build.sh # make the build script exec
 chmod 777 packages/airtable/my_new_function/build.sh # open the permissions for the build script
 ```
 
-When naming a new function, try to group functions that work with particular data sources in in the same directory, and add new directories when new data sources are added. When a function accesses multiple data sources, put it in the directory of the data source it update (for instance, `update_request_data` pulls from Airtable, but writes data to be access on our website).
+When naming a new function, try to group functions that work with particular data sources in in the same directory, and add new directories when new data sources are added. When a function accesses multiple data sources, put it in the directory of the data source it updates (for instance, `update_request_data` pulls from Airtable, but writes data to be access on our website).
 
 ### Where do I write my function's code?
 
-To ensure that functions are testable, reusable, and portable, please add the code for your function to [`bam_core.functions`](../core/bam_core/functions/) and inherit from the base `bam_core.functions.base.Function` class. You can import this in your `__main__.py` file, eg:
+To ensure that functions are testable, reusable, and portable, please add the code for your function to [`bam_core.functions`](../core/bam_core/functions/) and inherit from the base `bam_core.functions.base.Function` class. You can import this in your `__main__.py` file of your function's directory, eg:
 
-```
+```python
 from bam_core.functions.update_website_request_data import UpdateWebsiteRequestData
 
 main = UpdateWebsiteRequestData().main
 
 ```
 
-Following the above example, you'll modify `__main__.py` and update the `main` function. For convenience, you can inherit from [`bam_core.function.Function`](../core/bam_core/function.py), 
+You'll then write the logic for your function in `bam_core`.
 
-Here's an example to get you started:
+Below is an example to get you started. You would save this file as `bam_core/functions/my_new_function.py`
 
 ```python
 import logging
@@ -108,7 +109,7 @@ if __name__ == "__main__:
     MyNewFunction().cli()
 ```
 
-**NOTE**: If your function is adding methods for accessing new services, or new methods for accessing existing services, orconsider adding those to `bam-core` as a part of your work as it'll benefit others moving forward!
+**NOTE**: If your function is adding methods for accessing new services, or new methods for accessing existing services, consider adding those to [`bam_core.lib`](../core/bam_core/lib/) or [`bam_core.utils`](../core/bam_core/utils/) as a part of your work as it'll benefit others moving forward!
 
 ### How do I prepare a new function for deployment?
 
@@ -128,17 +129,17 @@ Once you're done, you should be able to create a pull request for your changes. 
 
 ## How do I schedule a function? 
 
-Rather than adding a [scheduled trigger](https://docs.digitalocean.com/products/functions/how-to/schedule-functions/) to each function, we have two functions - [cron/daily](packages/cron/daily) and [cron/hourly](packages/cron/hourly/) which run multiple functions on a daily and hourly basis, respectively. This helps us get around Digital Ocean's quota of three scheduled triggers per account.  Add your function and call the `main` method to add it the schedule.
+Rather than adding a [scheduled trigger](https://docs.digitalocean.com/products/functions/how-to/schedule-functions/) for each function, we have two functions - [cron/daily](packages/cron/daily) and [cron/hourly](packages/cron/hourly/) which run multiple functions on a daily and hourly basis, respectively. This helps us get around Digital Ocean's quota of three scheduled triggers per account.  Add your function and call the `main` method to add it the schedule.
 
 For example:
 
 ```python
-from bam_core.functions.my_new_function import MyNewFunction
+from bam_core.functions.base import Function
 
 def main(event, context):
-    SomeOtherFunction().main(event, context)
-    MyNewFunction().main(event, context)
+    return Function.run_functions(
+        event,
+        context,
+        MyNewFunction
+    )
 ```
-
-### TODO
-- [ ] Update Makefile to deploy single funcs

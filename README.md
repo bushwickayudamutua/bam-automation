@@ -1,6 +1,6 @@
 # bam-automation
 
-Hi! Welcome to `bam-automation`. This repository contains code for syncing data between Bushwick Ayuda Mutua's services and performing routine and/or automated tasks. It contains three components, each of which contains a README with more information. If you're interested in helping us out with our efforts, fill our [our volunteer form](https://bushwickayudamutua.com/volunteer/) and select the `Tech and data support / Soporte técnico y de datos` working group. A volunteer coordinator will get in touch with shortly thereafter!
+Hi! Welcome to `bam-automation`. This repository contains code for syncing data between Bushwick Ayuda Mutua's services and performing routine and/or automated tasks. It contains three components, each of which contains a README with more information. If you're interested in helping us out with our efforts, fill our [our volunteer form](https://bushwickayudamutua.com/volunteer/) and select the `Tech and data support / Soporte técnico y de datos` working group. A volunteer coordinator will get in touch with you shortly thereafter!
 
 ## Local Development Setup
 
@@ -29,7 +29,7 @@ cp .env.sample .env
 
 ### Subfolders
 ## [`app`](app/)
- This folder contains a [`fastapi`](https://fastapi.tiangolo.com/) application designed to provide additional functionality to Airtable automations via HTTP requests.
+This folder contains a [`fastapi`](https://fastapi.tiangolo.com/) application designed to provide additional functionality to Airtable automations via HTTP requests.
 
 ## [`core`](core/)
 
