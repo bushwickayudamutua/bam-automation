@@ -20,9 +20,6 @@ from bam_core.constants import (
 
 log = logging.getLogger(__name__)
 
-# fields to request per view
-VIEW_FIELDS = [PHONE_FIELD, EG_STATUS_FIELD]
-
 # handling for request field parameter
 REQUEST_SCHEMA_MAP = {
     "eg": EG_REQUESTS_SCHEMA,
@@ -35,6 +32,12 @@ REQUEST_FIELD_MAP = {
     "furniture": FURNITURE_REQUESTS_FIELD,
 }
 
+STATUS_FIELD_MAP = {
+    "eg": EG_STATUS_FIELD,
+    "kitchen": EG_STATUS_FIELD,
+    "furniture": EG_STATUS_FIELD,
+}
+
 
 class TimeoutEssentialGoodsRequests(Function):
     """
@@ -42,7 +45,7 @@ class TimeoutEssentialGoodsRequests(Function):
         * a `REQUEST_FIELD`
             - (Either `eg`, `kitchen`, `furniture`)
         * a `REQUEST_VALUE` item
-            - (eg `Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品`)
+            - (eg `Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品`)
 
     For all records that have an `REQUEST_VALUE` in the `REQUEST_FIELD`, add an associated "timeout" status to any
     unfulfilled records for phone numbers which have at least one later fulfilled request.
@@ -60,7 +63,7 @@ class TimeoutEssentialGoodsRequests(Function):
             "-r",
             "--request-value",
             dest="REQUEST_VALUE",
-            help="The request to timeout",
+            help="The request to timeout. E.g. 'Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品'",
             required=True,
         )
         self.parser.add_argument(
@@ -88,10 +91,10 @@ class TimeoutEssentialGoodsRequests(Function):
         self,
         request_value: str,
         request_field: str,
-        status_field: str,
         timeout_tags: List[str],
         delivered_tags: List[str],
-        dry_run: bool,
+        status_field: str = EG_STATUS_FIELD,
+        dry_run: bool = False,
     ) -> Counter:
         """
         For phone numbers which have at least one fulfilled request,
@@ -100,12 +103,13 @@ class TimeoutEssentialGoodsRequests(Function):
         """
 
         # get matching requests
+        log.info(f"Fetching records for '{request_field}' = '{request_value}'")
         request_records = self.airtable.get_phone_number_to_requests_lookup(
             formula=formulas.FIND(
                 formulas.STR_VALUE(request_value),
                 formulas.FIELD(request_field),
             ),
-            fields=VIEW_FIELDS + [request_field, status_field],
+            fields=[PHONE_FIELD, request_field, status_field],
         )
         stats = Counter()
         for phone_number, records in request_records.items():
@@ -146,8 +150,9 @@ class TimeoutEssentialGoodsRequests(Function):
                     )
                     stats["timedout_requests"] += 1
                     msg = (
-                        f"{'Adding' if dry_run else 'Would add'}"
-                        f" {','.join(timeout_tags)} to: {record_id} for phone number: {phone_number}"
+                        f"{'Adding' if not dry_run else 'Would add'}"
+                        f" '{','.join(timeout_tags)}' to the '{status_field}' field for "
+                        f"'{phone_number}' (created_at: {created_at})"
                     )
                     log.info(msg)
                     self.update_record(
@@ -160,7 +165,9 @@ class TimeoutEssentialGoodsRequests(Function):
         request_field_shorthand = event["REQUEST_FIELD"].strip()
         if request_field_shorthand not in REQUEST_SCHEMA_MAP:
             raise ValueError(
-                f"Invalid REQUEST_FIELD: {request_field_shorthand}. Choose from: {REQUEST_SCHEMA_MAP.keys()}"
+                f"Invalid REQUEST_FIELD: '{request_field_shorthand}'"
+                + "\nChoose from: "
+                + ", ".join(REQUEST_SCHEMA_MAP.keys())
             )
 
         request_schema = REQUEST_SCHEMA_MAP[request_field_shorthand]
@@ -169,7 +176,9 @@ class TimeoutEssentialGoodsRequests(Function):
 
         if request_value not in request_schema["items"]:
             raise ValueError(
-                f"Invalid {request_field_shorthand} request: '{request_value}. Choose from: {request_schema.keys()}"
+                f"Invalid {request_field_shorthand} request: '{request_value}'"
+                + "\nChoose from:\n\t"
+                + "\n\t".join(request_schema["items"].keys())
             )
 
         # get the timeout flag from the schema
@@ -180,17 +189,43 @@ class TimeoutEssentialGoodsRequests(Function):
             request_schema["items"][request_value]["delivered"]
         )
 
+        # get the status field to update
+        status_field = STATUS_FIELD_MAP[request_field_shorthand]
+
+        # parse dry run flag
+        dry_run = event.get("DRY_RUN", False)
+        try:
+            dry_run = bool(dry_run)
+        except ValueError:
+            raise ValueError(
+                f"Invalid DRY_RUN value: {dry_run}. Must be 'true' or 'false'."
+            )
+
         # timeout requests for phone numbers with >= 1 fulfilled request
+        if dry_run:
+            log.warning("Running in DRY_RUN mode. No records will be updated.")
+        else:
+            log.info("Running in LIVE mode. Records will be updated.")
         timeout_stats = self.timeout_requests(
             request_value=request_value,
             request_field=request_field,
-            status_field=EG_STATUS_FIELD,
             timeout_tags=timeout_tags,
             delivered_tags=delivered_tags,
-            dry_run=bool(event.get("DRY_RUN", False)),
+            status_field=status_field,
+            dry_run=dry_run,
         )
-        log.info("Timeout process finished with stats:\n")
-        pprint(timeout_stats)
+        log.info("Finished!")
+        if not timeout_stats.get("timedout_requests", 0) > 0:
+            print(
+                f"No phone numbers had unfulfilled {request_field_shorthand} requests to timeout."
+            )
+        else:
+            print(
+                f"{timeout_stats['timedout_requests']} unfulfilled requests for '{request_value}' "
+                + f"{'would have been' if dry_run else 'were'} timedout by adding '"
+                + ",".join(timeout_tags)
+                + f"' to the '{status_field}' field."
+            )
         return timeout_stats
 
 

@@ -41,7 +41,7 @@ class ConsolidateEssentialGoodsRequests(Function):
         * a `REQUEST_FIELD`
             - (Either `eg`, `kitchen`, `furniture`)
         * an `REQUEST_VALUE` item
-            - (eg `Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品`)
+            - (eg `Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品`)
         * a `SOURCE_VIEW`, or the associated view of "open" requests for this item
             - (eg `Essential Goods: Soap & Shower Products`)
         * a list of `TARGET_VIEWS`, or other views of "open" requests
@@ -67,7 +67,7 @@ class ConsolidateEssentialGoodsRequests(Function):
             "-r",
             "--request-value",
             dest="REQUEST_VALUE",
-            help="The request to consolidate",
+            help="The request to consolidate. E.g. 'Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品'",
             required=True,
         )
         self.parser.add_argument(
