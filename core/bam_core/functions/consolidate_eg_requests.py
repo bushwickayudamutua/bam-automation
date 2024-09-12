@@ -24,14 +24,14 @@ BASE_VIEW_FIELDS = [PHONE_FIELD]
 
 # handling for request field parameter
 REQUEST_SCHEMA_MAP = {
-    'eg': EG_REQUESTS_SCHEMA,
-    'kitchen': KITCHEN_REQUESTS_SCHEMA,
-    'furniture': FURNITURE_REQUESTS_SCHEMA,
+    "eg": EG_REQUESTS_SCHEMA,
+    "kitchen": KITCHEN_REQUESTS_SCHEMA,
+    "furniture": FURNITURE_REQUESTS_SCHEMA,
 }
 REQUEST_FIELD_MAP = {
-    'eg': EG_REQUESTS_FIELD,
-    'kitchen': KITCHEN_REQUESTS_FIELD,
-    'furniture': FURNITURE_REQUESTS_FIELD,
+    "eg": EG_REQUESTS_FIELD,
+    "kitchen": KITCHEN_REQUESTS_FIELD,
+    "furniture": FURNITURE_REQUESTS_FIELD,
 }
 
 

@@ -462,7 +462,7 @@ EG_VIEWS = [
         name="Essential Goods: Pet Food",
         status_field_name="Essential Goods Requests Status",
         timeout_flag_value="Pet Food Timeout",
-    )
+    ),
 ]
 
 FURNITURE_VIEWS = [

@@ -10,13 +10,21 @@ mj = Mailjet()
 
 
 def get_parser():
-    parser = argparse.ArgumentParser(description="Upload a list of emails to Mailjet")
+    parser = argparse.ArgumentParser(
+        description="Upload a list of emails to Mailjet"
+    )
     parser.add_argument(
-        "-l", "--list-names", nargs="+", help="The names of the lists to upload to"
+        "-l",
+        "--list-names",
+        nargs="+",
+        help="The names of the lists to upload to",
     )
     parser.add_argument("-c", "--csv", help="The csv file to upload")
     parser.add_argument(
-        "-e", "--email", default="email", help="The column name of the email addresses"
+        "-e",
+        "--email",
+        default="email",
+        help="The column name of the email addresses",
     )
     parser.add_argument(
         "-d",
@@ -60,7 +68,9 @@ def main():
                 if prop in properties:
                     properties[prop] = properties[prop].lower() == "true"
             for list_name in args.list_names:
-                log.info(f"Adding {email} to {list_name} with properties: {properties}")
+                log.info(
+                    f"Adding {email} to {list_name} with properties: {properties}"
+                )
                 if not args.dry_run:
                     mj.add_contact_to_list(email, list_name, **properties)
             emails.add(email)
