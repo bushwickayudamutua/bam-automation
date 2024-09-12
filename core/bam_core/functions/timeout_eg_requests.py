@@ -174,7 +174,7 @@ class TimeoutEssentialGoodsRequests(Function):
 
         request_schema = REQUEST_SCHEMA_MAP[request_field_shorthand]
         request_field = REQUEST_FIELD_MAP[request_field_shorthand]
-        
+
         if "REQUEST_VALUE" not in event:
             raise ValueError("REQUEST_VALUE is required.")
         request_value = event["REQUEST_VALUE"].strip()
@@ -198,7 +198,7 @@ class TimeoutEssentialGoodsRequests(Function):
         status_field = STATUS_FIELD_MAP[request_field_shorthand]
 
         # parse dry run flag
-        dry_run = event.get("DRY_RUN", False)
+        dry_run = event.get("DRY_RUN", True)
         try:
             dry_run = bool(dry_run)
         except ValueError:
@@ -206,11 +206,11 @@ class TimeoutEssentialGoodsRequests(Function):
                 f"Invalid DRY_RUN value: {dry_run}. Must be 'true' or 'false'."
             )
 
-        # timeout requests for phone numbers with >= 1 fulfilled request
         if dry_run:
             log.warning("Running in DRY_RUN mode. No records will be updated.")
         else:
-            log.info("Running in LIVE mode. Records will be updated.")
+            log.warning("Running in LIVE mode. Records will be updated.")
+
         timeout_stats = self.timeout_requests(
             request_value=request_value,
             request_field=request_field,

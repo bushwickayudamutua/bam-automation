@@ -109,7 +109,7 @@ class ConsolidateEssentialGoodsRequests(Function):
     def consolidate_view(
         self,
         request_field: str,
-        request: str,
+        request_value: str,
         timeout_tag: str,
         delivered_tag: str,
         source_view: str,
@@ -125,7 +125,7 @@ class ConsolidateEssentialGoodsRequests(Function):
         for target_view in target_views:
             log.info("=" * 60)
             log.info(
-                f"Consolidating: {request}\nFrom: {source_view} To: {target_view}"
+                f"Consolidating: {request_value}\nFrom: {source_view} To: {target_view}"
             )
             fields = [*BASE_VIEW_FIELDS, request_field, status_field]
             target_lookup = self.airtable.get_phone_number_to_requests_lookup(
@@ -152,14 +152,15 @@ class ConsolidateEssentialGoodsRequests(Function):
                     request_tags = target_record.get(request_field, [])
 
                     if (
-                        request in request_tags
+                        request_value in request_tags
                         and delivered_tag in status_tags
                     ):
                         # ignore delivered requests
                         continue
 
                     elif (
-                        request in request_tags and timeout_tag in status_tags
+                        request_value in request_tags
+                        and timeout_tag in status_tags
                     ):
                         consolidated_id = target_record["id"]
                         # remove timeout flag
@@ -174,14 +175,14 @@ class ConsolidateEssentialGoodsRequests(Function):
                             dry_run,
                         )
 
-                    elif request not in request_tags:
+                    elif request_value not in request_tags:
                         consolidated_id = target_record["id"]
                         # add request
                         log.info(
-                            f"(Target - {created_at}) Adding: {request} To: {phone_number} In: {target_view}"
+                            f"(Target - {created_at}) Adding: {request_value} To: {phone_number} In: {target_view}"
                         )
                         stats[target_view]["requests_added"] += 1
-                        request_tags.append(request)
+                        request_tags.append(request_value)
                         self.update_record(
                             target_record["id"],
                             {request_field: request_tags},
@@ -216,7 +217,18 @@ class ConsolidateEssentialGoodsRequests(Function):
         return dict(stats)
 
     def run(self, event, context):
-        # validate the provided request
+        # validate the parameters
+        if "REQUEST_FIELD" not in event:
+            raise ValueError("REQUEST_FIELD is required.")
+        if "REQUEST_VALUE" not in event:
+            raise ValueError("REQUEST_VALUE is required.")
+        # check source/target views
+        if "SOURCE_VIEW" not in event:
+            raise ValueError("SOURCE_VIEW is required.")
+        if "TARGET_VIEWS" not in event:
+            raise ValueError("TARGET_VIEWS is required.")
+
+        # parse the request field
         request_field_shorthand = event["REQUEST_FIELD"].strip()
         request_field = REQUEST_FIELD_MAP.get(request_field_shorthand)
         schema = REQUEST_SCHEMA_MAP.get(request_field_shorthand)
@@ -224,25 +236,40 @@ class ConsolidateEssentialGoodsRequests(Function):
             raise ValueError(
                 f"Invalid REQUEST_FIELD: {request_field_shorthand}. Choose from: {REQUEST_SCHEMA_MAP.keys()}"
             )
-        request = event["REQUEST_VALUE"].strip()
+
+        request_value = event["REQUEST_VALUE"].strip()
         if request not in schema["items"]:
             raise ValueError(
-                f"Invalid REQUEST_VALUE {request_field}: {request}. Choose from: {schema['items'].keys()}"
+                f"Invalid REQUEST_VALUE {request_field}: {request_value}. Choose from: {schema['items'].keys()}"
             )
 
         # get the timeout flag from the schema
-        timeout_tag = schema["items"][request]["timeout"]
-        delivered_tag = schema["items"][request]["delivered"]
+        timeout_tag = schema["items"][request_value]["timeout"]
+        delivered_tag = schema["items"][request_value]["delivered"]
+
+        # parse dry run flag
+        dry_run = event.get("DRY_RUN", True)
+        try:
+            dry_run = bool(dry_run)
+        except ValueError:
+            raise ValueError(
+                f"Invalid DRY_RUN value: {dry_run}. Must be 'true' or 'false'."
+            )
+
+        if dry_run:
+            log.warning("Running in DRY_RUN mode. No records will be updated.")
+        else:
+            log.warning("Running in LIVE mode. Records will be updated.")
 
         # consolidate the view
         consolidate_stats = self.consolidate_view(
             request_field=request_field,
-            request=request,
+            request_value=request_value,
             timeout_tag=timeout_tag,
             delivered_tag=delivered_tag,
             source_view=event["SOURCE_VIEW"],
             target_views=event["TARGET_VIEWS"],
-            dry_run=bool(event.get("DRY_RUN", False)),
+            dry_run=dry_run,
         )
         log.info("Consolidation finished with stats:\n")
         pprint(consolidate_stats)

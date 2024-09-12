@@ -198,7 +198,20 @@ class DedupeAirtableViews(Function):
         )
 
     def run(self, event, context):
-        dry_run = event.get("DRY_RUN", False)
+        # parse dry run flag
+        dry_run = event.get("DRY_RUN", True)
+        try:
+            dry_run = bool(dry_run)
+        except ValueError:
+            raise ValueError(
+                f"Invalid DRY_RUN value: {dry_run}. Must be 'true' or 'false'."
+            )
+
+        if dry_run:
+            log.warning("Running in DRY_RUN mode. No records will be updated.")
+        else:
+            log.warning("Running in LIVE mode. Records will be updated.")
+
         for view in constants.VIEWS:
             log.info(f"Deduping view: {view['name']}")
             dedupe_view(view, dry_run)
