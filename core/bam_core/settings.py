@@ -35,7 +35,7 @@ S3_CDN_ID = os.getenv("BAM_S3_CDN_ID", None)
 LOG_LEVEL = os.getenv("BAM_LOG_LEVEL", "INFO")
 LOG_FORMAT = os.getenv(
     "BAM_LOG_FORMAT",
-    r"[%(levelname)s] - %(asctime)s -> %(message)s",
+    r"[%(levelname)s] -> %(message)s",
 )
 
 LOGGING_CONFIG = {

@@ -3,6 +3,7 @@ import traceback
 
 from bam_core.constants import PHONE_FIELD
 from bam_core.utils.phone import extract_phone_numbers
+from bam_core.utils.etc import to_bool
 from pyairtable import formulas
 
 from .base import Function
@@ -132,14 +133,7 @@ class UpdateAirtableFieldValue(Function):
         view_name = event.get("VIEW_NAME", None)
 
         # parse dry run flag
-        dry_run = event.get("DRY_RUN", True)
-        try:
-            dry_run = bool(dry_run)
-        except ValueError:
-            raise ValueError(
-                f"Invalid DRY_RUN value: {dry_run}. Must be 'true' or 'false'."
-            )
-
+        dry_run = to_bool(event.get("DRY_RUN", True))
         if dry_run:
             log.warning("Running in DRY_RUN mode. No records will be updated.")
         else:

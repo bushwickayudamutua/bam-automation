@@ -6,7 +6,7 @@ from typing import List, Dict, Any
 from pyairtable import formulas
 
 from .base import Function
-from bam_core.utils.etc import to_list
+from bam_core.utils.etc import to_list, to_bool
 from bam_core.constants import (
     EG_REQUESTS_SCHEMA,
     EG_REQUESTS_FIELD,
@@ -181,7 +181,7 @@ class TimeoutEssentialGoodsRequests(Function):
 
         if request_value not in request_schema["items"]:
             raise ValueError(
-                f"Invalid {request_field_shorthand} request: '{request_value}'"
+                f"Invalid {request_field} request: '{request_value}'"
                 + "\nChoose from:\n\t"
                 + "\n\t".join(request_schema["items"].keys())
             )
@@ -198,14 +198,7 @@ class TimeoutEssentialGoodsRequests(Function):
         status_field = STATUS_FIELD_MAP[request_field_shorthand]
 
         # parse dry run flag
-        dry_run = event.get("DRY_RUN", True)
-        try:
-            dry_run = bool(dry_run)
-        except ValueError:
-            raise ValueError(
-                f"Invalid DRY_RUN value: {dry_run}. Must be 'true' or 'false'."
-            )
-
+        dry_run = to_bool(event.get("DRY_RUN", True))
         if dry_run:
             log.warning("Running in DRY_RUN mode. No records will be updated.")
         else:

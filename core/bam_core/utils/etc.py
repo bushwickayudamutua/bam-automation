@@ -51,3 +51,20 @@ def to_list(value: Union[Any, List[Any]]) -> List[Any]:
     if isinstance(value, list):
         return value
     return [value]
+
+
+def to_bool(val: Union[str, bool]) -> bool:
+    """Convert a string representation of truth to true (1) or false (0).
+    True values are 'y', 'yes', 't', 'true', 'on', and '1'; false values
+    are 'n', 'no', 'f', 'false', 'off', and '0'.  Raises ValueError if
+    'val' is anything else.
+    """
+    if isinstance(val, bool):
+        return val
+    val = str(val).lower()
+    if val in ("y", "yes", "t", "true", "on", "1"):
+        return True
+    elif val in ("n", "no", "f", "false", "off", "0"):
+        return False
+    else:
+        raise ValueError("Invalid boolean value: %r" % (val,))
