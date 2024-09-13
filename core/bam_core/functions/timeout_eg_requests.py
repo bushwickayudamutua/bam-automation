@@ -198,7 +198,9 @@ class TimeoutEssentialGoodsRequests(Function):
         status_field = STATUS_FIELD_MAP[request_field_shorthand]
 
         # parse dry run flag
+
         dry_run = to_bool(event.get("DRY_RUN", True))
+
         if dry_run:
             log.warning("Running in DRY_RUN mode. No records will be updated.")
         else:
@@ -214,16 +216,16 @@ class TimeoutEssentialGoodsRequests(Function):
         )
         log.info("Finished!")
         if not timeout_stats.get("timedout_requests", 0) > 0:
-            print(
-                f"No phone numbers had unfulfilled requests for '{request_value}' to timeout."
-            )
+            message = f"No phone numbers had unfulfilled requests for '{request_value}' to timeout."
         else:
-            print(
+            message = (
                 f"{timeout_stats['timedout_requests']} unfulfilled requests for '{request_value}' "
                 + f"{'would have been' if dry_run else 'were'} timedout by adding '"
                 + ",".join(timeout_tags)
                 + f"' to the '{status_field}' field."
             )
+        log.info(message)
+        timeout_stats["message"] = message
         return timeout_stats
 
 
