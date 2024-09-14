@@ -103,6 +103,7 @@ class TimeoutEssentialGoodsRequests(Function):
         """
 
         # get matching requests
+        log.info("=" * 60)
         log.info(f"Fetching records for '{request_field}' = '{request_value}'")
         request_records = self.airtable.get_phone_number_to_requests_lookup(
             formula=formulas.FIND(
