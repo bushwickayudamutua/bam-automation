@@ -57,7 +57,7 @@ def to_bool(val: Union[str, bool]) -> bool:
     """
     Convert a string representation of truth to true or false.
     True values are 'y', 'yes', 't', 'true', 'on', and '1'
-    False values are 'n', 'no', 'f', 'false', 'off', and '0'.  
+    False values are 'n', 'no', 'f', 'false', 'off', and '0'.
     Raises ValueError if 'val' is anything else.
     :param val: A value
     :return bool

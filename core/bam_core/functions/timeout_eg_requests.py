@@ -236,7 +236,7 @@ class TimeoutEssentialGoodsRequests(Function):
                 "status_field": status_field,
                 "dry_run": dry_run,
             },
-            "stats": timeout_stats
+            "stats": timeout_stats,
         }
         return result
 

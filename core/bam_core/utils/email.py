@@ -219,9 +219,9 @@ def clean_email(email: str) -> str:
         email = email.replace("@@", "@")
 
     # check for @ symbol in username
-    at_count = email.count('@')
+    at_count = email.count("@")
     if at_count > 1:
-        email = email.replace('@', '.', at_count-1)
+        email = email.replace("@", ".", at_count - 1)
 
     return email
 

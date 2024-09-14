@@ -6,7 +6,7 @@ from collections import defaultdict, Counter
 from typing import List, Dict, Any
 
 from .base import Function
-from bam_core.utils.etc import to_bool
+from bam_core.utils.etc import to_bool, to_list
 from bam_core.constants import (
     EG_REQUESTS_SCHEMA,
     EG_REQUESTS_FIELD,
@@ -33,6 +33,12 @@ REQUEST_FIELD_MAP = {
     "eg": EG_REQUESTS_FIELD,
     "kitchen": KITCHEN_REQUESTS_FIELD,
     "furniture": FURNITURE_REQUESTS_FIELD,
+}
+
+STATUS_FIELD_MAP = {
+    "eg": EG_STATUS_FIELD,
+    "kitchen": EG_STATUS_FIELD,
+    "furniture": EG_STATUS_FIELD,
 }
 
 
@@ -115,7 +121,7 @@ class ConsolidateEssentialGoodsRequests(Function):
         delivered_tag: str,
         source_view: str,
         target_views: List[str],
-        status_field: str = EG_STATUS_FIELD,
+        status_field: str,
         dry_run: bool = False,
     ) -> Dict[str, Counter]:
         """
@@ -243,10 +249,16 @@ class ConsolidateEssentialGoodsRequests(Function):
             raise ValueError(
                 f"Invalid REQUEST_VALUE {request_field}: {request_value}. Choose from: {schema['items'].keys()}"
             )
+        # get the status field
+        status_field = STATUS_FIELD_MAP.get(request_field_shorthand)
 
         # get the timeout flag from the schema
         timeout_tag = schema["items"][request_value]["timeout"]
         delivered_tag = schema["items"][request_value]["delivered"]
+
+        # parse source + target views to be a list
+        source_view = event["SOURCE_VIEW"].strip()
+        target_views = [t.strip() for t in to_list(event["TARGET_VIEWS"])]
 
         # parse dry run flag
         dry_run = to_bool(event.get("DRY_RUN", True))
@@ -261,13 +273,27 @@ class ConsolidateEssentialGoodsRequests(Function):
             request_value=request_value,
             timeout_tag=timeout_tag,
             delivered_tag=delivered_tag,
-            source_view=event["SOURCE_VIEW"],
-            target_views=event["TARGET_VIEWS"],
+            source_view=source_view,
+            target_views=target_views,
+            status_field=status_field,
             dry_run=dry_run,
         )
+        results = {
+            "parameters_raw": event,
+            "parameters_parsed": {
+                "request_field": request_field,
+                "request_value": request_value,
+                "timeout_tag": timeout_tag,
+                "delivered_tag": delivered_tag,
+                "source_view": source_view,
+                "target_views": target_views,
+                "dry_run": dry_run,
+            },
+            "stats": consolidate_stats,
+        }
         log.info("Consolidation finished with stats:\n")
         pprint(consolidate_stats)
-        return consolidate_stats
+        return results
 
 
 if __name__ == "__main__":
