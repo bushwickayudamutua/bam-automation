@@ -244,3 +244,15 @@ def test_double_dot_com():
     email = "test@gmail.com.com"
     result = format_email(email)
     assert result["email"] == "test@gmail.com"
+
+
+def test_iclud():
+    email = "test@iclud"
+    result = format_email(email)
+    assert result["email"] == "test@icloud.com"
+
+def test_n_as_null():
+    email = "n"
+    result = format_email(email)
+    assert result["email"] == ""
+    assert result["error"] == "No email address provided"

@@ -43,6 +43,7 @@ COMMON_DOMAIN_MISSPELLINGS = {
     "tahoo": "yahoo.com",
     "sol": "aol.com",
     "icolud.com": "icloud.com",
+    "iclud": "icloud.com",
 }
 
 COMMON_DOMAINS = [
@@ -67,12 +68,14 @@ COMMON_NULLS = [
     "no enail",
     "no email",
     "notengo",
+    "notemgo",
     "no tengo uso el telefono",
     "none@none.com",
     "no",
     "n/a",
     "na",
     "ñ",
+    "n",
     "na@na.com",
     "dont have one",
     "ca",
@@ -121,8 +124,16 @@ def clean_email(email: str) -> str:
     if email.endswith(".comp"):
         email = email[:-5] + ".com"
 
+    # check for .como typos
+    if email.endswith(".como"):
+        email = email[:-5] + ".com"
+
     # check for @com typos
     if email.endswith("@com"):
+        email = email[:-4] + ".com"
+
+    # check for .clm typos
+    if email.endswith(".clm"):
         email = email[:-4] + ".com"
 
     # check for .con typos
