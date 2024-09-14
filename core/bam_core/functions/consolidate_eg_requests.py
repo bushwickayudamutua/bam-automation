@@ -224,16 +224,16 @@ class ConsolidateEssentialGoodsRequests(Function):
         return dict(stats)
 
     def run(self, event, context):
-        # validate the parameters
-        if "REQUEST_FIELD" not in event:
-            raise ValueError("REQUEST_FIELD is required.")
-        if "REQUEST_VALUE" not in event:
-            raise ValueError("REQUEST_VALUE is required.")
-        # check source/target views
-        if "SOURCE_VIEW" not in event:
-            raise ValueError("SOURCE_VIEW is required.")
-        if "TARGET_VIEWS" not in event:
-            raise ValueError("TARGET_VIEWS is required.")
+        # enforce required parameters
+        required_params = [
+            "REQUEST_FIELD",
+            "REQUEST_VALUE",
+            "SOURCE_VIEW",
+            "TARGET_VIEWS",
+        ]
+        for param in required_params:
+            if param not in event:
+                raise ValueError(f"{param} is required.")
 
         # parse the request field
         request_field_shorthand = event["REQUEST_FIELD"].strip()
@@ -244,6 +244,7 @@ class ConsolidateEssentialGoodsRequests(Function):
                 f"Invalid REQUEST_FIELD: {request_field_shorthand}. Choose from: {REQUEST_SCHEMA_MAP.keys()}"
             )
 
+        # validate request value
         request_value = event["REQUEST_VALUE"].strip()
         if request_value not in schema["items"]:
             raise ValueError(
@@ -267,7 +268,7 @@ class ConsolidateEssentialGoodsRequests(Function):
         else:
             log.warning("Running in LIVE mode. Records will be updated.")
 
-        # consolidate the view
+        # consolidate the views
         consolidate_stats = self.consolidate_view(
             request_field=request_field,
             request_value=request_value,
@@ -278,7 +279,11 @@ class ConsolidateEssentialGoodsRequests(Function):
             status_field=status_field,
             dry_run=dry_run,
         )
-        results = {
+        log.info("Consolidation finished with stats:\n")
+        pprint(consolidate_stats)
+
+        # format and return the results
+        return {
             "parameters_raw": event,
             "parameters_parsed": {
                 "request_field": request_field,
@@ -291,9 +296,6 @@ class ConsolidateEssentialGoodsRequests(Function):
             },
             "stats": consolidate_stats,
         }
-        log.info("Consolidation finished with stats:\n")
-        pprint(consolidate_stats)
-        return results
 
 
 if __name__ == "__main__":

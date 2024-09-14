@@ -161,9 +161,13 @@ class TimeoutEssentialGoodsRequests(Function):
         return dict(stats)
 
     def run(self, event, context):
-        # validate the provided request
-        if "REQUEST_FIELD" not in event:
-            raise ValueError("REQUEST_FIELD is required.")
+        # enforce required parameters
+        required_params = ["REQUEST_FIELD", "REQUEST_VALUE"]
+        for param in required_params:
+            if param not in event:
+                raise ValueError(f"{param} is required.")
+
+        # validate input request field
         request_field_shorthand = event["REQUEST_FIELD"].strip()
         if request_field_shorthand not in REQUEST_SCHEMA_MAP:
             raise ValueError(
@@ -172,13 +176,12 @@ class TimeoutEssentialGoodsRequests(Function):
                 + ", ".join(REQUEST_SCHEMA_MAP.keys())
             )
 
+        # lookup schema and full request field name
         request_schema = REQUEST_SCHEMA_MAP[request_field_shorthand]
         request_field = REQUEST_FIELD_MAP[request_field_shorthand]
 
-        if "REQUEST_VALUE" not in event:
-            raise ValueError("REQUEST_VALUE is required.")
+        # validate request value
         request_value = event["REQUEST_VALUE"].strip()
-
         if request_value not in request_schema["items"]:
             raise ValueError(
                 f"Invalid {request_field} request: '{request_value}'"
@@ -186,7 +189,7 @@ class TimeoutEssentialGoodsRequests(Function):
                 + "\n\t".join(request_schema["items"].keys())
             )
 
-        # get the timeout flag from the schema
+        # get the timeout and delivered tags from the schema
         timeout_tags = to_list(
             request_schema["items"][request_value]["timeout"]
         )
@@ -198,7 +201,6 @@ class TimeoutEssentialGoodsRequests(Function):
         status_field = STATUS_FIELD_MAP[request_field_shorthand]
 
         # parse dry run flag
-
         dry_run = to_bool(event.get("DRY_RUN", True))
 
         if dry_run:
@@ -206,6 +208,7 @@ class TimeoutEssentialGoodsRequests(Function):
         else:
             log.warning("Running in LIVE mode. Records will be updated.")
 
+        # run the timeout process
         timeout_stats = self.timeout_requests(
             request_value=request_value,
             request_field=request_field,
@@ -214,6 +217,8 @@ class TimeoutEssentialGoodsRequests(Function):
             status_field=status_field,
             dry_run=dry_run,
         )
+
+        # report results
         log.info("Finished!")
         if not timeout_stats.get("timedout_requests", 0) > 0:
             message = f"No phone numbers had unfulfilled requests for '{request_value}' to timeout."
@@ -225,7 +230,9 @@ class TimeoutEssentialGoodsRequests(Function):
                 + f"' to the '{status_field}' field."
             )
         log.info(message)
-        result = {
+
+        # format and return results
+        return {
             "message": message,
             "parameters_raw": event,
             "parameters_parsed": {
@@ -238,7 +245,6 @@ class TimeoutEssentialGoodsRequests(Function):
             },
             "stats": timeout_stats,
         }
-        return result
 
 
 if __name__ == "__main__":
