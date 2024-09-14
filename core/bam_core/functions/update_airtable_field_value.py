@@ -116,20 +116,17 @@ class UpdateAirtableFieldValue(Function):
                     raise e
 
     def run(self, event, context):
-        if not "PHONE_NUMBERS_TO_UPDATE" in event:
-            raise ValueError("PHONE_NUMBERS_TO_UPDATE is required")
-        if not "FIELD_NAME" in event:
-            raise ValueError("FIELD_NAME is required")
-        if not "NEW_VALUE" in event:
-            raise ValueError("NEW_VALUE is required")
+        required_params = ["PHONE_NUMBERS_TO_UPDATE", "FIELD_NAME", "NEW_VALUE"]
+        for param in required_params:
+            if not event.get(param):
+                raise ValueError(f"{param} is required")
         text = event["PHONE_NUMBERS_TO_UPDATE"]
         phone_numbers = extract_phone_numbers(text)
         log.info(f"Found {len(phone_numbers)} phone numbers in text.")
         if not phone_numbers:
-            log.error(f"No phone numbers read from the inputted text: {text}")
-            return
-        field_name = event["FIELD_NAME"]
-        new_value = event["NEW_VALUE"]
+            raise ValueError(f"No phone numbers read from the inputted text: {text}")
+        field_name = event["FIELD_NAME"].strip()
+        new_value = event["NEW_VALUE"].strip()
         view_name = event.get("VIEW_NAME", None)
 
         # parse dry run flag
