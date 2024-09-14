@@ -225,8 +225,17 @@ class TimeoutEssentialGoodsRequests(Function):
                 + f"' to the '{status_field}' field."
             )
         log.info(message)
-        timeout_stats["message"] = message
-        return timeout_stats
+        result = {
+            "message": message,
+            "request_field": request_field,
+            "request_value": request_value,
+            "timeout_tags": timeout_tags,
+            "delivered_tags": delivered_tags,
+            "status_field": status_field,
+            "dry_run": dry_run,
+            "stats": timeout_stats
+        }
+        return result
 
 
 if __name__ == "__main__":

@@ -251,8 +251,21 @@ def test_iclud():
     result = format_email(email)
     assert result["email"] == "test@icloud.com"
 
+
 def test_n_as_null():
     email = "n"
     result = format_email(email)
     assert result["email"] == ""
     assert result["error"] == "No email address provided"
+
+
+def test_at_symbol_in_username():
+    email = "test@johnson@gmail.com"
+    result = format_email(email)
+    assert result["email"] == "test.johnson@gmail.com"
+
+
+def test_gmail_es():
+    email = "test@gmail.es"
+    result = format_email(email)
+    assert result["email"] == "test@gmail.com"

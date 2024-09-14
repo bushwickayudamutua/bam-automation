@@ -18,6 +18,7 @@ COMMON_DOMAIN_MISSPELLINGS = {
     "gmeil": "gmail.com",
     "gmailcon": "gmail.com",
     "gmil.cpor": "gmail.com",
+    "gmail.es": "gmail.com",
     "gimel": "gmail.com",
     "gomail": "gmail.com",
     "hamel": "gmail.com",
@@ -26,6 +27,7 @@ COMMON_DOMAIN_MISSPELLINGS = {
     "gamail": "gmail.com",
     "gmil": "gmail.com",
     "gail": "gmail.com",
+    "gm": "gmail.com",
     "gamil": "gmail.com",
     "gmeal": "gmail.com",
     "gmale": "gmail.com",
@@ -215,6 +217,11 @@ def clean_email(email: str) -> str:
     # check for duplicated @
     if "@@" in email:
         email = email.replace("@@", "@")
+
+    # check for @ symbol in username
+    at_count = email.count('@')
+    if at_count > 1:
+        email = email.replace('@', '.', at_count-1)
 
     return email
 
