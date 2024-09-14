@@ -227,12 +227,15 @@ class TimeoutEssentialGoodsRequests(Function):
         log.info(message)
         result = {
             "message": message,
-            "request_field": request_field,
-            "request_value": request_value,
-            "timeout_tags": timeout_tags,
-            "delivered_tags": delivered_tags,
-            "status_field": status_field,
-            "dry_run": dry_run,
+            "parameters_raw": event,
+            "parameters_parsed": {
+                "request_field": request_field,
+                "request_value": request_value,
+                "timeout_tags": timeout_tags,
+                "delivered_tags": delivered_tags,
+                "status_field": status_field,
+                "dry_run": dry_run,
+            },
             "stats": timeout_stats
         }
         return result
