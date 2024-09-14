@@ -201,7 +201,6 @@ class DedupeAirtableViews(Function):
     def run(self, event, context):
         # parse dry run flag
         dry_run = to_bool(event.get("DRY_RUN", True))
-        print("dry run", dry_run)
         if dry_run:
             log.warning("Running in DRY_RUN mode. No records will be updated.")
         else:
