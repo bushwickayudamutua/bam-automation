@@ -117,8 +117,8 @@ class ConsolidateEssentialGoodsRequests(Function):
         self,
         request_field: str,
         request_value: str,
-        timeout_tag: str,
-        delivered_tag: str,
+        timeout_tags: List[str],
+        delivered_tags: List[str],
         source_view: str,
         target_views: List[str],
         status_field: str,
@@ -160,22 +160,25 @@ class ConsolidateEssentialGoodsRequests(Function):
 
                     if (
                         request_value in request_tags
-                        and delivered_tag in status_tags
+                        and any([dt in status_tags for dt in delivered_tags])
                     ):
                         # ignore delivered requests
                         continue
 
                     elif (
                         request_value in request_tags
-                        and timeout_tag in status_tags
+                        and any([tt in status_tags for tt in timeout_tags])
                     ):
                         consolidated_id = target_record["id"]
                         # remove timeout flag
+                        tag_list = ', '.join(timeout_tags)
                         log.info(
-                            f"(Target - {created_at}) Removing: {timeout_tag} From: {phone_number} In: {target_view}"
+                            f"(Target - {created_at}) Removing: {tag_list} From: {phone_number} In: {target_view}"
                         )
                         stats[target_view]["timeouts_removed"] += 1
-                        status_tags.remove(timeout_tag)
+                        for tt in timeout_tags:
+                            if tt in status_tags:
+                                status_tags.remove(tt)
                         self.update_record(
                             target_record["id"],
                             {status_field: status_tags},
@@ -208,13 +211,12 @@ class ConsolidateEssentialGoodsRequests(Function):
                         # this shouldn't ever happen
                         stats[source_view]["records_overlapped"] += 1
                         continue
+                    tag_list = ', '.join(timeout_tags)
                     log.info(
-                        f"(Source - {created_at}) Adding: {timeout_tag} To: {phone_number} In: {source_view}"
+                        f"(Source - {created_at}) Adding: {tag_list} To: {phone_number} In: {source_view}"
                     )
                     stats[source_view]["timeouts_added"] += 1
-                    status_tags = source_record.get(status_field, []) + [
-                        timeout_tag
-                    ]
+                    status_tags = list(set(source_record.get(status_field, []) + timeout_tags))
                     self.update_record(
                         source_record["id"],
                         {status_field: status_tags},
@@ -254,8 +256,8 @@ class ConsolidateEssentialGoodsRequests(Function):
         status_field = STATUS_FIELD_MAP.get(request_field_shorthand)
 
         # get the timeout flag from the schema
-        timeout_tag = schema["items"][request_value]["timeout"]
-        delivered_tag = schema["items"][request_value]["delivered"]
+        timeout_tags = to_list(schema["items"][request_value]["timeout"])
+        delivered_tags = to_list(schema["items"][request_value]["delivered"])
 
         # parse source + target views to be a list
         source_view = event["SOURCE_VIEW"].strip()
@@ -272,8 +274,8 @@ class ConsolidateEssentialGoodsRequests(Function):
         consolidate_stats = self.consolidate_view(
             request_field=request_field,
             request_value=request_value,
-            timeout_tag=timeout_tag,
-            delivered_tag=delivered_tag,
+            timeout_tags=timeout_tags,
+            delivered_tags=delivered_tags,
             source_view=source_view,
             target_views=target_views,
             status_field=status_field,
@@ -288,8 +290,8 @@ class ConsolidateEssentialGoodsRequests(Function):
             "parameters_parsed": {
                 "request_field": request_field,
                 "request_value": request_value,
-                "timeout_tag": timeout_tag,
-                "delivered_tag": delivered_tag,
+                "timeout_tags": timeout_tags,
+                "delivered_tags": delivered_tags,
                 "source_view": source_view,
                 "target_views": target_views,
                 "dry_run": dry_run,
