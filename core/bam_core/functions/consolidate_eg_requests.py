@@ -158,20 +158,18 @@ class ConsolidateEssentialGoodsRequests(Function):
                     status_tags = target_record.get(status_field, [])
                     request_tags = target_record.get(request_field, [])
 
-                    if (
-                        request_value in request_tags
-                        and any([dt in status_tags for dt in delivered_tags])
+                    if request_value in request_tags and any(
+                        [dt in status_tags for dt in delivered_tags]
                     ):
                         # ignore delivered requests
                         continue
 
-                    elif (
-                        request_value in request_tags
-                        and any([tt in status_tags for tt in timeout_tags])
+                    elif request_value in request_tags and any(
+                        [tt in status_tags for tt in timeout_tags]
                     ):
                         consolidated_id = target_record["id"]
                         # remove timeout flag
-                        tag_list = ', '.join(timeout_tags)
+                        tag_list = ", ".join(timeout_tags)
                         log.info(
                             f"(Target - {created_at}) Removing: {tag_list} From: {phone_number} In: {target_view}"
                         )
@@ -211,12 +209,14 @@ class ConsolidateEssentialGoodsRequests(Function):
                         # this shouldn't ever happen
                         stats[source_view]["records_overlapped"] += 1
                         continue
-                    tag_list = ', '.join(timeout_tags)
+                    tag_list = ", ".join(timeout_tags)
                     log.info(
                         f"(Source - {created_at}) Adding: {tag_list} To: {phone_number} In: {source_view}"
                     )
                     stats[source_view]["timeouts_added"] += 1
-                    status_tags = list(set(source_record.get(status_field, []) + timeout_tags))
+                    status_tags = list(
+                        set(source_record.get(status_field, []) + timeout_tags)
+                    )
                     self.update_record(
                         source_record["id"],
                         {status_field: status_tags},
