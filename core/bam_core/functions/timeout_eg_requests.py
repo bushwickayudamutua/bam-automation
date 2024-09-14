@@ -234,7 +234,6 @@ class TimeoutEssentialGoodsRequests(Function):
 
         # format and return results
         return {
-            "message": message,
             "parameters_raw": event,
             "parameters_parsed": {
                 "request_field": request_field,
