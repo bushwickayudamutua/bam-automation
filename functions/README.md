@@ -1,6 +1,6 @@
 # BAM's automation functions.
 
-This folder contains all of BAM's automated functions which are deployed on Digital Ocean. If you haven't worked with Digital Ocean's Functions before, this [quickstart](https://docs.digitalocean.com/products/functions/quickstart/) may be helpful.
+This folder contains all of BAM's automated functions which are deployed on Digital Ocean. If you haven't worked with Digital Ocean's Functions before, this [quickstart](https://docs.digitalocean.com/products/functions/getting-started/quickstart/) may be helpful.
 
 Each function makes use of common code in [`bam-core`](../core/). More detail on this can be found below in the section on developing new functions.
 
