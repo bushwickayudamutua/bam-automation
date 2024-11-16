@@ -9,10 +9,11 @@ def is_international_phone_number(phone_number: str) -> bool:
     """
     Check if a phone number is international
     :param phone_number: The phone number to check
-    :return: True if the phone number is international, False otherwise
+    :return: True if the phone number is international AND valid, False otherwise
     """
     try:
         parsed_phone_number = phonenumbers.parse(phone_number, "US")
+        # if the phone number is not valid, we can't be sure if it's international or not.
         if not phonenumbers.is_valid_number(parsed_phone_number):
             return False
         return (
