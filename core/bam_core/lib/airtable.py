@@ -11,7 +11,6 @@ from bam_core.constants import (
     AIRTABLE_DATETIME_FORMAT,
     PHONE_FIELD,
     ASSISTANCE_REQUESTS_TABLE_NAME,
-    FULFILLED_REQUESTS_TABLE_NAME,
     ESSENTIAL_GOODS_TABLE_NAME,
     VOLUNTEERS_TABLE_NAME,
     MESH_VIEW_NAME,
@@ -86,10 +85,6 @@ class Airtable(object):
     @property
     def assistance_requests(self) -> Table:
         return self.get_table(ASSISTANCE_REQUESTS_TABLE_NAME)
-
-    @property
-    def fulfilled_requests(self) -> Table:
-        return self.get_table(FULFILLED_REQUESTS_TABLE_NAME)
 
     @property
     def essential_goods(self) -> Table:
@@ -181,6 +176,40 @@ class Airtable(object):
             fields=fields,
             **kwargs,
         ).get(phone_number, [])
+
+    ############################
+    # Record Linking Functions #
+    ############################
+
+    def _get_record_link(self, table_id: str, record_id: str) -> str:
+        """
+        Get a link to an Airtable record
+        """
+        return f"https://airtable.com/{self.base_id}/{table_id}/{record_id}"
+
+    def get_assistance_request_link(self, record_id: str) -> str:
+        """
+        Get a link to an Assistance Request record
+        """
+        return self._get_record_link(
+            settings.AIRTABLE_ASSISTANCE_REQUESTS_TABLE_ID, record_id
+        )
+
+    def get_essential_goods_donations_link(self, record_id: str) -> str:
+        """
+        Get a link to an Essential Goods record
+        """
+        return self._get_record_link(
+            settings.AIRTABLE_ESSENTIAL_GOODS_DONATIONS_TABLE_ID, record_id
+        )
+
+    def get_volunteer_link(self, record_id: str) -> str:
+        """
+        Get a link to a Volunteer record
+        """
+        return self._get_record_link(
+            settings.AIRTABLE_VOLUNTEERS_TABLE_ID, record_id
+        )
 
     ##############################
     # Request Analysis Functions #

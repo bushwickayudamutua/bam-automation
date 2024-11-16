@@ -1,8 +1,15 @@
 environment:
   BAM_AIRTABLE_TOKEN: "${BAM_AIRTABLE_TOKEN}"
   BAM_AIRTABLE_BASE_ID: "${BAM_AIRTABLE_BASE_ID}"
+  BAM_AIRTABLE_ASSISTANCE_REQUESTS_TABLE_ID: "${BAM_AIRTABLE_ASSISTANCE_REQUESTS_TABLE_ID}"
+  BAM_ESSENTIAL_GOODS_DONATIONS_TABLE_ID: "${BAM_ESSENTIAL_GOODS_DONATIONS_TABLE_ID}"
+  BAM_VOLUNTEERS_TABLE_ID: "${BAM_VOLUNTEERS_TABLE_ID}"
   BAM_MAILJET_API_KEY: "${BAM_MAILJET_API_KEY}"
   BAM_MAILJET_API_SECRET: "${BAM_MAILJET_API_SECRET}"
+  BAM_GOOGLE_MAPS_API_KEY: "${BAM_GOOGLE_MAPS_API_KEY}"
+  BAM_GOOGLE_SERVICE_ACCOUNT_JSON: |
+    ${BAM_GOOGLE_SERVICE_ACCOUNT_JSON}
+  BAM_OPEN_COLLECTIVE_ACCESS_TOKEN: "${BAM_OPEN_COLLECTIVE_ACCESS_TOKEN}"
   BAM_DO_TOKEN: "${BAM_DO_TOKEN}"
   BAM_S3_BASE_URL: "https://nyc3.digitaloceanspaces.com"
   BAM_S3_ENDPOINT_URL: "https://nyc3.digitaloceanspaces.com"
@@ -50,7 +57,7 @@ packages:
           - name: trigger-daily-run
             sourceType: scheduler
             sourceDetails:
-              cron: "33 2 * * *" # 10:30pm ET
+              cron: "33 2 * * *" # 10:33pm ET
 
   - name: airtable
     parameters: {}
@@ -64,7 +71,7 @@ packages:
         parameters: {}
         annotations: {}
         limits:
-          timeout: 300000
+          timeout: 900000
           logs: 256
           memory: 1024
 
@@ -76,7 +83,7 @@ packages:
         parameters: {}
         annotations: {}
         limits:
-          timeout: 300000
+          timeout: 900000
           logs: 256
           memory: 1024
 
@@ -88,7 +95,7 @@ packages:
         parameters: {}
         annotations: {}
         limits:
-          timeout: 300000
+          timeout: 900000
           logs: 256
           memory: 1024
 
@@ -100,7 +107,7 @@ packages:
         parameters: {}
         annotations: {}
         limits:
-          timeout: 300000
+          timeout: 900000
           logs: 256
           memory: 1024
 
@@ -116,9 +123,9 @@ packages:
         parameters: {}
         annotations: {}
         limits:
-          timeout: 300000
+          timeout: 900000
           logs: 256
-          memory: 512
+          memory: 1024
 
   - name: mailjet
     environment: {}
@@ -133,6 +140,6 @@ packages:
         parameters: {}
         annotations: {}
         limits:
-          timeout: 300000
+          timeout: 900000
           logs: 256
           memory: 1024

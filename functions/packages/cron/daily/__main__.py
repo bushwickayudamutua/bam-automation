@@ -10,7 +10,7 @@ def main(event, context):
         context,
         DedupeAirtableViews,
         UpdateMailjetLists,
-        SnapshotAirtableViews,
+        SnapshotAirtableViews
     )
 
 

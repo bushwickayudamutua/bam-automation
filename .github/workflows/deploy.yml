@@ -46,7 +46,7 @@ jobs:
         token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
     - name: Populate .env file for functions
       run: |
-        echo "${{ secrets.BAM_ENV_FILE_CONTENTS }}" > ./.env
+        echo "${{ secrets.BAM_ENV_FILE_CONTENTS }}" | base64 -d > ./.env
     - name: Install doctl serverless plugin
       run: |
         doctl serverless install

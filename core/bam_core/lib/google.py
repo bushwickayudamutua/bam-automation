@@ -1,6 +1,10 @@
+import json
+from typing import Any, Dict, List
+
+import gspread
 import googlemaps
 
-from bam_core.settings import GOOGLE_MAPS_API_KEY
+from bam_core.settings import GOOGLE_MAPS_API_KEY, GOOGLE_SERVICE_ACCOUNT_JSON
 from bam_core.constants import MAYDAY_LOCATION, MAYDAY_RADIUS
 
 
@@ -47,3 +51,38 @@ class GoogleMaps(object):
             address (str): The address to normalize
         """
         return self.client.addressvalidation(address)
+
+
+class GoogleSheets(object):
+    def __init__(self):
+        self.client = gspread.service_account_from_dict(
+            json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
+        )
+
+    def upload_to_sheet(
+        self,
+        sheet_name: str,
+        sheet_index: int,
+        data: List[Dict[str, Any]],
+        overwrite: bool = True,
+        header: bool = True,
+    ):
+        """
+        Upload a list of dictionaries to a Google Sheet
+        Args:
+            sheet_name (str): The name of the sheet to upload to
+            sheet_index (int): The index of the sheet to upload to
+            data (list): List of dictionaries to upload
+            overwrite (bool): Whether to replace all data in the sheet
+            header (bool): Whether to write the header to the sheet
+        """
+        sheet = self.client.open(sheet_name).get_worksheet(sheet_index)
+        if overwrite:
+            sheet.clear()
+
+        if header:
+            headers = list(data[0].keys())
+            sheet.append_row(headers)
+
+        # append data to sheet
+        sheet.append_rows([list(row.values()) for row in data])
