@@ -3,7 +3,10 @@ from fastapi import FastAPI
 from fastapi import FastAPI, Body, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
-from bam_core.utils.phone import format_phone_number
+from bam_core.utils.phone import (
+    format_phone_number,
+    is_international_phone_number,
+)
 from bam_core.utils.email import format_email
 from bam_core.utils.geo import format_address
 
@@ -45,12 +48,15 @@ def clean_record(
         if not valid_phone:
             response["phone"] = phone
             response["phone_is_invalid"] = True
+            response["phone_is_intl"] = False
         else:
             response["phone"] = valid_phone
             response["phone_is_invalid"] = False
+            response["phone_is_intl"] = is_international_phone_number(phone)
     else:
         response["phone"] = ""
         response["phone_is_invalid"] = True
+        response["phone_is_intl"] = False
 
     # validate email address
     if email and email != "null":

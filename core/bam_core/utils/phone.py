@@ -5,6 +5,27 @@ import phonenumbers
 log = logging.getLogger(__name__)
 
 
+def is_international_phone_number(phone_number: str) -> bool:
+    """
+    Check if a phone number is international
+    :param phone_number: The phone number to check
+    :return: True if the phone number is international, False otherwise
+    """
+    try:
+        parsed_phone_number = phonenumbers.parse(phone_number, "US")
+        if not phonenumbers.is_valid_number(parsed_phone_number):
+            return False
+        return (
+            parsed_phone_number.country_code is not None
+            and parsed_phone_number.country_code != 1
+        )
+    except Exception as e:
+        log.warning(
+            f"Error checking if phone number {phone_number} is international because of {e}"
+        )
+        return False
+
+
 def format_phone_number(phone_number: str) -> Optional[str]:
     """
     Format a phone number to the US standard
