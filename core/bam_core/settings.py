@@ -25,7 +25,7 @@ MAILJET_API_SECRET = os.getenv("BAM_MAILJET_API_SECRET", None)
 # google settings
 GOOGLE_MAPS_API_KEY = os.getenv("BAM_GOOGLE_MAPS_API_KEY", None)
 GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv(
-    "BAM_GOOGLE_SERVICE_ACCOUNT_JSON", None
+    "BAM_GOOGLE_SERVICE_ACCOUNT_JSON",'{}'
 )
 
 # s3 settings
