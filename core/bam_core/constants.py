@@ -7,7 +7,6 @@ AIRTABLE_DATETIME_FORMAT = r"%Y-%m-%dT%H:%M:%S.%fZ"
 ASSISTANCE_REQUESTS_TABLE_NAME = "Assistance Requests: Main"
 VOLUNTEERS_TABLE_NAME = "Volunteers: Main"
 ESSENTIAL_GOODS_TABLE_NAME = "Essential Good Donations: Main"
-FULFILLED_REQUESTS_TABLE_NAME = "Fulfilled Requests: Main"
 
 # Airtable field name for phone numbers
 PHONE_FIELD = "Phone Number"
@@ -631,3 +630,8 @@ VIEWS: list[View] = (
 # location of mayday used to help lookup addresses
 MAYDAY_LOCATION = {"lat": 40.7041015, "lng": -73.9163523}
 MAYDAY_RADIUS = 16093.44  # 10 miles in meters
+
+
+# Google Sheets constants
+
+FULFILLED_REQUESTS_SHEET_NAME = "BAM Fulfilled Requests"

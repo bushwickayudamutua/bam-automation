@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 from zoneinfo import ZoneInfo
 
 from .base import Function
+from bam_core.constants import FULFILLED_REQUESTS_SHEET_NAME
 from bam_core.utils.serde import json_to_obj
 from bam_core.lib.airtable import Airtable
 
@@ -87,40 +88,42 @@ class AnalyzeFulfilledRequests(Function):
                         if item in these_tag_statuses.get("delivered", []):
                             fulfilled_requests.append(
                                 {
-                                    "fields": {
-                                        "Date / Delivered Item": f"{record[SNAPSHOT_DATE_FIELD]}: {item}",
-                                        "Assistance Request": [request_id],
-                                        "Type": tag_type,
-                                        "Delivered Item": item,
-                                        "Date Delivered": record[
-                                            SNAPSHOT_DATE_FIELD
-                                        ],
-                                        "Unique ID": f"{request_id}-{tag_type}-{item}",
-                                    }
+                                    "Request Type": tag_type,
+                                    "Delivered Item": item,
+                                    "Date Delivered": record[
+                                        SNAPSHOT_DATE_FIELD
+                                    ],
+                                    "Airtable Link": self.airtable.get_assistance_request_link(
+                                        request_id
+                                    ),
                                 }
                             )
                 last_statuses = these_statuses
-        return fulfilled_requests
+        return list(
+            sorted(
+                fulfilled_requests,
+                key=lambda r: r["Date Delivered"],
+                reverse=True,
+            )
+        )
 
     def run(self, event, context):
         """
-        Analyze airtable snapshots to identify fulfilled requests
+        Analyze airtable snapshots to identify fulfilled requests and write to a google sheet.
         """
         # fetch records and group by ID
         grouped_records = self.get_grouped_records()
         fulfilled_requests = self.analyze_grouped_records(grouped_records)
         log.info(f"Found {len(fulfilled_requests)} fulfilled requests")
         if not event.get("DRY_RUN", False):
-            log.info("Writing fulfilled requests to Airtable...")
-            for request in fulfilled_requests:
-                try:
-                    self.airtable.fulfilled_requests.batch_upsert(
-                        [request], key_fields=["Unique ID"]
-                    )
-                except Exception as e:
-                    log.warning(f"Failed to write fulfilled request: {e}")
+            log.info("Writing fulfilled requests to Google Sheet...")
+            self.gsheets.upload_to_sheet(
+                sheet_name=FULFILLED_REQUESTS_SHEET_NAME,
+                sheet_index=0,
+                data=fulfilled_requests,
+            )
         else:
-            log.info("Dry run, not writing fulfilled requests to Airtable")
+            log.info("Dry run, not writing fulfilled requests to Google Sheet")
         return {"num_fulfilled_requests": len(fulfilled_requests)}
 
 
