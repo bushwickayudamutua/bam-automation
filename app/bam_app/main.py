@@ -1,7 +1,6 @@
 import os
 from fastapi import FastAPI
-from fastapi import FastAPI, Body, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import FastAPI, HTTPException, status
 
 from bam_core.utils.phone import (
     format_phone_number,
