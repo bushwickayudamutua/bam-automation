@@ -5,12 +5,12 @@ from bam_core.functions.snapshot_airtable_views import SnapshotAirtableViews
 
 
 def main(event, context):
-    return Function.run_functions(
+    return Function.run_do_functions(
         event,
         context,
         DedupeAirtableViews,
         UpdateMailjetLists,
-        SnapshotAirtableViews
+        SnapshotAirtableViews,
     )
 
 

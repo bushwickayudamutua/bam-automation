@@ -1,4 +1,4 @@
-from argparse import ArgumentParser
+from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 import traceback
 import logging
 from typing import Any, Dict, List, Optional
@@ -6,10 +6,39 @@ from typing import Any, Dict, List, Optional
 from bam_core.lib.airtable import Airtable
 from bam_core.lib.mailjet import Mailjet
 from bam_core.lib.s3 import S3
+from bam_core.utils.etc import now_utc
 from bam_core.lib.google import GoogleMaps, GoogleSheets
 from bam_core.lib.nyc_planning_labs import NycPlanningLabs
+from bam_core.functions.params import Parameters
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
+
+
+class FunctionLogger(object):
+    def __init__(self, name):
+        self.logger = logging.getLogger(name)
+        self.log_lines = []
+
+    def _log(self, level, msg):
+        self.log_lines.append(
+            {"level": level, "message": msg, "time": now_utc()}
+        )
+        getattr(self.logger, level)(msg)
+
+    def info(self, msg):
+        self._log("info", msg)
+
+    def error(self, msg):
+        self._log("error", msg)
+
+    def exception(self, msg):
+        self._log("exception", msg)
+
+    def debug(self, msg):
+        self._log("debug", msg)
+
+    def warning(self, msg):
+        self._log("warning", msg)
 
 
 class Function(object):
@@ -26,61 +55,70 @@ class Function(object):
 
     def __init__(self, parser: Optional[ArgumentParser] = None):
         self.parser = parser or ArgumentParser(
-            prog=self.__class__.__name__, description=self.__class__.__doc__
+            prog=self.__class__.__name__,
+            description=self.__class__.__doc__,
+            formatter_class=ArgumentDefaultsHelpFormatter,
         )
+        self.log = FunctionLogger(self.__class__.__name__)
 
-    def add_options(self) -> None:
+    @property
+    def params(self) -> Parameters:
         """
-        Optionally add argparse options to self.parser here
+        Define the parameters for this function.
         """
-        pass
+        return Parameters()
 
-    def get_options(self) -> Dict[str, Any]:
-        """
-        Get the params from the parser.
-        """
-        return vars(self.parser.parse_args())
+    @property
+    def log_lines(self) -> List[Dict[str, Any]]:
+        return self.log.log_lines
 
-    def run(self, event, context):
+    def run(self, params: Dict[str, Any], context: Dict[str, Any]) -> Any:
         """
         The core logic of your function.
         """
         raise NotImplementedError
 
-    def main(self, event, context) -> Dict[str, Any]:
+    def run_api(self, params: Dict[str, Any]) -> Any:
+        """
+        The API Handler.
+        """
+        params = self.params.parse_dict(params)
+        return self.run(params, {})
+
+    def run_do(self, event, context) -> Dict[str, Any]:
         """
         The Digital Ocean Function Handler.
         """
-        output = self.run(event, context)
+        params = self.params.parse_dict(event)
+        output = self.run(params, context)
         return {"body": output}
 
-    def cli(self):
+    def run_cli(self):
         """
         The CLI handler
         """
-        self.add_options()
-        # override event with options from argparse
-        event = self.get_options()
-        return self.run(event, {})
+        self.params.add_cli_arguments(self.parser)
+        params = self.params.parse_cli_arguments(self.parser)
+        return self.run(params, {})
 
     @classmethod
-    def run_functions(cls, event, context, *functions) -> Dict[str, Any]:
+    def run_do_functions(cls, event, context, *functions) -> Dict[str, Any]:
         """
-        Run a list of functions and handle errors
+        Run a list of DO functions and handle errors
         """
         failures = []
         output = {}
         for function in functions:
             fn = function.__name__
-            log.info(f"Running {fn}\n{'*' * 80}")
+            logger.info(f"Running {fn}\n{'*' * 80}")
             try:
-                output[fn] = function().main(event, context)
+                output[fn] = function().run_do(event, context)
             except Exception as e:
-                log.error(f"Error running {fn}")
-                log.error(e)
+                logger.error(f"Error running {fn}")
+                logger.error(e)
                 traceback.print_exc()
                 failures.append(fn)
-            log.info(f"Finished {fn}\n{'*' * 80}")
+            logger.info(f"Finished {fn}\n{'*' * 80}")
         if failures:
             raise Exception(f"Errors running {fn}: {failures}")
 

@@ -34,12 +34,20 @@ def get_full(path: str) -> str:
     return path
 
 
-def now_est():
+def now_est() -> datetime:
     """
     Get the current time in EST
     :return datetime
     """
     return datetime.now(ZoneInfo("America/New_York"))
+
+
+def now_utc() -> datetime:
+    """
+    Get the current time in UTC
+    :return datetime
+    """
+    return datetime.now(ZoneInfo("UTC"))
 
 
 def to_list(value: Union[Any, List[Any]]) -> List[Any]:

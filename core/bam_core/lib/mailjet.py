@@ -191,5 +191,5 @@ class Mailjet(object):
         emails = []
         contacts = self.get_all_contacts()
         for contact in contacts:
-            emails.append(contact.get("Email"))
+            emails.append(contact.get("Email").lower())
         return emails

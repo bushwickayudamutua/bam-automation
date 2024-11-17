@@ -1,12 +1,11 @@
-import logging
 import traceback
-from pprint import pprint
 from collections import Counter
 from typing import List, Dict, Any
 from pyairtable import formulas
 
 from .base import Function
-from bam_core.utils.etc import to_list, to_bool
+from .params import Param, Parameters
+from bam_core.utils.etc import to_list
 from bam_core.constants import (
     EG_REQUESTS_SCHEMA,
     EG_REQUESTS_FIELD,
@@ -17,8 +16,6 @@ from bam_core.constants import (
     KITCHEN_REQUESTS_FIELD,
     FURNITURE_REQUESTS_FIELD,
 )
-
-log = logging.getLogger(__name__)
 
 # handling for request field parameter
 REQUEST_SCHEMA_MAP = {
@@ -51,29 +48,26 @@ class TimeoutEssentialGoodsRequests(Function):
     unfulfilled records for phone numbers which have at least one later fulfilled request.
     """
 
-    def add_options(self):
-        self.parser.add_argument(
-            "-f",
-            "--request-field",
-            dest="REQUEST_FIELD",
-            help="The field to consider for timing out. Either 'eg', 'kitchen', or 'furniture'",
+    params = Parameters(
+        Param(
+            name="request_field",
+            type="string",
             default="eg",
-        )
-        self.parser.add_argument(
-            "-r",
-            "--request-value",
-            dest="REQUEST_VALUE",
-            help="The request to timeout. E.g. 'Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品'",
+            description="The field to consider for timing out. Either 'eg', 'kitchen', or 'furniture'",
+        ),
+        Param(
+            name="request_value",
+            type="string",
             required=True,
-        )
-        self.parser.add_argument(
-            "-d",
-            "--dry-run",
-            dest="DRY_RUN",
-            help="If true, view which timeouts would be added without actually adding them.",
-            action="store_true",
+            description="The request to timeout. E.g. 'Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品'",
+        ),
+        Param(
+            name="dry_run",
+            type="bool",
             default=False,
-        )
+            description="If true, view which timeouts would be added without actually adding them.",
+        ),
+    )
 
     def update_record(
         self, id: str, fields: Dict[str, Any], dry_run: bool
@@ -103,8 +97,10 @@ class TimeoutEssentialGoodsRequests(Function):
         """
 
         # get matching requests
-        log.info("=" * 60)
-        log.info(f"Fetching records for '{request_field}' = '{request_value}'")
+        self.log.info("=" * 60)
+        self.log.info(
+            f"Fetching records for '{request_field}' = '{request_value}'"
+        )
         request_records = self.airtable.get_phone_number_to_requests_lookup(
             formula=formulas.FIND(
                 formulas.STR_VALUE(request_value),
@@ -155,21 +151,15 @@ class TimeoutEssentialGoodsRequests(Function):
                         f" '{','.join(timeout_tags)}' to the '{status_field}' field for "
                         f"'{phone_number}' (created_at: {created_at})"
                     )
-                    log.info(msg)
+                    self.log.info(msg)
                     self.update_record(
                         record_id, {status_field: statuses}, dry_run
                     )
         return dict(stats)
 
-    def run(self, event, context):
-        # enforce required parameters
-        required_params = ["REQUEST_FIELD", "REQUEST_VALUE"]
-        for param in required_params:
-            if param not in event:
-                raise ValueError(f"{param} is required.")
-
+    def run(self, params, context):
         # validate input request field
-        request_field_shorthand = event["REQUEST_FIELD"].strip()
+        request_field_shorthand = params["request_field"].strip()
         if request_field_shorthand not in REQUEST_SCHEMA_MAP:
             raise ValueError(
                 f"Invalid REQUEST_FIELD: '{request_field_shorthand}'"
@@ -182,7 +172,7 @@ class TimeoutEssentialGoodsRequests(Function):
         request_field = REQUEST_FIELD_MAP[request_field_shorthand]
 
         # validate request value
-        request_value = event["REQUEST_VALUE"].strip()
+        request_value = params["request_value"].strip()
         if request_value not in request_schema["items"]:
             raise ValueError(
                 f"Invalid {request_field} request: '{request_value}'"
@@ -202,12 +192,14 @@ class TimeoutEssentialGoodsRequests(Function):
         status_field = STATUS_FIELD_MAP[request_field_shorthand]
 
         # parse dry run flag
-        dry_run = to_bool(event.get("DRY_RUN", True))
+        dry_run = params.get("dry_run", True)
 
         if dry_run:
-            log.warning("Running in DRY_RUN mode. No records will be updated.")
+            self.log.warning(
+                "Running in DRY_RUN mode. No records will be updated."
+            )
         else:
-            log.warning("Running in LIVE mode. Records will be updated.")
+            self.log.warning("Running in LIVE mode. Records will be updated.")
 
         # run the timeout process
         timeout_stats = self.timeout_requests(
@@ -220,7 +212,7 @@ class TimeoutEssentialGoodsRequests(Function):
         )
 
         # report results
-        log.info("Finished!")
+        self.log.info("Finished!")
         if not timeout_stats.get("timedout_requests", 0) > 0:
             message = f"No phone numbers had unfulfilled requests for '{request_value}' to timeout."
         else:
@@ -230,11 +222,11 @@ class TimeoutEssentialGoodsRequests(Function):
                 + ",".join(timeout_tags)
                 + f"' to the '{status_field}' field."
             )
-        log.info(message)
+        self.log.info(message)
 
         # format and return results
         return {
-            "parameters_raw": event,
+            "parameters_raw": params,
             "parameters_parsed": {
                 "request_field": request_field,
                 "request_value": request_value,
@@ -248,4 +240,4 @@ class TimeoutEssentialGoodsRequests(Function):
 
 
 if __name__ == "__main__":
-    TimeoutEssentialGoodsRequests().cli()
+    TimeoutEssentialGoodsRequests().run_cli()

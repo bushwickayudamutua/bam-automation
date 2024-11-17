@@ -1,11 +1,11 @@
-import logging
 import time
 import traceback
-from pprint import pprint
 from collections import defaultdict, Counter
 from typing import List, Dict, Any
 
+
 from .base import Function
+from .params import Param, Parameters
 from bam_core.utils.etc import to_bool, to_list
 from bam_core.constants import (
     EG_REQUESTS_SCHEMA,
@@ -17,8 +17,6 @@ from bam_core.constants import (
     EG_STATUS_FIELD,
     PHONE_FIELD,
 )
-
-log = logging.getLogger(__name__)
 
 # minimum set of fields to request per view
 BASE_VIEW_FIELDS = [PHONE_FIELD]
@@ -62,44 +60,38 @@ class ConsolidateEssentialGoodsRequests(Function):
     thereby closing that request.
     """
 
-    def add_options(self):
-        self.parser.add_argument(
-            "-f",
-            "--request-field",
-            dest="REQUEST_FIELD",
-            help="The field to consider for consolidation. Either 'eg', 'kitchen', or 'furniture'",
+    params = Parameters(
+        Param(
+            name="request_field",
+            type="string",
+            description="The field to consider for consolidation. Either 'eg', 'kitchen', or 'furniture'",
             default="eg",
-        )
-        self.parser.add_argument(
-            "-r",
-            "--request-value",
-            dest="REQUEST_VALUE",
-            help="The request to consolidate. E.g. 'Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品'",
+        ),
+        Param(
+            name="request_value",
+            type="string",
+            description="The request to consolidate. E.g. 'Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品'",
             required=True,
-        )
-        self.parser.add_argument(
-            "-s",
-            "--source-view",
-            dest="SOURCE_VIEW",
-            help="The source view to consolidate requests from",
+        ),
+        Param(
+            name="source_view",
+            type="string",
+            description="The source view to consolidate requests from",
             required=True,
-        )
-        self.parser.add_argument(
-            "-t",
-            "--target-views",
-            dest="TARGET_VIEWS",
-            help="The target view to consolidate requests to",
-            nargs="+",
+        ),
+        Param(
+            name="target_views",
+            type="string_list",
+            description="The target view to consolidate requests to",
             required=True,
-        )
-        self.parser.add_argument(
-            "-d",
-            "--dry-run",
-            dest="DRY_RUN",
-            help="If true, update operations will not be performed.",
-            action="store_true",
-            default=False,
-        )
+        ),
+        Param(
+            name="dry_run",
+            type="bool",
+            description="If true, update operations will not be performed.",
+            default=True,
+        ),
+    )
 
     def update_record(
         self, id: str, fields: Dict[str, Any], dry_run: bool
@@ -130,8 +122,8 @@ class ConsolidateEssentialGoodsRequests(Function):
 
         stats = defaultdict(Counter)
         for target_view in target_views:
-            log.info("=" * 60)
-            log.info(
+            self.log.info("=" * 60)
+            self.log.info(
                 f"Consolidating: {request_value}\nFrom: {source_view} To: {target_view}"
             )
             fields = [*BASE_VIEW_FIELDS, request_field, status_field]
@@ -170,7 +162,7 @@ class ConsolidateEssentialGoodsRequests(Function):
                         consolidated_id = target_record["id"]
                         # remove timeout flag
                         tag_list = ", ".join(timeout_tags)
-                        log.info(
+                        self.log.info(
                             f"(Target - {created_at}) Removing: {tag_list} From: {phone_number} In: {target_view}"
                         )
                         stats[target_view]["timeouts_removed"] += 1
@@ -186,7 +178,7 @@ class ConsolidateEssentialGoodsRequests(Function):
                     elif request_value not in request_tags:
                         consolidated_id = target_record["id"]
                         # add request
-                        log.info(
+                        self.log.info(
                             f"(Target - {created_at}) Adding: {request_value} To: {phone_number} In: {target_view}"
                         )
                         stats[target_view]["requests_added"] += 1
@@ -210,7 +202,7 @@ class ConsolidateEssentialGoodsRequests(Function):
                         stats[source_view]["records_overlapped"] += 1
                         continue
                     tag_list = ", ".join(timeout_tags)
-                    log.info(
+                    self.log.info(
                         f"(Source - {created_at}) Adding: {tag_list} To: {phone_number} In: {source_view}"
                     )
                     stats[source_view]["timeouts_added"] += 1
@@ -225,20 +217,9 @@ class ConsolidateEssentialGoodsRequests(Function):
 
         return dict(stats)
 
-    def run(self, event, context):
-        # enforce required parameters
-        required_params = [
-            "REQUEST_FIELD",
-            "REQUEST_VALUE",
-            "SOURCE_VIEW",
-            "TARGET_VIEWS",
-        ]
-        for param in required_params:
-            if param not in event:
-                raise ValueError(f"{param} is required.")
-
+    def run(self, params, context):
         # parse the request field
-        request_field_shorthand = event["REQUEST_FIELD"].strip()
+        request_field_shorthand = params["request_field"].strip()
         request_field = REQUEST_FIELD_MAP.get(request_field_shorthand)
         schema = REQUEST_SCHEMA_MAP.get(request_field_shorthand)
         if not request_field or not schema:
@@ -247,7 +228,7 @@ class ConsolidateEssentialGoodsRequests(Function):
             )
 
         # validate request value
-        request_value = event["REQUEST_VALUE"].strip()
+        request_value = params["request_value"].strip()
         if request_value not in schema["items"]:
             raise ValueError(
                 f"Invalid REQUEST_VALUE {request_field}: {request_value}. Choose from: {schema['items'].keys()}"
@@ -260,15 +241,17 @@ class ConsolidateEssentialGoodsRequests(Function):
         delivered_tags = to_list(schema["items"][request_value]["delivered"])
 
         # parse source + target views to be a list
-        source_view = event["SOURCE_VIEW"].strip()
-        target_views = [t.strip() for t in to_list(event["TARGET_VIEWS"])]
+        source_view = params["source_view"].strip()
+        target_views = [t.strip() for t in to_list(params["target_views"])]
 
         # parse dry run flag
-        dry_run = to_bool(event.get("DRY_RUN", True))
+        dry_run = to_bool(params.get("dry_run", True))
         if dry_run:
-            log.warning("Running in DRY_RUN mode. No records will be updated.")
+            self.log.warning(
+                "Running in DRY_RUN mode. No records will be updated."
+            )
         else:
-            log.warning("Running in LIVE mode. Records will be updated.")
+            self.log.warning("Running in LIVE mode. Records will be updated.")
 
         # consolidate the views
         consolidate_stats = self.consolidate_view(
@@ -281,12 +264,13 @@ class ConsolidateEssentialGoodsRequests(Function):
             status_field=status_field,
             dry_run=dry_run,
         )
-        log.info("Consolidation finished with stats:\n")
-        pprint(consolidate_stats)
+        self.log.info(
+            f"Consolidation finished with stats:\ {consolidate_stats}"
+        )
 
         # format and return the results
         return {
-            "parameters_raw": event,
+            "parameters_raw": params,
             "parameters_parsed": {
                 "request_field": request_field,
                 "request_value": request_value,
@@ -301,4 +285,4 @@ class ConsolidateEssentialGoodsRequests(Function):
 
 
 if __name__ == "__main__":
-    ConsolidateEssentialGoodsRequests().cli()
+    ConsolidateEssentialGoodsRequests().run_cli()

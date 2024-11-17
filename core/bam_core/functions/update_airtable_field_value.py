@@ -1,14 +1,9 @@
-import logging
-import traceback
-
 from bam_core.constants import PHONE_FIELD
 from bam_core.utils.phone import extract_phone_numbers
-from bam_core.utils.etc import to_bool
 from pyairtable import formulas
 
+from .params import Param, Parameters
 from .base import Function
-
-log = logging.getLogger(__name__)
 
 
 class UpdateAirtableFieldValue(Function):
@@ -16,38 +11,38 @@ class UpdateAirtableFieldValue(Function):
     Update a field in the Assistance Requests table for a list of phone numbers
     """
 
-    def add_options(self):
-        self.parser.add_argument(
-            "-p",
-            dest="PHONE_NUMBERS_TO_UPDATE",
-            help="The text containing the phone numbers to update",
+    params = Parameters(
+        Param(
+            name="phone_numbers_to_update",
+            type="string",
+            description="The text containing the phone numbers to update",
             required=True,
-        )
-        self.parser.add_argument(
-            "-f",
-            dest="FIELD_NAME",
-            help="The name of the field to update",
+        ),
+        Param(
+            name="field_name",
+            type="string",
+            description="The name of the field to update",
             required=True,
-        )
-        self.parser.add_argument(
-            "-n",
-            dest="NEW_VALUE",
-            help="The new value to set for the field",
+        ),
+        Param(
+            name="new_value",
+            type="string",
+            description="The new value to set for the field",
             required=True,
-        )
-        self.parser.add_argument(
-            "-v",
-            dest="VIEW_NAME",
-            help="The optional name of the view to use",
+        ),
+        Param(
+            name="view_name",
+            type="string",
+            description="The optional name of the view to use",
             default=None,
-        )
-        self.parser.add_argument(
-            "-d",
-            dest="DRY_RUN",
-            help="If true, update operations will not be performed.",
-            action="store_true",
-            default=False,
-        )
+        ),
+        Param(
+            name="dry_run",
+            type="bool",
+            description="If true, update operations will not be performed.",
+            default=True,
+        ),
+    )
 
     def update_field(
         self,
@@ -91,7 +86,7 @@ class UpdateAirtableFieldValue(Function):
             try:
                 phone_number_to_records[record["fields"][PHONE_FIELD]] = record
             except KeyError:
-                log.warning(
+                self.log.warning(
                     f"Unable to get phone number for record id: {record}"
                 )
 
@@ -99,53 +94,44 @@ class UpdateAirtableFieldValue(Function):
             try:
                 record = phone_number_to_records[number]
             except KeyError:
-                log.warning(f"Could not find record for number {number}")
+                self.log.warning(f"Could not find record for number {number}")
                 continue
 
-            log.info(f"Updating {field_name} to {new_value} for {number}")
+            self.log.info(f"Updating {field_name} to {new_value} for {number}")
             if not dry_run:
                 try:
                     self.airtable.assistance_requests.update(
                         str(record["id"]), {field_name: new_value}
                     )
                 except Exception as e:
-                    log.error(
-                        f"Error updating field {field_name} to {new_value} for {number}"
+                    self.log.error(
+                        f"Error updating field {field_name} to {new_value} for {number}: {e}"
                     )
-                    traceback.print_exc()
                     raise e
 
-    def run(self, event, context):
-        # enforce required params
-        required_params = [
-            "PHONE_NUMBERS_TO_UPDATE",
-            "FIELD_NAME",
-            "NEW_VALUE",
-        ]
-        for param in required_params:
-            if not event.get(param):
-                raise ValueError(f"{param} is required")
-
+    def run(self, params, context):
         # extract phone numbers from text
-        text = event["PHONE_NUMBERS_TO_UPDATE"]
+        text = params["phone_numbers_to_update"]
         phone_numbers = extract_phone_numbers(text)
         if not phone_numbers:
             raise ValueError(
                 f"No phone numbers read from the inputted text: {text}"
             )
-        log.info(f"Found {len(phone_numbers)} phone numbers in text.")
+        self.log.info(f"Found {len(phone_numbers)} phone numbers in text.")
 
         # extract field name, new value, and view name
-        field_name = event["FIELD_NAME"].strip()
-        new_value = event["NEW_VALUE"].strip()
-        view_name = event.get("VIEW_NAME", None)
+        field_name = params["field_name"].strip()
+        new_value = params["new_value"].strip()
+        view_name = params.get("view_name", None)
 
         # parse dry run flag
-        dry_run = to_bool(event.get("DRY_RUN", True))
+        dry_run = params.get("dry_run", True)
         if dry_run:
-            log.warning("Running in DRY_RUN mode. No records will be updated.")
+            self.log.warning(
+                "Running in DRY_RUN mode. No records will be updated."
+            )
         else:
-            log.warning("Running in LIVE mode. Records will be updated.")
+            self.log.warning("Running in LIVE mode. Records will be updated.")
 
         # run the updates
         self.update_field(
@@ -154,4 +140,4 @@ class UpdateAirtableFieldValue(Function):
 
 
 if __name__ == "__main__":
-    UpdateAirtableFieldValue().cli()
+    UpdateAirtableFieldValue().run_cli()

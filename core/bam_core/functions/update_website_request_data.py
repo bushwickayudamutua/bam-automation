@@ -1,12 +1,10 @@
 import os
-import logging
 import tempfile
 from datetime import datetime
 
 from .base import Function
+from .params import Param, Parameters
 from bam_core.utils.serde import obj_to_json
-
-log = logging.getLogger(__name__)
 
 
 class UpdateWebsiteRequestData(Function):
@@ -82,7 +80,16 @@ class UpdateWebsiteRequestData(Function):
         ],
     }
 
-    def run(self, event, context):
+    params = Parameters(
+        Param(
+            name="dry_run",
+            type="bool",
+            default=True,
+            description="If true, data will not be written to the digital ocean space.",
+        )
+    )
+
+    def run(self, params, context):
         """"""
         now = datetime.utcnow()
         output_data = {
@@ -92,7 +99,7 @@ class UpdateWebsiteRequestData(Function):
         for metric in self.CONFIG.get("metrics"):
             metric_name = metric.pop("name")
             translations = metric.pop("translations", {})
-            log.info(f"Generating metric:\n\t{metric}")
+            self.log.info(f"Generating metric:\n\t{metric}")
             output = {
                 "name": metric_name,
                 "translations": translations,
@@ -100,7 +107,12 @@ class UpdateWebsiteRequestData(Function):
             }
             output["value"] = self.airtable.get_view_count(**metric)
             output_data["metrics"].append(output)
-        log.info(f"Generated metrics:\n\t{output_data['metrics']}")
+        self.log.info(f"Generated metrics:\n\t{output_data['metrics']}")
+        if params["dry_run"]:
+            self.log.info(
+                "Dry run enabled. Skipping upload to digital ocean space."
+            )
+            return output_data
         td = tempfile.gettempdir()
         tf = os.path.join(td, "request-counts.json")
         with open(tf, "w") as f:
@@ -108,13 +120,13 @@ class UpdateWebsiteRequestData(Function):
         prefix = self.CONFIG["filepath"]
         fp = self.s3.upload(tf, prefix, mimetype="application/json")
         self.s3.set_public(fp)
-        log.info(
-            f"Uploaded file with updated ts: {now.isoformat()} to s3: {fp}"
+        self.log.info(
+            f"Uploaded file with updated ts: {now.isoformat()} to digital ocean space: {fp}"
         )
         self.s3.purge_cdn_cache(prefix)
-        log.info(f"Purged CDN cache for file: {prefix}")
+        self.log.info(f"Purged CDN cache for file: {prefix}")
         return output_data
 
 
 if __name__ == "__main__":
-    UpdateWebsiteRequestData().cli()
+    UpdateWebsiteRequestData().run_cli()

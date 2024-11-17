@@ -9,13 +9,11 @@ from bam_core.utils.phone import (
 )
 from bam_core.utils.email import format_email
 from bam_core.utils.geo import format_address
-
+from bam_app.settings import APIKEY
 
 app = FastAPI()
 
 # apikey auth
-
-APIKEY = os.getenv("BAM_APIKEY", "bam")
 
 
 def check_api_key(apikey: str):
@@ -25,7 +23,7 @@ def check_api_key(apikey: str):
         )
 
 
-@app.get("/clean-record")
+@app.get("/api/clean-record")
 def clean_record(
     apikey: str,
     phone: str = None,
@@ -76,7 +74,7 @@ def clean_record(
     return response
 
 
-@app.get("/yo")
+@app.get("/api/status")
 def health_check():
     """
     :param email: The phone number to validate
