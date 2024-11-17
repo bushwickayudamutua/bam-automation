@@ -192,7 +192,7 @@ class Param:
         }
 
 
-class Parameters:
+class Params:
     def __init__(self, *params: List[Union[Param, Dict[str, Any]]]):
         self.params = {}
         for param in params:

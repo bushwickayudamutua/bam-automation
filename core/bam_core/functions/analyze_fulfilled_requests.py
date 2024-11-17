@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 from zoneinfo import ZoneInfo
 
 from .base import Function
-from .params import Parameters, Param
+from .params import Params, Param
 from bam_core.constants import FULFILLED_REQUESTS_SHEET_NAME
 from bam_core.utils.serde import json_to_obj
 from bam_core.lib.airtable import Airtable
@@ -17,7 +17,7 @@ SNAPSHOT_DATE_FIELD = "Snapshot Date"
 
 
 class AnalyzeFulfilledRequests(Function):
-    params = Parameters(
+    params = Params(
         Param(
             name="dry_run",
             type="bool",

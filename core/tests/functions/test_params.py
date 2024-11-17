@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 from datetime import datetime
 
 from bam_core.functions.params import (
-    Parameters,
+    Params,
     Param,
     ParamInt,
     ParamFloat,
@@ -89,7 +89,7 @@ def parameters():
             description="A bool list parameter",
         ),
     ]
-    return Parameters(*params)
+    return Params(*params)
 
 
 def test_add_param(parameters):

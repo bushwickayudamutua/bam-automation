@@ -4,7 +4,7 @@ from typing import List, Dict, Any
 from pyairtable import formulas
 
 from .base import Function
-from .params import Param, Parameters
+from .params import Param, Params
 from bam_core.utils.etc import to_list
 from bam_core.constants import (
     EG_REQUESTS_SCHEMA,
@@ -48,7 +48,7 @@ class TimeoutEssentialGoodsRequests(Function):
     unfulfilled records for phone numbers which have at least one later fulfilled request.
     """
 
-    params = Parameters(
+    params = Params(
         Param(
             name="request_field",
             type="string",

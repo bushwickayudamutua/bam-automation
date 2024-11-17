@@ -5,7 +5,7 @@ from typing import List, Dict, Any
 
 
 from .base import Function
-from .params import Param, Parameters
+from .params import Param, Params
 from bam_core.utils.etc import to_bool, to_list
 from bam_core.constants import (
     EG_REQUESTS_SCHEMA,
@@ -60,7 +60,7 @@ class ConsolidateEssentialGoodsRequests(Function):
     thereby closing that request.
     """
 
-    params = Parameters(
+    params = Params(
         Param(
             name="request_field",
             type="string",

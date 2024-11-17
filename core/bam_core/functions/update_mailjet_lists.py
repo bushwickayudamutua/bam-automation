@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 
-from .params import Param, Parameters
+from .params import Param, Params
 from .base import Function
 
 
@@ -34,7 +34,7 @@ class UpdateMailjetLists(Function):
         },
     ]
 
-    params = Parameters(
+    params = Params(
         Param(
             name="dry_run",
             type="bool",

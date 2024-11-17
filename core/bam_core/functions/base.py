@@ -9,7 +9,7 @@ from bam_core.lib.s3 import S3
 from bam_core.utils.etc import now_utc
 from bam_core.lib.google import GoogleMaps, GoogleSheets
 from bam_core.lib.nyc_planning_labs import NycPlanningLabs
-from bam_core.functions.params import Parameters
+from bam_core.functions.params import Params
 
 logger = logging.getLogger(__name__)
 
@@ -62,11 +62,11 @@ class Function(object):
         self.log = FunctionLogger(self.__class__.__name__)
 
     @property
-    def params(self) -> Parameters:
+    def params(self) -> Params:
         """
-        Define the parameters for this function.
+        Define the Params for this function.
         """
-        return Parameters()
+        return Params()
 
     @property
     def log_lines(self) -> List[Dict[str, Any]]:

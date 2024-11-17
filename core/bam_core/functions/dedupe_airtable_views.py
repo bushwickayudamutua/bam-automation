@@ -8,7 +8,7 @@ from bam_core import constants
 from bam_core.constants import View
 from bam_core.functions.base import Function, FunctionLogger
 from bam_core.utils.etc import to_bool
-from bam_core.functions.params import Param, Parameters
+from bam_core.functions.params import Param, Params
 
 
 # record type
@@ -207,7 +207,7 @@ class DedupeAirtableViews(Function):
     open records for a phone number as "timed out".
     """
 
-    params = Parameters(
+    params = Params(
         Param(
             name="dry_run",
             type="bool",

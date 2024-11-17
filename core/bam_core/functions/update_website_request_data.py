@@ -3,7 +3,7 @@ import tempfile
 from datetime import datetime
 
 from .base import Function
-from .params import Param, Parameters
+from .params import Param, Params
 from bam_core.utils.serde import obj_to_json
 
 
@@ -80,7 +80,7 @@ class UpdateWebsiteRequestData(Function):
         ],
     }
 
-    params = Parameters(
+    params = Params(
         Param(
             name="dry_run",
             type="bool",

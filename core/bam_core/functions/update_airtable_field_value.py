@@ -2,7 +2,7 @@ from bam_core.constants import PHONE_FIELD
 from bam_core.utils.phone import extract_phone_numbers
 from pyairtable import formulas
 
-from .params import Param, Parameters
+from .params import Param, Params
 from .base import Function
 
 
@@ -11,7 +11,7 @@ class UpdateAirtableFieldValue(Function):
     Update a field in the Assistance Requests table for a list of phone numbers
     """
 
-    params = Parameters(
+    params = Params(
         Param(
             name="phone_numbers_to_update",
             type="string",

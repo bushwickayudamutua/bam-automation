@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 from datetime import timedelta, datetime
 
 from .base import Function
-from .params import Param, Parameters
+from .params import Param, Params
 from bam_core.utils.serde import obj_to_json
 from bam_core.utils.etc import now_est, now_utc
 from bam_core.constants import AIRTABLE_DATETIME_FORMAT
@@ -30,7 +30,7 @@ class SnapshotAirtableViews(Function):
         },
     ]
 
-    params = Parameters(
+    params = Params(
         Param(
             name="number_of_days",
             type="int",

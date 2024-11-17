@@ -1,6 +1,6 @@
 from bam_core.functions.base import Function
 from bam_core.functions.params import (
-    Parameters,
+    Params,
     Param,
 )
 
@@ -16,7 +16,7 @@ def test_function_run():
 
 def test_function_run_params_default():
     class TestFunction(Function):
-        params = Parameters(
+        params = Params(
             Param(
                 name="test",
                 type="string",
@@ -34,7 +34,7 @@ def test_function_run_params_default():
 
 def test_function_run_raises_param_missing():
     class TestFunction(Function):
-        params = Parameters(
+        params = Params(
             Param(
                 name="test",
                 type="string",
