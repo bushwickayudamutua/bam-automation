@@ -1,10 +1,11 @@
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import Column, Integer, String, ForeignKey, Enum as SqlEnum
+from sqlalchemy import DateTime, Column, Integer, String, ForeignKey, Enum as SqlEnum
 from sqlalchemy.orm import relationship
 
-from bam_app.models.core import BaseModel, utcnow
+from bam_app.models.core import BaseModel
+from bam_core.utils.etc import now_utc
 
 
 class TaskStatus(Enum):
@@ -23,8 +24,8 @@ class TaskQueue(BaseModel):
     task_data = Column(String, nullable=True)
     logs = Column(String, nullable=True)
     status = Column(SqlEnum(TaskStatus), default=TaskStatus.QUEUED)
-    created_at = Column(String, default=utcnow)
-    updated_at = Column(String, onupdate=utcnow)
+    created_at = Column(DateTime, default=now_utc)
+    updated_at = Column(DateTime, onupdate=now_utc)
 
     user = relationship("User", back_populates="tasks")
 
@@ -44,7 +45,7 @@ class TaskQueue(BaseModel):
         )
         if task:
             task.status = TaskStatus.RUNNING
-            task.updated_at = utcnow()
+            task.updated_at = now_utc()
             session.commit()
         return task
 
@@ -70,7 +71,7 @@ class TaskQueue(BaseModel):
         task = cls.get_task(session, task_id)
         if task:
             task.status = status
-            task.updated_at = utcnow()
+            task.updated_at = now_utc()
             session.commit()
         return task
 
@@ -82,7 +83,7 @@ class TaskQueue(BaseModel):
         task = cls.get_task(session, task_id)
         if task:
             task.logs = logs
-            task.updated_at = utcnow()
+            task.updated_at = now_utc()
             session.commit()
         return task
 
