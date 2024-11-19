@@ -1,10 +1,7 @@
 from typing import Any, Dict, List
-import logging
 
+from .params import Param, Params
 from .base import Function
-
-
-log = logging.getLogger(__name__)
 
 
 class UpdateMailjetLists(Function):
@@ -37,6 +34,15 @@ class UpdateMailjetLists(Function):
         },
     ]
 
+    params = Params(
+        Param(
+            name="dry_run",
+            type="bool",
+            default=True,
+            description="If true, data will not be written to Mailjet.",
+        )
+    )
+
     def _filter_new_contacts(
         self,
         view: Dict[str, Any],
@@ -62,7 +68,7 @@ class UpdateMailjetLists(Function):
         # dedupe subscribers by email address
         new_contacts = {}
         for contact in all_contacts:
-            email = contact["fields"].get(view["fields"]["email"], None)
+            email = contact["fields"].get(view["fields"]["email"], "").lower()
             if (
                 email
                 and email not in current_contacts
@@ -77,11 +83,11 @@ class UpdateMailjetLists(Function):
 
         return list(new_contacts.values())
 
-    def run(self, event, context):
+    def run(self, params, context):
         results = []
         current_contacts = set(self.mailjet.get_all_emails())
         for view in self.CONFIG:
-            log.info(f"Syncing contacts from {view['table_name']}")
+            self.log.info(f"Syncing contacts from {view['table_name']}")
             fields = view.get("fields")
             all_contacts = self.airtable.get_view(
                 table_name=view["table_name"],
@@ -92,7 +98,7 @@ class UpdateMailjetLists(Function):
                 view, all_contacts, current_contacts
             )
             n_new_contacts = len(new_contacts)
-            log.info(
+            self.log.info(
                 f"Syncing {n_new_contacts} new contacts from {view['table_name']} to mailjet lists: {view['lists']}"
             )
 
@@ -101,12 +107,17 @@ class UpdateMailjetLists(Function):
             for contact in new_contacts:
                 for list_name in view["lists"]:
                     kwargs = {**contact, "list_name": list_name}
-                    log.info(f"Adding contact {contact} to list {list_name}")
+                    self.log.info(
+                        f"Adding contact {contact} to list {list_name}"
+                    )
+                    if params["dry_run"]:
+                        self.log.info("Dry run enabled. Skipping...")
+                        continue
                     try:
                         self.mailjet.add_contact_to_list(**kwargs)
                     except Exception as e:
                         n_failures += 1
-                        log.error(
+                        self.log.error(
                             f"Failed to add contact {contact} to list {list_name}: {e}. Continuing..."
                         )
 
@@ -121,4 +132,4 @@ class UpdateMailjetLists(Function):
 
 
 if __name__ == "__main__":
-    UpdateMailjetLists().cli()
+    UpdateMailjetLists().run_cli()

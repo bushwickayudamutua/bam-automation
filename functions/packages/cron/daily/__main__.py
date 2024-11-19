@@ -5,17 +5,23 @@ from bam_core.functions.snapshot_airtable_views import SnapshotAirtableViews
 
 
 def main(event, context):
-    return Function.run_functions(
+    return Function.run_do_functions(
         event,
         context,
         DedupeAirtableViews,
         UpdateMailjetLists,
-        SnapshotAirtableViews
+        SnapshotAirtableViews,
     )
 
 
 if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) == 1:
+        dry_run = True
+    else:
+        dry_run = False if sys.argv[1] == "false" else True
     from pprint import pprint
 
-    output = main({}, {})
+    output = main({"dry_run": dry_run}, {})
     pprint(output)

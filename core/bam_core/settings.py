@@ -2,6 +2,8 @@ import os
 import dotenv
 import logging
 import logging.config
+import json
+import base64
 
 # load .env file
 dotenv.load_dotenv()
@@ -24,8 +26,10 @@ MAILJET_API_SECRET = os.getenv("BAM_MAILJET_API_SECRET", None)
 
 # google settings
 GOOGLE_MAPS_API_KEY = os.getenv("BAM_GOOGLE_MAPS_API_KEY", None)
-GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv(
-    "BAM_GOOGLE_SERVICE_ACCOUNT_JSON",'{}'
+GOOGLE_SERVICE_ACCOUNT_CONFIG = json.loads(
+    base64.b64decode(
+        os.getenv("BAM_GOOGLE_SERVICE_ACCOUNT_JSON_BASE64", "e30=")
+    )
 )
 
 # s3 settings

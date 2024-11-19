@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 from zoneinfo import ZoneInfo
 
 from .base import Function
+from .params import Params, Param
 from bam_core.constants import FULFILLED_REQUESTS_SHEET_NAME
 from bam_core.utils.serde import json_to_obj
 from bam_core.lib.airtable import Airtable
@@ -16,14 +17,14 @@ SNAPSHOT_DATE_FIELD = "Snapshot Date"
 
 
 class AnalyzeFulfilledRequests(Function):
-    def add_options(self):
-        self.parser.add_argument(
-            "-d",
-            dest="DRY_RUN",
-            help="If true, data will not be written back to Airtable.",
-            action="store_true",
-            default=False,
+    params = Params(
+        Param(
+            name="dry_run",
+            type="bool",
+            default=True,
+            description="If true, data will not be written to the  Google Sheet.",
         )
+    )
 
     def get_snapshot_date(self, filepath):
         """
@@ -43,7 +44,7 @@ class AnalyzeFulfilledRequests(Function):
         Get records from Digital Ocean Space
         """
         grouped_records = defaultdict(list)
-        log.info("Fetching snapshots from Digital Ocean Space...")
+        self.log.info("Fetching snapshots from Digital Ocean Space...")
         for filepath in self.s3.list_keys(
             "airtable-snapshots/assistance-requests-main/"
         ):
@@ -107,25 +108,29 @@ class AnalyzeFulfilledRequests(Function):
             )
         )
 
-    def run(self, event, context):
+    def run(self, params, context):
         """
         Analyze airtable snapshots to identify fulfilled requests and write to a google sheet.
         """
         # fetch records and group by ID
         grouped_records = self.get_grouped_records()
         fulfilled_requests = self.analyze_grouped_records(grouped_records)
-        log.info(f"Found {len(fulfilled_requests)} fulfilled requests")
-        if not event.get("DRY_RUN", False):
-            log.info("Writing fulfilled requests to Google Sheet...")
+        self.log.info(f"Found {len(fulfilled_requests)} fulfilled requests")
+        if not params.get("dry_run", False):
+            self.log.info(
+                f"Writing fulfilled requests to Google Sheet: '{FULFILLED_REQUESTS_SHEET_NAME}'"
+            )
             self.gsheets.upload_to_sheet(
                 sheet_name=FULFILLED_REQUESTS_SHEET_NAME,
                 sheet_index=0,
                 data=fulfilled_requests,
             )
         else:
-            log.info("Dry run, not writing fulfilled requests to Google Sheet")
+            self.log.info(
+                "Dry run, not writing fulfilled requests to Google Sheet"
+            )
         return {"num_fulfilled_requests": len(fulfilled_requests)}
 
 
 if __name__ == "__main__":
-    AnalyzeFulfilledRequests().cli()
+    AnalyzeFulfilledRequests().run_cli()

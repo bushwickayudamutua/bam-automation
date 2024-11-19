@@ -1,14 +1,9 @@
 from collections import Counter
-import logging
-from pprint import pprint
 from typing import Any, Dict
 
 from .base import Function
 from bam_core.utils.phone import format_phone_number
 from bam_core.utils.email import format_email, NO_EMAIL_ERROR
-
-
-log = logging.getLogger(__name__)
 
 
 class CleanAirtableViews(Function):
@@ -46,7 +41,7 @@ class CleanAirtableViews(Function):
             if clean_phone_number is not None:
                 valid_phone_number = True
                 if clean_phone_number != phone_number:
-                    log.info(
+                    self.log.info(
                         f"Changing phone number: {phone_number} to {clean_phone_number} for record: {record_id}"
                     )
                     table.update(
@@ -60,7 +55,7 @@ class CleanAirtableViews(Function):
 
         # mark invalid phone numbers which have not already been marked invalid
         if not valid_phone_number and not was_invalid_phone_number:
-            log.info(
+            self.log.info(
                 f"Marking phone number: {phone_number} as invalid for record: {record_id}"
             )
             table.update(record_id, {"Invalid Phone Number?": True})
@@ -68,7 +63,7 @@ class CleanAirtableViews(Function):
 
         # mark now valid phone numbers which had been previously marked as invalid
         if valid_phone_number and was_invalid_phone_number:
-            log.info(
+            self.log.info(
                 f"Marking phone number: {phone_number} as valid for record: {record_id}"
             )
             table.update(record_id, {"Invalid Phone Number?": False})
@@ -91,7 +86,7 @@ class CleanAirtableViews(Function):
         # check for empty emails
         if not email:
             if prev_email_error != NO_EMAIL_ERROR:
-                log.info(
+                self.log.info(
                     f"Marking email: {email} as invalid for record: {record_id} because of error: {NO_EMAIL_ERROR}"
                 )
                 table.update(
@@ -110,7 +105,7 @@ class CleanAirtableViews(Function):
             if not email_error:
                 valid_email = True
                 if clean_email != email:
-                    log.info(
+                    self.log.info(
                         f"Changing email: {email} to {clean_email} for record: {record_id}"
                     )
                     table.update(
@@ -126,7 +121,7 @@ class CleanAirtableViews(Function):
         if email and not valid_email and email_error != prev_email_error:
             if not email:
                 email_error = str(NO_EMAIL_ERROR)
-            log.info(
+            self.log.info(
                 f"Marking email: {email} as invalid for record: {record_id} because of error: {email_error}"
             )
             table.update(record_id, {"Email Error": email_error})
@@ -137,7 +132,7 @@ class CleanAirtableViews(Function):
 
         # mark now valid emails which had been previously marked as invalid
         if valid_email and prev_email_error:
-            log.info(
+            self.log.info(
                 f"Marking email: {email} as valid for record: {record_id}"
             )
             table.update(record_id, {"Email Error": ""})
@@ -149,7 +144,7 @@ class CleanAirtableViews(Function):
         """
         Clean a view of records in Airtable
         """
-        log.info(
+        self.log.info(
             f"Fetching {view_to_clean['table_name']}--{view_to_clean['view_name']}"
         )
         table = self.airtable.get_table(view_to_clean["table_name"])
@@ -163,7 +158,7 @@ class CleanAirtableViews(Function):
                 "Email Error",
             ],  # add more fields here for future cleaning steps.
         )
-        log.info(
+        self.log.info(
             f"Cleaning {len(records)} records from {view_to_clean['table_name']}--{view_to_clean['view_name']}"
         )
         phone_counter = Counter()
@@ -189,10 +184,9 @@ class CleanAirtableViews(Function):
         for view_to_clean in self.CONFIG:
             result = self.clean_view(view_to_clean)
             results.append(result)
-        log.info("Results:")
-        pprint(results)
+        self.log.info(f"Results: {results}")
         return results
 
 
 if __name__ == "__main__":
-    CleanAirtableViews().cli()
+    CleanAirtableViews().run_cli()

@@ -5,7 +5,7 @@ This application is designed to house APIs which can be called from within Airta
 
 Currently, it has the following endpoints:
 
-* `/clean-record`:
+* `/api/clean-record`:
   * Cleans, formats, and performs DNS checks on email address domains via `email-formatter`.
   * Cleans and formats phone numbers via `phonenumbers`
   * Normalizes address via Google Maps API and NYC Planning Labs geosearch tool.

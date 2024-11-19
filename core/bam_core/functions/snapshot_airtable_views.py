@@ -1,18 +1,20 @@
 import os
-import logging
 import tempfile
 from typing import Any, Dict, List
 from datetime import timedelta, datetime
 
 from .base import Function
+from .params import Param, Params
 from bam_core.utils.serde import obj_to_json
-from bam_core.utils.etc import now_est
+from bam_core.utils.etc import now_est, now_utc
 from bam_core.constants import AIRTABLE_DATETIME_FORMAT
-
-log = logging.getLogger(__name__)
 
 
 class SnapshotAirtableViews(Function):
+    """
+    Fetch modified records from Airtable and upload to Digital Ocean Space
+    """
+
     CONFIG = [
         {
             "table_name": "Assistance Requests: Main",
@@ -28,20 +30,20 @@ class SnapshotAirtableViews(Function):
         },
     ]
 
-    def add_options(self):
-        self.parser.add_argument(
-            "-n",
-            dest="NUMBER_OF_DAYS",
-            help="The number of days to go back in time to fetch modified records",
+    params = Params(
+        Param(
+            name="number_of_days",
+            type="int",
             default=1,
-        )
-        self.parser.add_argument(
-            "-d",
-            dest="DRY_RUN",
-            help="If true, data will not be written to Digital Ocean Space.",
-            action="store_true",
-            default=False,
-        )
+            description="The number of days to go back in time to fetch modified records",
+        ),
+        Param(
+            name="dry_run",
+            type="bool",
+            default=True,
+            description="If true, data will not be written to Digital Ocean Space.",
+        ),
+    )
 
     def get_modified_records(
         self,
@@ -63,8 +65,7 @@ class SnapshotAirtableViews(Function):
                         last_modified, AIRTABLE_DATETIME_FORMAT
                     )
                     if last_modified.date() >= (
-                        datetime.utcnow().date()
-                        - timedelta(days=number_of_days)
+                        now_utc().date() - timedelta(days=number_of_days)
                     ):
                         records.append(record)
             else:
@@ -91,28 +92,30 @@ class SnapshotAirtableViews(Function):
         slug = self.get_slug_from_table_name(table_name)
         return f"airtable-snapshots/{slug}/{slug}-{self.get_date_slug()}.json"
 
-    def run(self, event, context):
+    def run(self, params, context):
         """
         Snapshot Airtable tables
         """
-        number_of_days = event.get("NUMBER_OF_DAYS", 1)
+        number_of_days = params.get("number_of_days", 1)
         if str(number_of_days).lower() == "none":
             number_of_days = None
         if number_of_days:
             number_of_days = int(number_of_days)
-        dry_run = event.get("DRY_RUN", False)
+        dry_run = params.get("dry_run", True)
         output = []
         for config in self.CONFIG:
             table_name = config["table_name"]
             last_modified_field = config["last_modified_field"]
-            log.info(f"Fetching modified records from '{table_name}'")
+            self.log.info(f"Fetching modified records from '{table_name}'")
             records = self.get_modified_records(
                 table_name, last_modified_field, number_of_days
             )
             if not records:
-                log.info(f"No modified records found in {table_name} table")
+                self.log.info(
+                    f"No modified records found in {table_name} table"
+                )
                 continue
-            log.info(
+            self.log.info(
                 f"Found {len(records)} modified records in {table_name} table"
             )
 
@@ -120,7 +123,7 @@ class SnapshotAirtableViews(Function):
             tmp = tempfile.NamedTemporaryFile(delete=False)
             filepath = self.get_filepath(table_name)
             if not dry_run:
-                log.info(
+                self.log.info(
                     f"Writing {len(records)} records to {tmp.name} and uploading to {filepath}"
                 )
                 try:
@@ -132,7 +135,7 @@ class SnapshotAirtableViews(Function):
                     tmp.close()
                     os.unlink(tmp.name)
             else:
-                log.info(
+                self.log.info(
                     f"Would have written {len(records)} records to {filepath}"
                 )
             output.append(
@@ -146,4 +149,4 @@ class SnapshotAirtableViews(Function):
 
 
 if __name__ == "__main__":
-    SnapshotAirtableViews().cli()
+    SnapshotAirtableViews().run_cli()
