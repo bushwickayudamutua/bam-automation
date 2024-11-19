@@ -1,7 +1,14 @@
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import DateTime, Column, Integer, String, ForeignKey, Enum as SqlEnum
+from sqlalchemy import (
+    DateTime,
+    Column,
+    Integer,
+    String,
+    ForeignKey,
+    Enum as SqlEnum,
+)
 from sqlalchemy.orm import relationship
 
 from bam_app.models.core import BaseModel

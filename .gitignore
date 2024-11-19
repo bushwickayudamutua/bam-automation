@@ -19,3 +19,4 @@ node_modules
 virtualenv/
 functions/packages/*/*/core
 service-account.json
+*.db

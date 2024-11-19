@@ -5,6 +5,7 @@ from bam_app.settings import PASSWORD_SALT
 from bam_app.models.core import BaseModel
 from bam_core.utils.etc import now_utc
 
+
 class User(BaseModel):
     __tablename__ = "users"
 
