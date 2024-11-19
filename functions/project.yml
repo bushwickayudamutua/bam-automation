@@ -29,7 +29,8 @@ packages:
         main: ""
         runtime: "python:3.9"
         web: true
-        parameters: {}
+        parameters:
+          dry_run: false
         annotations: {}
         limits:
           timeout: 900000
@@ -46,7 +47,8 @@ packages:
         main: ""
         runtime: "python:3.9"
         web: true
-        parameters: {}
+        parameters:
+          dry_run: false
         annotations: {}
         limits:
           timeout: 900000

@@ -15,7 +15,11 @@ def main(event, context):
 
 
 if __name__ == "__main__":
+    import sys
+    if len(sys.argv) == 1:
+        dry_run = True
+    else:
+        dry_run = False if sys.argv[1] == "false" else True
     from pprint import pprint
-
-    output = main({}, {})
+    output = main({"dry_run": dry_run}, {})
     pprint(output)

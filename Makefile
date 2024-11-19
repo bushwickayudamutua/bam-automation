@@ -35,11 +35,11 @@ deploy-functions:
 
 run-daily:
 
-	cd functions/packages/cron/daily && python __main__.py
+	cd functions/packages/cron/daily && python __main__.py false
 
 run-hourly:
 
-	cd functions/packages/cron/hourly && python __main__.py
+	cd functions/packages/cron/hourly && python __main__.py false
 
 test-core:
 
