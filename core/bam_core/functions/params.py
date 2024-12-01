@@ -28,7 +28,7 @@ class ParamType:
         return self.validate_cli(value)
 
 
-class ParamInt(ParamType):
+class ParamIntType(ParamType):
     name = "int"
 
     def validate(self, value: Any) -> int:
@@ -38,7 +38,7 @@ class ParamInt(ParamType):
             raise ValueError(f"Expected int, got {value}")
 
 
-class ParamFloat(ParamType):
+class ParamFloatType(ParamType):
     name = "float"
 
     def validate(self, value: Any) -> float:
@@ -48,7 +48,7 @@ class ParamFloat(ParamType):
             raise ValueError(f"Expected float, got {value}")
 
 
-class ParamDatetime(ParamType):
+class ParamDatetimeType(ParamType):
     name = "datetime"
 
     def validate(self, value: Any) -> datetime:
@@ -58,7 +58,7 @@ class ParamDatetime(ParamType):
             raise ValueError(f"Expected datetime in ISO format, got {value}")
 
 
-class ParamJson(ParamType):
+class ParamJsonType(ParamType):
     name = "json"
 
     def validate(self, value: Any) -> Union[list, dict]:
@@ -72,7 +72,7 @@ class ParamJson(ParamType):
         return value
 
 
-class ParamString(ParamType):
+class ParamStringType(ParamType):
     name = "string"
 
     def validate(self, value: Any) -> str:
@@ -84,7 +84,7 @@ class ParamString(ParamType):
         return self.validate(value)
 
 
-class ParamBool(ParamType):
+class ParamBoolType(ParamType):
     name = "bool"
 
     def validate(self, value: Any) -> bool:
@@ -97,8 +97,8 @@ class ParamBool(ParamType):
         return self.validate(value)
 
 
-class ParamStringList(ParamType):
-    sub_type = ParamString()
+class ParamStringListType(ParamType):
+    sub_type = ParamStringType()
 
     @property
     def name(self):
@@ -118,34 +118,34 @@ class ParamStringList(ParamType):
             )
 
 
-class ParamIntList(ParamStringList):
-    sub_type = ParamInt()
+class ParamIntListType(ParamStringListType):
+    sub_type = ParamIntType()
 
 
-class ParamFloatList(ParamStringList):
-    sub_type = ParamFloat()
+class ParamFloatListType(ParamStringListType):
+    sub_type = ParamFloatType()
 
 
-class ParamDatetimeList(ParamStringList):
-    sub_type = ParamDatetime()
+class ParamDatetimeListType(ParamStringListType):
+    sub_type = ParamDatetimeType()
 
 
-class ParamBoolList(ParamStringList):
-    sub_type = ParamBool()
+class ParamBoolListType(ParamStringListType):
+    sub_type = ParamBoolType()
 
 
 PARAM_TYPES = (
-    ParamString,
-    ParamInt,
-    ParamFloat,
-    ParamDatetime,
-    ParamBool,
-    ParamStringList,
-    ParamIntList,
-    ParamFloatList,
-    ParamDatetimeList,
-    ParamBoolList,
-    ParamJson,
+    ParamStringType,
+    ParamIntType,
+    ParamFloatType,
+    ParamDatetimeType,
+    ParamBoolType,
+    ParamStringListType,
+    ParamIntListType,
+    ParamFloatListType,
+    ParamDatetimeListType,
+    ParamBoolListType,
+    ParamJsonType,
 )
 
 PARAM_TYPES_MAP = {str(t().name): t for t in PARAM_TYPES}
@@ -154,7 +154,7 @@ PARAM_TYPES_MAP = {str(t().name): t for t in PARAM_TYPES}
 @dataclass
 class Param:
     name: str
-    type: str
+    type: Union[str, ParamType] = ParamStringType()
     default: Any = None
     description: str = ""
     required: bool = False
@@ -163,7 +163,7 @@ class Param:
     def short_name(self) -> str:
         words = self.name.split("_")
         if len(words) > 1:
-            return "".join([w[0] for w in words])
+            return "".join([w[0].lower() for w in words])
         return self.name[:2]
 
     @property

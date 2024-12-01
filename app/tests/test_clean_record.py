@@ -7,7 +7,7 @@ client = TestClient(app)
 
 def test_clean_record_with_valid_input():
     response = client.get(
-        f"/api/airtable/clean-record?apikey={APIKEY}&phone=626-420-6969&email=test@test.com"
+        f"/clean-record?apikey={APIKEY}&phone=626-420-6969&email=test@test.com"
     )
     assert response.status_code == 200
     assert response.json() == {
@@ -21,7 +21,7 @@ def test_clean_record_with_valid_input():
 
 def test_clean_record_with_valid_intl_number():
     response = client.get(
-        f"/api/airtable/clean-record?apikey={APIKEY}&phone=%2b443476669193&email=test@test.com"
+        f"/clean-record?apikey={APIKEY}&phone=%2b443476669193&email=test@test.com"
     )
     assert response.status_code == 200
     assert response.json() == {
@@ -34,13 +34,13 @@ def test_clean_record_with_valid_intl_number():
 
 
 def test_apikey_invalid():
-    response = client.get(f"/api/airtable/clean-record?apikey=invalid")
+    response = client.get(f"/clean-record?apikey=invalid")
     assert response.status_code == 401
 
 
 def test_clean_record_with_null_input():
     response = client.get(
-        f"/api/airtable/clean-record?apikey={APIKEY}&phone=null&email=null"
+        f"/clean-record?apikey={APIKEY}&phone=null&email=null"
     )
     assert response.status_code == 200
     assert response.json() == {
@@ -54,7 +54,7 @@ def test_clean_record_with_null_input():
 
 def test_clean_record_with_missing_input():
     response = client.get(
-        f"/api/airtable/clean-record?apikey={APIKEY}&phone=&email="
+        f"/clean-record?apikey={APIKEY}&phone=&email="
     )
     assert response.status_code == 200
     assert response.json() == {
@@ -68,7 +68,7 @@ def test_clean_record_with_missing_input():
 
 def test_clean_record_with_invalid_email():
     response = client.get(
-        f"/api/airtable/clean-record?apikey={APIKEY}&phone=&email=invalid"
+        f"/clean-record?apikey={APIKEY}&phone=&email=invalid"
     )
     assert response.status_code == 200
     assert response.json() == {
@@ -82,7 +82,7 @@ def test_clean_record_with_invalid_email():
 
 def test_clean_record_with_reformatted_email():
     response = client.get(
-        f"/api/airtable/clean-record?apikey={APIKEY}&phone=&email=foo @gmail .com"
+        f"/clean-record?apikey={APIKEY}&phone=&email=foo @gmail .com"
     )
     assert response.status_code == 200
     assert response.json() == {
