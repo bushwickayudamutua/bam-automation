@@ -4,7 +4,10 @@ from typing import Any, Dict, List
 import gspread
 import googlemaps
 
-from bam_core.settings import GOOGLE_MAPS_API_KEY, GOOGLE_SERVICE_ACCOUNT_JSON
+from bam_core.settings import (
+    GOOGLE_MAPS_API_KEY,
+    GOOGLE_SERVICE_ACCOUNT_CONFIG,
+)
 from bam_core.constants import MAYDAY_LOCATION, MAYDAY_RADIUS
 
 
@@ -56,7 +59,7 @@ class GoogleMaps(object):
 class GoogleSheets(object):
     def __init__(self):
         self.client = gspread.service_account_from_dict(
-            json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
+            GOOGLE_SERVICE_ACCOUNT_CONFIG
         )
 
     def upload_to_sheet(

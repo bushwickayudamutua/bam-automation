@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
-from bam_app.main import app, APIKEY
+from bam_app.main import app
+from bam_app.settings import APIKEY
 
 client = TestClient(app)
 

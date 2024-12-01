@@ -7,6 +7,7 @@ from bam_core.functions.dedupe_airtable_views import (
     Record,
 )
 from bam_core import constants
+from bam_core.functions.base import FunctionLogger
 
 
 earliest_airtable_record = {
@@ -91,7 +92,7 @@ def test_no_dedupe(monkeypatch):
 
     monkeypatch.setattr(dedupe_airtable_views.table, "all", mock_table_records)
     records_to_keep = dedupe_airtable_views.dedupe_view(
-        constants.FOOD_VIEWS[0]
+        constants.FOOD_VIEWS[0], dry_run=False, logger=FunctionLogger("test")
     )
     assert records_to_keep == {earliest_record.phone_number: earliest_record}
 
@@ -106,7 +107,7 @@ def test_one_dedupe_view(monkeypatch):
 
     monkeypatch.setattr(dedupe_airtable_views.table, "all", mock_table_records)
     records_to_keep = dedupe_airtable_views.dedupe_view(
-        constants.FOOD_VIEWS[0]
+        constants.FOOD_VIEWS[0], dry_run=False, logger=FunctionLogger("test")
     )
     assert records_to_keep == {earliest_record.phone_number: earliest_record}
 
@@ -122,7 +123,7 @@ def test_multiple_dedupe_view(monkeypatch):
 
     monkeypatch.setattr(dedupe_airtable_views.table, "all", mock_table_records)
     records_to_keep = dedupe_airtable_views.dedupe_view(
-        constants.FOOD_VIEWS[0]
+        constants.FOOD_VIEWS[0], dry_run=False, logger=FunctionLogger("test")
     )
     assert records_to_keep == {earliest_record.phone_number: earliest_record}
 
