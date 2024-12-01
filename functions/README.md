@@ -33,7 +33,7 @@ Each [function](../core/bam_core/functions) is first written as a simple python 
 python -m bam_core.functions.update_website_request_data -h
 ```
 
-All functions should include a "Dry Run" mode (the `-d` flag) which prevents any modifications from running.
+All functions should include a "Dry Run" mode (the `-dr` flag) which prevents any modifications from running.
 
 ### On Digital Ocean
 
