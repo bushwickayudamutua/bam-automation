@@ -67,7 +67,7 @@ To ensure that functions are testable, reusable, and portable, please add the co
 ```python
 from bam_core.functions.update_website_request_data import UpdateWebsiteRequestData
 
-main = UpdateWebsiteRequestData().main
+main = UpdateWebsiteRequestData().run_do
 
 ```
 
