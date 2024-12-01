@@ -19,7 +19,7 @@ jobs:
           pip install -r requirements-dev.txt
       - name: Populate .env file
         run: |
-          echo "${{ secrets.BAM_ENV_FILE_CONTENTS }}" | base64 -d > ./.env
+          echo "${{ secrets.BAM_ENV_FILE_CONTENTS }}" > ./.env
       - name: Run core tests
         run: |
           pip install .
