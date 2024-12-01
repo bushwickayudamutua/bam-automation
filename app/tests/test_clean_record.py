@@ -53,9 +53,7 @@ def test_clean_record_with_null_input():
 
 
 def test_clean_record_with_missing_input():
-    response = client.get(
-        f"/clean-record?apikey={APIKEY}&phone=&email="
-    )
+    response = client.get(f"/clean-record?apikey={APIKEY}&phone=&email=")
     assert response.status_code == 200
     assert response.json() == {
         "email": "",

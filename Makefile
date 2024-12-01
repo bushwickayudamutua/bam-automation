@@ -48,7 +48,3 @@ test-core:
 test-app:
 
 	cd app && pytest -vv .
-
-b64-encode-env:
-
-	cat .env | base64
