@@ -7,15 +7,11 @@ from bam_core.utils.phone import (
 )
 from bam_core.utils.email import format_email
 from bam_core.utils.geo import format_address
-
+from bam_app.settings import APIKEY
 
 app = FastAPI()
 
-# apikey auth
-
-APIKEY = os.getenv("BAM_APIKEY", "bam")
-
-
+# apikey authentication
 def check_api_key(apikey: str):
     if apikey != APIKEY:
         raise HTTPException(
