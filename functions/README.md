@@ -76,37 +76,35 @@ You'll then write the logic for your function in `bam_core`.
 Below is an example to get you started. You would save this file as `bam_core/functions/my_new_function.py`
 
 ```python
-import logging
 from typing import Dict, Any
-from bam_core.function import Function
-
-log = logging.getLogger(__name__)
+from bam_core.functions.base import Function
+from bam_core.functions.params import Params, Param
 
 class MyNewFunction(Function):
 
-    def add_options(self):
-        self.parser.add_argument(
-            "-d",
-            dest="DRY_RUN",
-            help="If true, update operations will not be performed.",
-            action="store_true",
-            default=False,
+    params = Params(
+        Param(
+            name="dry_run",
+            type="bool",
+            description="If true, update operations will not be performed.",
+            default=True,
         )
+    )
 
-    def run(self, event, context) -> Dict[str, Any]:
+    def run(self, params, context) -> Dict[str, Any]:
         # # do your thing here
         # access airtable/mailjet/s3:
         # self.airtable
         # self.mailjet
         # self.s3
         # # access event / cli parameters
-        dry_run = event["DRY_RUN"]
-        log.info("Hello!")
+        dry_run = params["dry_run"]
+        self.log.info("Hello!")
         return {}
 
 
 if __name__ == "__main__:
-    MyNewFunction().cli()
+    MyNewFunction().run_cli()
 ```
 
 **NOTE**: If your function is adding methods for accessing new services, or new methods for accessing existing services, consider adding those to [`bam_core.lib`](../core/bam_core/lib/) or [`bam_core.utils`](../core/bam_core/utils/) as a part of your work as it'll benefit others moving forward!
@@ -135,9 +133,10 @@ For example:
 
 ```python
 from bam_core.functions.base import Function
+from bam_core.functions.my_new_function import MyNewFunction
 
 def main(event, context):
-    return Function.run_functions(
+    return Function.run_do_functions(
         event,
         context,
         MyNewFunction
