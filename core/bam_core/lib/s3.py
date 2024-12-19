@@ -161,8 +161,14 @@ class S3(object):
         :param key: An S3 key
         :return dict
         """
-        obj = self.resource.Object(self.bucket_name, self._in_key(key))
-        return obj.get()["Body"].read()
+        f = None
+        try:
+            obj = self.resource.Object(self.bucket_name, self._in_key(key))
+            with obj.get()["Body"] as f:
+                return f.read()
+        finally:
+            if f:
+                f.close()
 
     def exists(self, key: str) -> bool:
         f"""

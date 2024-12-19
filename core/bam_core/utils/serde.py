@@ -90,6 +90,8 @@ def str_to_gz_fobj(s: str) -> io.BytesIO:
     """
     out = io.BytesIO()
     with gzip.GzipFile(fileobj=out, mode="w") as f:
+        if isinstance(s, str):
+            s = s.encode("utf-8")
         f.write(s)
     return out
 

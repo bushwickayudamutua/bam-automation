@@ -11,6 +11,7 @@ from bam_app.settings import APIKEY
 
 app = FastAPI()
 
+
 # apikey authentication
 def check_api_key(apikey: str):
     if apikey != APIKEY:
