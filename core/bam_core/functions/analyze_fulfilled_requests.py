@@ -4,7 +4,6 @@ import json
 from datetime import datetime, timedelta
 import shutil
 from typing import Any, Dict, Generator, List, Optional
-from memory_profiler import profile
 
 from bam_core.functions.base import Function
 from bam_core.functions.params import Params, Param
