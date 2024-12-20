@@ -14,7 +14,6 @@ def main(event, context):
         DedupeAirtableViews,
         UpdateMailjetLists,
         SnapshotAirtableViews,
-        AnalyzeFulfilledRequests,
     )
 
 
