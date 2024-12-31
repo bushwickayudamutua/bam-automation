@@ -244,7 +244,7 @@ class AnalyzeFulfilledRequests(Function):
             self.log.info(
                 "Dry run, not writing fulfilled requests to Google Sheet or summary file Digital Ocean Space."
             )
-        return {"num_fulfilled_requests": len(fulfilled_requests)}
+        return {"num_fulfilled_requests": len(fulfilled_requests), "summary": summary}
 
 
 if __name__ == "__main__":
