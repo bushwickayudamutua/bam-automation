@@ -40,7 +40,7 @@ class AnalyzeFulfilledRequests(Function):
         )
     )
 
-    OUTPUT_FILEPATH = "website-data/delivered-requests.json"
+    OUTPUT_FILEPATH = "website-data/fulfilled-requests.json"
     ANALYSIS_END_DATE = datetime.now().date().isoformat()
     ANALYSIS_START_DATE = (
         datetime.now().date() - timedelta(days=31)
