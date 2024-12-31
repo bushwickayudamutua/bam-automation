@@ -40,11 +40,11 @@ class AnalyzeFulfilledRequests(Function):
         )
     )
 
-    output_filepath = "website-data/delivered-requests.json"
-    analysis_start_date = (
+    OUTPUT_FILEPATH = "website-data/delivered-requests.json"
+    ANALYSIS_START_DATE = (
         datetime.now().date() - timedelta(days=31)
     ).isoformat()
-    analysis_config = [
+    ANALYSIS_CONFIG = [
         {
             "name": "Groceries",
             "translations": {"span": "Comida", "eng": "Groceries"},
@@ -195,11 +195,11 @@ class AnalyzeFulfilledRequests(Function):
                 r
                 for r in fulfilled_requests
                 if r["Delivered Item"] in tags
-                and r["Date Delivered"] >= self.analysis_start_date
+                and r["Date Delivered"] >= self.ANALYSIS_START_DATE
             ]
         )
         self.log.info(
-            f"Found {num_requests} requests for {tags} since {self.analysis_start_date}"
+            f"Found {num_requests} requests for {tags} since {self.ANALYSIS_START_DATE}"
         )
         return num_requests
 
@@ -207,7 +207,7 @@ class AnalyzeFulfilledRequests(Function):
         self, fulfilled_requests: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         summary = []
-        for config in self.analysis_config:
+        for config in self.ANALYSIS_CONFIG:
             config["value"] = self.summarize_fulfilled_item(
                 fulfilled_requests, config["tags"]
             )
@@ -222,13 +222,13 @@ class AnalyzeFulfilledRequests(Function):
         with open(tf, "w") as f:
             f.write(obj_to_json(summary))
         fp = self.s3.upload(
-            tf, self.output_filepath, mimetype="application/json"
+            tf, self.OUTPUT_FILEPATH, mimetype="application/json"
         )
         self.s3.set_public(fp)
         self.log.info(f"Uploaded summary file to Digital Ocean Space: {fp}")
-        self.s3.purge_cdn_cache(self.output_filepath)
+        self.s3.purge_cdn_cache(self.OUTPUT_FILEPATH)
         self.log.info(
-            f"Purged CDN cache for summary file: {self.output_filepath}"
+            f"Purged CDN cache for summary file: {self.OUTPUT_FILEPATH}"
         )
 
     def run(self, params, context):
