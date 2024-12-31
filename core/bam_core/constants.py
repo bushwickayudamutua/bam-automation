@@ -111,13 +111,15 @@ BED_REQUESTS_SCHEMA = {
     },
 }
 
+FURNITURE_REQUEST_BED = "Cama / Bed / 床"
+
 # Mapping of furniture requests to statuses.
 # Note that bed requests are nested under furniture requests.
 FURNITURE_REQUESTS_SCHEMA = {
     "request_field": FURNITURE_REQUESTS_FIELD,
     "status_field": EG_STATUS_FIELD,
     "items": {
-        "Cama / Bed / 床": {
+        FURNITURE_REQUEST_BED: {
             "delivered": ["Mattress Delivered", "Bed Frame Delivered"],
             "timeout": ["Mattress Timeout", "Bed Frame Timeout"],
             "items": BED_REQUESTS_SCHEMA,
@@ -165,6 +167,8 @@ FURNITURE_REQUESTS_SCHEMA = {
     },
 }
 
+KITCHEN_REQUEST_POTS_AND_PANS = "Ollas y Sartenes / Pots & Pans / 鍋碗瓢盆"
+
 # Mapping of kitchen requests to statuses
 KITCHEN_REQUESTS_SCHEMA = {
     "request_field": KITCHEN_REQUESTS_FIELD,
@@ -174,7 +178,7 @@ KITCHEN_REQUESTS_SCHEMA = {
             "delivered": "Microwave Delivered",
             "timeout": "Microwave Timeout",
         },
-        "Ollas y Sartenes / Pots & Pans / 鍋碗瓢盆": {
+        KITCHEN_REQUEST_POTS_AND_PANS: {
             "delivered": "Pots & Pans Delivered",
             "timeout": "Pots & Pans Timeout",
         },
@@ -205,6 +209,13 @@ KITCHEN_REQUESTS_SCHEMA = {
     },
 }
 
+EG_REQUEST_PADS = (
+    "Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾"
+)
+EG_REQUEST_BABY_DIAPERS = "Pañales / Baby Diapers / 嬰兒紙尿褲"
+EG_REQUEST_CLOTHING = "Ropa / Clothing / 服裝"
+EG_REQUEST_SCHOOL_SUPPLIES = "Cosas de Escuela / School Supplies / 學校用品"
+
 # Mapping of EG requests to statuses
 # Note that kitchen requests and furniture requests are nested under EG requests.
 EG_REQUESTS_SCHEMA = {
@@ -216,12 +227,12 @@ EG_REQUESTS_SCHEMA = {
             "timeout": "Soap & Shower Products Timeout",
             "missed": EG_MISSED_APPT_STATUS,
         },
-        "Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾": {
+        EG_REQUEST_PADS: {
             "delivered": "Pads Delivered",
             "timeout": "Pads Timeout",
             "missed": EG_MISSED_APPT_STATUS,
         },
-        "Pañales / Baby Diapers / 嬰兒紙尿褲": {
+        EG_REQUEST_BABY_DIAPERS: {
             "delivered": "Baby Diapers Delivered",
             "timeout": "Baby Diapers Timeout",
             "missed": EG_MISSED_APPT_STATUS,
@@ -231,12 +242,12 @@ EG_REQUESTS_SCHEMA = {
             "timeout": "Adult Diapers Timeout",
             "missed": EG_MISSED_APPT_STATUS,
         },
-        "Ropa / Clothing / 服裝": {
+        EG_REQUEST_CLOTHING: {
             "delivered": "Clothing Assistance Delivered",
             "timeout": "Clothing Assistance Timeout",
             "missed": EG_MISSED_APPT_STATUS,
         },
-        "Cosas de Escuela / School Supplies / 學校用品": {
+        EG_REQUEST_SCHOOL_SUPPLIES: {
             "delivered": "School Supplies Delivered",
             "timeout": "School Supplies Timeout",
             "missed": EG_MISSED_APPT_STATUS,
@@ -278,11 +289,13 @@ EG_REQUESTS_SCHEMA = {
     },
 }
 
+FOOD_REQUEST_GROCERIES = "Alimentos / Groceries / 食品"
+
 FOOD_REQUESTS_SCHEMA = {
     "request_field": FOOD_REQUESTS_FIELD,
     "status_field": FOOD_STATUS_FIELD,
     "items": {
-        "Alimentos / Groceries / 食品": {
+        FOOD_REQUEST_GROCERIES: {
             "delivered": "Groceries Delivered",
             "timeout": "Groceries Request Timeout",
             "missed": FOOD_MISSED_APPT_STATUS,
@@ -390,13 +403,13 @@ REQUESTS_SCHEMA = [
 ]
 
 OLD_REQUEST_TAGS = {
-    "Alimentos / Groceries / 杂货": "Alimentos / Groceries / 食品",
-    "Pañales / Baby Diapers / 婴儿纸尿裤": "Pañales / Baby Diapers / 嬰兒紙尿褲",
+    "Alimentos / Groceries / 杂货": FOOD_REQUEST_GROCERIES,
+    "Pañales / Baby Diapers / 婴儿纸尿裤": EG_REQUEST_BABY_DIAPERS,
     "Pañales de adultos / Adult Diapers / 成人纸尿裤": "Pañales de adultos / Adult Diapers / 成人紙尿褲",
     "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品": "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品",
-    "Productos Femenino - Toallitas / Feminine Products - Pads / 卫生巾": "Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾",
-    "Cosas de Escuela / School Supplies / 学校用品": "Cosas de Escuela / School Supplies / 學校用品",
-    "Ropa / Clothing / 服装协助": "Ropa / Clothing / 服裝",
+    "Productos Femenino - Toallitas / Feminine Products - Pads / 卫生巾": EG_REQUEST_PADS,
+    "Cosas de Escuela / School Supplies / 学校用品": EG_REQUEST_SCHOOL_SUPPLIES,
+    "Ropa / Clothing / 服装协助": EG_REQUEST_CLOTHING,
     "Muebles / Furniture / 家俱": "Muebles / Furniture / 家具",
     "Cosas de Cocina / Kitchen Supplies / 厨房用品": "Cosas de Cocina / Kitchen Supplies / 廚房用品",
     "Comida de mascota / Pet Food / 寵物食品": "Comida de mascota / Pet Food / 寵物食品",
