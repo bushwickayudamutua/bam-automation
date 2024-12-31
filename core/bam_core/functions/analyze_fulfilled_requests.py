@@ -8,7 +8,10 @@ from zoneinfo import ZoneInfo
 
 from .base import Function
 from .params import Params, Param
-from bam_core.constants import FULFILLED_REQUESTS_SHEET_NAME
+from bam_core.constants import (
+    BED_REQUESTS_SCHEMA,
+    FULFILLED_REQUESTS_SHEET_NAME,
+)
 from bam_core.constants import (
     FURNITURE_REQUEST_BED,
     KITCHEN_REQUEST_POTS_AND_PANS,
@@ -45,7 +48,7 @@ class AnalyzeFulfilledRequests(Function):
         {
             "name": "Groceries",
             "translations": {"span": "Comida", "eng": "Groceries"},
-            "tag": FOOD_REQUEST_GROCERIES,
+            "tags": [FOOD_REQUEST_GROCERIES],
         },
         {
             "name": "Pots and Pans",
@@ -53,27 +56,28 @@ class AnalyzeFulfilledRequests(Function):
                 "span": "Ollas y sartenes",
                 "eng": "Pots and Pans",
             },
-            "tag": KITCHEN_REQUEST_POTS_AND_PANS,
+            "tags": [KITCHEN_REQUEST_POTS_AND_PANS],
         },
         {
             "name": "Beds",
             "translations": {"span": "Camas", "eng": "Beds"},
-            "tag": FURNITURE_REQUEST_BED,
+            "tags": [FURNITURE_REQUEST_BED]
+            + list(BED_REQUESTS_SCHEMA["items"].keys()),
         },
         {
             "name": "Pads",
             "translations": {"span": "Toallas sanitarias", "eng": "Pads"},
-            "tag": EG_REQUEST_PADS,
+            "tags": [EG_REQUEST_PADS],
         },
         {
             "name": "Diapers",
             "translations": {"span": "Pañales", "eng": "Diapers"},
-            "tag": EG_REQUEST_BABY_DIAPERS,
+            "tags": [EG_REQUEST_BABY_DIAPERS],
         },
         {
             "name": "Clothing Assistance",
             "translations": {"span": "Ropa", "eng": "Clothing Assistance"},
-            "tag": EG_REQUEST_CLOTHING,
+            "tags": [EG_REQUEST_CLOTHING],
         },
         {
             "name": "School Supplies",
@@ -81,7 +85,7 @@ class AnalyzeFulfilledRequests(Function):
                 "span": "Útiles escolares",
                 "eng": "School Supplies",
             },
-            "tag": EG_REQUEST_SCHOOL_SUPPLIES,
+            "tags": [EG_REQUEST_SCHOOL_SUPPLIES],
         },
     ]
 
@@ -181,7 +185,7 @@ class AnalyzeFulfilledRequests(Function):
         )
 
     def summarize_fulfilled_item(
-        self, fulfilled_requests: List[Dict[str, Any]], tag: str
+        self, fulfilled_requests: List[Dict[str, Any]], tags: List[str]
     ) -> int:
         """
         Summarize fulfilled requests for a specific tag
@@ -190,12 +194,12 @@ class AnalyzeFulfilledRequests(Function):
             [
                 r
                 for r in fulfilled_requests
-                if r["Delivered Item"] == tag
+                if r["Delivered Item"] in tags
                 and r["Date Delivered"] >= self.analysis_start_date
             ]
         )
         self.log.info(
-            f"Found {num_requests} requests for {tag} since {self.analysis_start_date}"
+            f"Found {num_requests} requests for {tags} since {self.analysis_start_date}"
         )
         return num_requests
 
@@ -205,7 +209,7 @@ class AnalyzeFulfilledRequests(Function):
         summary = []
         for config in self.analysis_config:
             config["value"] = self.summarize_fulfilled_item(
-                fulfilled_requests, config["tag"]
+                fulfilled_requests, config["tags"]
             )
             summary.append(config)
         return summary
@@ -244,7 +248,10 @@ class AnalyzeFulfilledRequests(Function):
             self.log.info(
                 "Dry run, not writing fulfilled requests to Google Sheet or summary file Digital Ocean Space."
             )
-        return {"num_fulfilled_requests": len(fulfilled_requests), "summary": summary}
+        return {
+            "num_fulfilled_requests": len(fulfilled_requests),
+            "summary": summary,
+        }
 
 
 if __name__ == "__main__":
