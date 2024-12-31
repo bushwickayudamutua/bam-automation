@@ -1,13 +1,24 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 from collections import defaultdict
+import os
+import tempfile
 from typing import Any, Dict, List
 from zoneinfo import ZoneInfo
 
 from .base import Function
 from .params import Params, Param
 from bam_core.constants import FULFILLED_REQUESTS_SHEET_NAME
-from bam_core.utils.serde import json_to_obj
+from bam_core.constants import (
+    FURNITURE_REQUEST_BED,
+    KITCHEN_REQUEST_POTS_AND_PANS,
+    EG_REQUEST_PADS,
+    EG_REQUEST_BABY_DIAPERS,
+    EG_REQUEST_CLOTHING,
+    EG_REQUEST_SCHOOL_SUPPLIES,
+    FOOD_REQUEST_GROCERIES,
+)
+from bam_core.utils.serde import json_to_obj, obj_to_json
 from bam_core.lib.airtable import Airtable
 
 log = logging.getLogger(__name__)
@@ -25,6 +36,54 @@ class AnalyzeFulfilledRequests(Function):
             description="If true, data will not be written to the  Google Sheet.",
         )
     )
+
+    output_filepath = "website-data/delivered-requests.json"
+    analysis_start_date = (
+        datetime.now().date() - timedelta(days=31)
+    ).isoformat()
+    analysis_config = [
+        {
+            "name": "Groceries",
+            "translations": {"span": "Comida", "eng": "Groceries"},
+            "tag": FOOD_REQUEST_GROCERIES,
+        },
+        {
+            "name": "Pots and Pans",
+            "translations": {
+                "span": "Ollas y sartenes",
+                "eng": "Pots and Pans",
+            },
+            "tag": KITCHEN_REQUEST_POTS_AND_PANS,
+        },
+        {
+            "name": "Beds",
+            "translations": {"span": "Camas", "eng": "Beds"},
+            "tag": FURNITURE_REQUEST_BED,
+        },
+        {
+            "name": "Pads",
+            "translations": {"span": "Toallas sanitarias", "eng": "Pads"},
+            "tag": EG_REQUEST_PADS,
+        },
+        {
+            "name": "Diapers",
+            "translations": {"span": "Pañales", "eng": "Diapers"},
+            "tag": EG_REQUEST_BABY_DIAPERS,
+        },
+        {
+            "name": "Clothing Assistance",
+            "translations": {"span": "Ropa", "eng": "Clothing Assistance"},
+            "tag": EG_REQUEST_CLOTHING,
+        },
+        {
+            "name": "School Supplies",
+            "translations": {
+                "span": "Útiles escolares",
+                "eng": "School Supplies",
+            },
+            "tag": EG_REQUEST_SCHOOL_SUPPLIES,
+        },
+    ]
 
     def get_snapshot_date(self, filepath):
         """
@@ -108,6 +167,66 @@ class AnalyzeFulfilledRequests(Function):
             )
         )
 
+    def upload_fulfilled_requests_to_google_sheet(self, fulfilled_requests):
+        """
+        Upload fulfilled requests to Google Sheet
+        """
+        self.log.info(
+            f"Writing fulfilled requests to Google Sheet: '{FULFILLED_REQUESTS_SHEET_NAME}'"
+        )
+        self.gsheets.upload_to_sheet(
+            sheet_name=FULFILLED_REQUESTS_SHEET_NAME,
+            sheet_index=0,
+            data=fulfilled_requests,
+        )
+
+    def summarize_fulfilled_item(
+        self, fulfilled_requests: List[Dict[str, Any]], tag: str
+    ) -> int:
+        """
+        Summarize fulfilled requests for a specific tag
+        """
+        num_requests = len(
+            [
+                r
+                for r in fulfilled_requests
+                if r["Delivered Item"] == tag
+                and r["Date Delivered"] >= self.analysis_start_date
+            ]
+        )
+        self.log.info(
+            f"Found {num_requests} requests for {tag} since {self.analysis_start_date}"
+        )
+        return num_requests
+
+    def summarize_fulfilled_requests(
+        self, fulfilled_requests: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        summary = []
+        for config in self.analysis_config:
+            config["value"] = self.summarize_fulfilled_item(
+                fulfilled_requests, config["tag"]
+            )
+            summary.append(config)
+        return summary
+
+    def upload_summarized_fulfilled_requests_to_s3(
+        self, summary: List[Dict[str, Any]]
+    ):
+        td = tempfile.gettempdir()
+        tf = os.path.join(td, "delivered-counts.json")
+        with open(tf, "w") as f:
+            f.write(obj_to_json(summary))
+        fp = self.s3.upload(
+            tf, self.output_filepath, mimetype="application/json"
+        )
+        self.s3.set_public(fp)
+        self.log.info(f"Uploaded summary file to Digital Ocean Space: {fp}")
+        self.s3.purge_cdn_cache(self.output_filepath)
+        self.log.info(
+            f"Purged CDN cache for summary file: {self.output_filepath}"
+        )
+
     def run(self, params, context):
         """
         Analyze airtable snapshots to identify fulfilled requests and write to a google sheet.
@@ -116,18 +235,14 @@ class AnalyzeFulfilledRequests(Function):
         grouped_records = self.get_grouped_records()
         fulfilled_requests = self.analyze_grouped_records(grouped_records)
         self.log.info(f"Found {len(fulfilled_requests)} fulfilled requests")
+        summary = self.summarize_fulfilled_requests(fulfilled_requests)
+
         if not params.get("dry_run", False):
-            self.log.info(
-                f"Writing fulfilled requests to Google Sheet: '{FULFILLED_REQUESTS_SHEET_NAME}'"
-            )
-            self.gsheets.upload_to_sheet(
-                sheet_name=FULFILLED_REQUESTS_SHEET_NAME,
-                sheet_index=0,
-                data=fulfilled_requests,
-            )
+            self.upload_fulfilled_requests_to_google_sheet(fulfilled_requests)
+            self.upload_summarized_fulfilled_requests_to_s3(summary)
         else:
             self.log.info(
-                "Dry run, not writing fulfilled requests to Google Sheet"
+                "Dry run, not writing fulfilled requests to Google Sheet or summary file Digital Ocean Space."
             )
         return {"num_fulfilled_requests": len(fulfilled_requests)}
 
