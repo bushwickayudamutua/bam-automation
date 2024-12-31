@@ -41,6 +41,7 @@ class AnalyzeFulfilledRequests(Function):
     )
 
     OUTPUT_FILEPATH = "website-data/delivered-requests.json"
+    ANALYSIS_END_DATE = datetime.now().date().isoformat()
     ANALYSIS_START_DATE = (
         datetime.now().date() - timedelta(days=31)
     ).isoformat()
@@ -212,7 +213,11 @@ class AnalyzeFulfilledRequests(Function):
                 fulfilled_requests, config["tags"]
             )
             summary.append(config)
-        return summary
+        return {
+            "start_date": self.ANALYSIS_START_DATE,
+            "end_date": self.ANALYSIS_END_DATE,
+            "metrics": summary,
+        }
 
     def upload_summarized_fulfilled_requests_to_s3(
         self, summary: List[Dict[str, Any]]
