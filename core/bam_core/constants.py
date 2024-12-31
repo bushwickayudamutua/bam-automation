@@ -120,12 +120,8 @@ FURNITURE_REQUESTS_SCHEMA = {
     "status_field": EG_STATUS_FIELD,
     "items": {
         FURNITURE_REQUEST_BED: {
-            "delivered": [
-                v["delivered"] for v in BED_REQUESTS_SCHEMA["items"].values()
-            ],
-            "timeout": [
-                v["timeout"] for v in BED_REQUESTS_SCHEMA["items"].values()
-            ],
+            "delivered": ["Mattress Delivered", "Bed Frame Delivered"],
+            "timeout": ["Mattress Timeout", "Bed Frame Timeout"],
             "items": BED_REQUESTS_SCHEMA,
         },
         "Sofa / Sofa / 沙發": {
