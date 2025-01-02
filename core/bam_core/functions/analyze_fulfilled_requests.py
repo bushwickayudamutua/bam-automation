@@ -223,7 +223,7 @@ class AnalyzeFulfilledRequests(Function):
         self, summary: List[Dict[str, Any]]
     ):
         td = tempfile.gettempdir()
-        tf = os.path.join(td, "delivered-counts.json")
+        tf = os.path.join(td, "fulfilled-requests.json")
         with open(tf, "w") as f:
             f.write(obj_to_json(summary))
         fp = self.s3.upload(
