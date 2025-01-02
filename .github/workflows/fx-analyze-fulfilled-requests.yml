@@ -11,7 +11,7 @@ on:
     - cron: '0 4 * * *'  # Run every day at midnight ET
 
 jobs:
-  cron:
+  analyze_fulfilled_requests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
