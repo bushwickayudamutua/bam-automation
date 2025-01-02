@@ -21,6 +21,7 @@ jobs:
       - name: Populate .env file, install dependencies and execute analysis
         run: |
           echo "${{ secrets.BAM_ENV_FILE_CONTENTS }}" > ./.env
+          export $(xargs <.env)
           python -m pip install --upgrade pip wheel setuptools
           pip install ./core/
           if [ ${{ github.event.inputs.dry_run }} != "" ]; then

@@ -1,7 +1,7 @@
 from typing import Any, Dict, List
 
-from .params import Param, Params
-from .base import Function
+from bam_core.functions.base import Function
+from bam_core.functions.params import Params, Param
 
 
 class UpdateMailjetLists(Function):

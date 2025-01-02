@@ -1,7 +1,7 @@
 from collections import Counter
 from typing import Any, Dict
 
-from .base import Function
+from bam_core.functions.base import Function
 from bam_core.utils.phone import format_phone_number
 from bam_core.utils.email import format_email, NO_EMAIL_ERROR
 

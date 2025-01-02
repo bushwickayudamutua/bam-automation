@@ -2,8 +2,8 @@ import os
 import tempfile
 from datetime import datetime
 
-from .base import Function
-from .params import Param, Params
+from bam_core.functions.base import Function
+from bam_core.functions.params import Params, Param
 from bam_core.utils.serde import obj_to_json
 
 

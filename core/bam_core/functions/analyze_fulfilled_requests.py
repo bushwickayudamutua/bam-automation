@@ -6,8 +6,8 @@ import tempfile
 from typing import Any, Dict, List
 from zoneinfo import ZoneInfo
 
-from .base import Function
-from .params import Params, Param
+from bam_core.functions.base import Function
+from bam_core.functions.params import Params, Param
 from bam_core.constants import (
     BED_REQUESTS_SCHEMA,
     FULFILLED_REQUESTS_SHEET_NAME,

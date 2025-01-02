@@ -3,8 +3,8 @@ import tempfile
 from typing import Any, Dict, List
 from datetime import timedelta, datetime
 
-from .base import Function
-from .params import Param, Params
+from bam_core.functions.base import Function
+from bam_core.functions.params import Params, Param
 from bam_core.utils.serde import obj_to_json
 from bam_core.utils.etc import now_est, now_utc
 from bam_core.constants import AIRTABLE_DATETIME_FORMAT

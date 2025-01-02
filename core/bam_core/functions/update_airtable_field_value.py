@@ -2,8 +2,8 @@ from bam_core.constants import PHONE_FIELD
 from bam_core.utils.phone import extract_phone_numbers
 from pyairtable import formulas
 
-from .params import Param, Params
-from .base import Function
+from bam_core.functions.base import Function
+from bam_core.functions.params import Params, Param
 
 
 class UpdateAirtableFieldValue(Function):

@@ -3,8 +3,8 @@ from collections import Counter
 from typing import List, Dict, Any
 from pyairtable import formulas
 
-from .base import Function
-from .params import Param, Params
+from bam_core.functions.base import Function
+from bam_core.functions.params import Params, Param
 from bam_core.utils.etc import to_list
 from bam_core.constants import (
     EG_REQUESTS_SCHEMA,
