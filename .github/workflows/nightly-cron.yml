@@ -3,7 +3,7 @@ name: Nightly cron job
 on:
   workflow_dispatch:
     inputs:
-      dry-run:
+      dry_run:
         description: 'Run the analysis in dry-run mode'
         required: true
         default: 'no'
@@ -27,4 +27,8 @@ jobs:
           echo "${{ secrets.BAM_ENV_FILE_CONTENTS }}" > ./.env
       - name: Run snapshot analysis
         run: |
-            python -m bam_core.functions.analyze_fulfilled_requests --dry-run no
+          if [ ${{ github.event.inputs.dry_run }} != "" ]; then
+            python -m bam_core.functions.analyze_fulfilled_requests --dry-run ${{ github.event.inputs.typeOfTesting }} 
+          else 
+              python -m bam_core.functions.analyze_fulfilled_requests --dry-run no
+          fi
