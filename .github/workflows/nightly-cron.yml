@@ -6,7 +6,7 @@ on:
       dry-run:
         description: 'Run the analysis in dry-run mode'
         required: true
-        default: 'yes'
+        default: 'no'
   schedule:
     - cron: '0 5 * * *'  # Run every day at midnight ET
 
