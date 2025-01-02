@@ -18,17 +18,17 @@ jobs:
       - uses: actions/setup-python@v3
         with:
           python-version: "3.9"
+      - name: Populate .env file
+        run: |
+          echo "${{ secrets.BAM_ENV_FILE_CONTENTS }}" > ./.env
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip wheel setuptools
           pip install ./core/
-      - name: Populate .env file
-        run: |
-          echo "${{ secrets.BAM_ENV_FILE_CONTENTS }}" > ./.env
       - name: Run snapshot analysis
         run: |
           if [ ${{ github.event.inputs.dry_run }} != "" ]; then
-            python -m bam_core.functions.analyze_fulfilled_requests --dry-run ${{ github.event.inputs.typeOfTesting }} 
+            python -m bam_core.functions.analyze_fulfilled_requests --dry-run ${{ github.event.inputs.dry_run }} 
           else 
-              python -m bam_core.functions.analyze_fulfilled_requests --dry-run no
+            python -m bam_core.functions.analyze_fulfilled_requests --dry-run no
           fi
