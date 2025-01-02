@@ -1,11 +1,11 @@
-name: Cron Jobs
+name: Nightly cron job
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # Run every day at midnight UTC
+    - cron: '0 5 * * *'  # Run every day at midnight ET
 
 jobs:
-  nightly:
+  cron:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
