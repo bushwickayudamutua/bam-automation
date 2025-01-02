@@ -18,12 +18,14 @@ jobs:
       - uses: actions/setup-python@v3
         with:
           python-version: "3.9"
-      - name: Populate .env file, install dependencies and execute analysis
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip wheel setuptools
+          pip install ./core/
+      - name: Populate .env file and execute analysis
         run: |
           echo "${{ secrets.BAM_ENV_FILE_CONTENTS }}" > ./.env
           export $(xargs <.env)
-          python -m pip install --upgrade pip wheel setuptools
-          pip install ./core/
           if [ ${{ github.event.inputs.dry_run }} != "" ]; then
             python -m bam_core.functions.analyze_fulfilled_requests --dry-run ${{ github.event.inputs.dry_run }} 
           else 
