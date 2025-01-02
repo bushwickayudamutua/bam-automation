@@ -1,4 +1,4 @@
-name: Nightly cron job
+name: Analyze Fulfilled Requests
 
 on:
   workflow_dispatch:
