@@ -1,7 +1,11 @@
 import os
+import time
+import logging
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Any, List, NewType, Union
+
+log = logging.getLogger(__name__)
 
 
 def list_files(path: str, ignore_hidden: bool = False) -> List[str]:
@@ -79,3 +83,43 @@ def to_bool(val: Union[str, bool]) -> bool:
         return False
     else:
         raise ValueError("Invalid boolean value: %r" % (val,))
+
+
+def retry(
+    times: int = 5,
+    wait: int = 5,
+    backoff: float = 1.5,
+    exceptions: List[Exception] = [Exception],
+) -> Any:
+    """
+    Retry Decorator
+    Retries the wrapped function/method `times` times if the exceptions listed
+    in ``exceptions`` are thrown
+    :param times: The number of times to repeat the wrapped function/method
+    :param wait: The number of seconds to wait before retrying
+    :param backoff: The backoff factor
+    :param Exceptions: Lists of exceptions that trigger a retry attempt
+    :return Any
+    """
+
+    def decorator(func):
+        def new_fn(*args, **kwargs):
+            attempt = 0
+            while attempt < times:
+                try:
+                    return func(*args, **kwargs)
+                except exceptions as e:
+                    attempt += 1
+                    wait_time = wait * (backoff**attempt)
+                    log.warning(
+                        f"Exception thrown when attempting to run {func}: {e}."
+                        f" Attempt {attempt} of {times}."
+                        f" Waiting {wait_time} seconds before retrying."
+                    )
+                    time.sleep(wait_time)
+            # If we've exhausted all attempts, raise the last exception
+            raise e
+
+        return new_fn
+
+    return decorator

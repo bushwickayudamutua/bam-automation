@@ -9,7 +9,7 @@ from bam_core.settings import (
     GOOGLE_SERVICE_ACCOUNT_CONFIG,
 )
 from bam_core.constants import MAYDAY_LOCATION, MAYDAY_RADIUS
-
+from bam_core.utils.etc import retry
 
 class GoogleMaps(object):
     def __init__(self, api_key=GOOGLE_MAPS_API_KEY):
@@ -57,11 +57,17 @@ class GoogleMaps(object):
 
 
 class GoogleSheets(object):
+
     def __init__(self):
-        self.client = gspread.service_account_from_dict(
+        pass
+
+    @property
+    def client(self):
+        return gspread.service_account_from_dict(
             GOOGLE_SERVICE_ACCOUNT_CONFIG
         )
 
+    @retry(times=5, wait=10, backoff=1.5)
     def upload_to_sheet(
         self,
         sheet_name: str,
