@@ -4,6 +4,8 @@ from typing import Any, Dict, List
 import gspread
 import googlemaps
 
+import olc
+
 from bam_core.settings import (
     GOOGLE_MAPS_API_KEY,
     GOOGLE_SERVICE_ACCOUNT_CONFIG,
@@ -14,11 +16,19 @@ from bam_core.utils.etc import retry
 
 class GoogleMaps(object):
     def __init__(self, api_key=GOOGLE_MAPS_API_KEY):
-        self.api_key = api_key
+        self.client = googlemaps.Client(key=api_key)
 
-    @property
-    def client(self):
-        return googlemaps.Client(key=self.api_key)
+    def get_pluscode(self, address):
+        """
+        Get a de-specified plus code for a given address
+        Args:
+            address (str): The address to compute a code for
+        """
+        geocode = self.client.geocode(address=address)
+        loc = geocode['results'][0]['geometry']['location']
+        lat, lng = loc['lat'], loc['lng']
+        
+        return olc.encode(lat, lng)
 
     def get_place(
         self,
