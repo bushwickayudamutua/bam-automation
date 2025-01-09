@@ -28,8 +28,9 @@ class GoogleMaps(object):
         Args:
             address (str): The address to compute a code for
         """
-        geocode = self.client.geocode(address=address)
-        loc = geocode['results'][0]['geometry']['location']
+        geocode_results = self.client.geocode(address=address).get('results', [])
+        if not geocode_results: return
+        loc = geocode_results[0]['geometry']['location']
         lat, lng = loc['lat'], loc['lng']
         
         return olc.encode(lat, lng)
