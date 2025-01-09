@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 import gspread
 import googlemaps
 
-import olc
+from bam_core.lib import olc
 
 from bam_core.settings import (
     GOOGLE_MAPS_API_KEY,
