@@ -19,6 +19,42 @@ def test_clean_record_with_valid_input():
     }
 
 
+def test_clean_record_with_valid_address():
+    response = client.get(
+        f"/clean-record?apikey={APIKEY}&phone=626-420-6969&email=test@test.com&address=323 Linden St&city_state=Brooklyn, NY&zipcode=11237"
+    )
+    assert response.status_code == 200
+    assert response.json() == {
+        "email": "test@test.com",
+        "email_error": "",
+        "phone": "(626) 420-6969",
+        "phone_is_invalid": False,
+        "phone_is_intl": False,
+        "cleaned_address": "323 Linden St, Brooklyn, NY 11237",
+        "bin": "",
+        "cleaned_address_accuracy": "Building",
+        "pluscode": "87G8M3XP+",
+    }
+
+
+def test_clean_record_with_invalid_address():
+    response = client.get(
+        f"/clean-record?apikey={APIKEY}&phone=626-420-6969&email=test@test.com&address=323 Schminden St&city_state=Brooklyn, NY&zipcode=11237"
+    )
+    assert response.status_code == 200
+    assert response.json() == {
+        "email": "test@test.com",
+        "email_error": "",
+        "phone": "(626) 420-6969",
+        "phone_is_invalid": False,
+        "phone_is_intl": False,
+        "cleaned_address": "323 Schminden St, Brooklyn, NY 11237",
+        "bin": "",
+        "cleaned_address_accuracy": "No result",
+        "pluscode": "",
+    }
+
+
 def test_clean_record_with_valid_intl_number():
     response = client.get(
         f"/clean-record?apikey={APIKEY}&phone=%2b443476669193&email=test@test.com"
