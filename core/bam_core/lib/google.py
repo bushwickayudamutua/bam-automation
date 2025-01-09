@@ -1,11 +1,11 @@
 import json
+from functools import cached_property
 from typing import Any, Dict, List
 
 import gspread
 import googlemaps
 
 from bam_core.lib import olc
-
 from bam_core.settings import (
     GOOGLE_MAPS_API_KEY,
     GOOGLE_SERVICE_ACCOUNT_CONFIG,
@@ -16,7 +16,11 @@ from bam_core.utils.etc import retry
 
 class GoogleMaps(object):
     def __init__(self, api_key=GOOGLE_MAPS_API_KEY):
-        self.client = googlemaps.Client(key=api_key)
+        self.api_key = api_key
+
+    @cached_property
+    def client(self):
+        return googlemaps.Client(key=api_key)
 
     def get_pluscode(self, address):
         """
