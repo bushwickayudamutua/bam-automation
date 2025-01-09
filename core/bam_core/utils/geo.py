@@ -68,11 +68,11 @@ def format_address(
     # common address mistakes/translations
     address = _fix_address(address)
 
-    # get plus code from GoogleMaps util
-    response["plus_code"] = gmaps.get_pluscode(address_query)
-
     # format address for query
     address_query = f"{address.strip()}, {city_state.strip() or DEFAULT_CITY_STATE} {_fix_zip_code(zipcode.strip())}".strip().upper()
+
+    # get plus code from GoogleMaps util
+    response["plus_code"] = gmaps.get_pluscode(address_query)
 
     # lookup address using Google Maps Places API
     place_response = gmaps.get_place(
