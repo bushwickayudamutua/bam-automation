@@ -20,7 +20,7 @@ class GoogleMaps(object):
 
     @cached_property
     def client(self):
-        return googlemaps.Client(key=api_key)
+        return googlemaps.Client(key=self.api_key)
 
     def get_pluscode(self, address):
         """
