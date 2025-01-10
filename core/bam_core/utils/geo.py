@@ -59,6 +59,7 @@ def format_address(
         "cleaned_address": "",
         "bin": "",
         "cleaned_address_accuracy": "No result",
+        "plus_code": "",
     }
     # don't do anything for missing addresses
     if not address or not address.strip():
@@ -69,6 +70,10 @@ def format_address(
 
     # format address for query
     address_query = f"{address.strip()}, {city_state.strip() or DEFAULT_CITY_STATE} {_fix_zip_code(zipcode.strip())}".strip().upper()
+
+    # get plus code from GoogleMaps util
+    plus_code = gmaps.get_pluscode(address_query)
+    if plus_code is not None: response["plus_code"] = plus_code
 
     # lookup address using Google Maps Places API
     place_response = gmaps.get_place(
