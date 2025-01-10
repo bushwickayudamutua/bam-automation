@@ -1,3 +1,6 @@
+import dotenv
+dotenv.load_dotenv()
+
 from fastapi.testclient import TestClient
 from bam_app.main import app
 from bam_app.settings import APIKEY
@@ -30,16 +33,16 @@ def test_clean_record_with_valid_address():
         "phone": "(626) 420-6969",
         "phone_is_invalid": False,
         "phone_is_intl": False,
-        "cleaned_address": "323 Linden St, Brooklyn, NY 11237",
-        "bin": "",
+        "cleaned_address": "323 LINDEN ST BROOKLYN NY 11237-5603",
+        "bin": "3076151",
         "cleaned_address_accuracy": "Building",
-        "pluscode": "87G8M3XP+",
+        "plus_code": "87G8M3XP+",
     }
 
 
 def test_clean_record_with_invalid_address():
     response = client.get(
-        f"/clean-record?apikey={APIKEY}&phone=626-420-6969&email=test@test.com&address=323 Schminden St&city_state=Brooklyn, NY&zipcode=11237"
+        f"/clean-record?apikey={APIKEY}&phone=626-420-6969&email=test@test.com&address=124 Conch St&city_state=Bikini Bottom&zipcode=11111"
     )
     assert response.status_code == 200
     assert response.json() == {
@@ -48,10 +51,10 @@ def test_clean_record_with_invalid_address():
         "phone": "(626) 420-6969",
         "phone_is_invalid": False,
         "phone_is_intl": False,
-        "cleaned_address": "323 Schminden St, Brooklyn, NY 11237",
+        "cleaned_address": "",
         "bin": "",
         "cleaned_address_accuracy": "No result",
-        "pluscode": "",
+        "plus_code": "",
     }
 
 
