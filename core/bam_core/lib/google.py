@@ -1,6 +1,6 @@
 import json
 from functools import cached_property
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 
 import gspread
 import googlemaps
@@ -22,28 +22,41 @@ class GoogleMaps(object):
     def client(self):
         return googlemaps.Client(key=self.api_key)
 
-    def get_pluscode(self, address):
+    def get_lat_lng(
+        self, address: str
+    ) -> Tuple[Optional[float], Optional[float]]:
+        """
+        Get the latitude and longitude of an address
+        Args:
+            address (str): The address to get the lat/lng for
+        """
+        geocode_results = self.client.geocode(address=address)
+        if not geocode_results:
+            return None, None
+        loc = geocode_results[0]["geometry"]["location"]
+        return loc["lat"], loc["lng"]
+
+    def get_plus_code(
+        self, lat: Optional[float], lng: Optional[float]
+    ) -> Optional[str]:
         """
         Get a de-specified plus code for a given address
         Args:
             address (str): The address to compute a code for
         """
-        geocode_results = self.client.geocode(address=address)
-        if not geocode_results: return
-        loc = geocode_results[0]['geometry']['location']
-        lat, lng = loc['lat'], loc['lng']
-        
+        if not lat or not lng:
+            return None
         return olc.encode(lat, lng)
 
     def get_place(
         self,
-        address,
-        location=MAYDAY_LOCATION,
-        radius=MAYDAY_RADIUS,
-        types=["premise", "subpremise", "geocode"],
-        language="en-US",
-        strict_bounds=True,
-    ):
+        address: str,
+        location: str = MAYDAY_LOCATION,
+        radius: float = MAYDAY_RADIUS,
+        types: list[str] = ["premise", "subpremise", "geocode"],
+        language: str = "en-US",
+        strict_bounds: bool = True,
+    ) -> List[Dict[str, Any]]:
         """
         Get a place from the Google Maps API
         Args:
@@ -63,7 +76,7 @@ class GoogleMaps(object):
             strict_bounds=strict_bounds,
         )
 
-    def get_normalized_address(self, address):
+    def get_normalized_address(self, address: str) -> Dict[str, Any]:
         """
         Normalize an address using the Google Maps API
         Args:

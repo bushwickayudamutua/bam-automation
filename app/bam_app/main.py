@@ -1,4 +1,3 @@
-import os
 from fastapi import FastAPI, HTTPException, status
 
 from bam_core.utils.phone import (

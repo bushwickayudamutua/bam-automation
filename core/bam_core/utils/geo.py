@@ -49,7 +49,7 @@ def format_address(
         zipcode (str): The zipcode to use if the address is missing
         strict_bounds (bool): Whether to use strict bounds of 10 miles from Mayday
     Returns:
-        Dict[str, str]: The formatted address, bin, and accuracy
+        Dict[str, str]: The formatted address, bin, accuracy, lat, lng, and plus_code
     """
     # connect to APIs
     gmaps = GoogleMaps()
@@ -60,6 +60,8 @@ def format_address(
         "bin": "",
         "cleaned_address_accuracy": "No result",
         "plus_code": "",
+        "lat": None,
+        "lng": None,
     }
     # don't do anything for missing addresses
     if not address or not address.strip():
@@ -70,10 +72,6 @@ def format_address(
 
     # format address for query
     address_query = f"{address.strip()}, {city_state.strip() or DEFAULT_CITY_STATE} {_fix_zip_code(zipcode.strip())}".strip().upper()
-
-    # get plus code from GoogleMaps util
-    plus_code = gmaps.get_pluscode(address_query)
-    if plus_code is not None: response["plus_code"] = plus_code
 
     # lookup address using Google Maps Places API
     place_response = gmaps.get_place(
@@ -86,9 +84,6 @@ def format_address(
             response["cleaned_address_accuracy"] = "Apartment"
         elif "premise" in place_response[0]["types"]:
             response["cleaned_address_accuracy"] = "Building"
-        else:
-            # ignore geocode results if not at the level of a building or apartment
-            return response
 
     # if no results, use the original address
     else:
@@ -149,6 +144,15 @@ def format_address(
             )
             if bin and str(bin) not in DEFAULT_BIN_RESPONSES:
                 response["bin"] = bin
+
+    # get plus code from GoogleMaps util
+    lat, lng = gmaps.get_lat_lng(cleaned_address)
+    response["lat"] = lat
+    response["lng"] = lng
+    plus_code = gmaps.get_plus_code(lat, lng)
+    if plus_code is not None:
+        response["plus_code"] = plus_code
+
     return response
 
 

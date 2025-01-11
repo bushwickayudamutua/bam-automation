@@ -9,15 +9,16 @@
 #   encode(47.365590, 8.524997)
 
 import math
+from typing import Optional
 
 # A separator used to break the code into two parts to aid memorability.
-SEPARATOR_ = '+'
+SEPARATOR_ = "+"
 
 # The number of characters to place before the separator.
 SEPARATOR_POSITION_ = 8
 
 # The character set used to encode the values.
-CODE_ALPHABET_ = '23456789CFGHJMPQRVWX'
+CODE_ALPHABET_ = "23456789CFGHJMPQRVWX"
 
 # The base to use to convert numbers to/from.
 ENCODING_BASE_ = len(CODE_ALPHABET_)
@@ -50,13 +51,15 @@ GRID_ROWS_ = 5
 
 # Multiply latitude by this much to make it a multiple of the finest
 # precision.
-FINAL_LAT_PRECISION_ = PAIR_PRECISION_ * GRID_ROWS_**(MAX_DIGIT_COUNT_ -
-                                                      PAIR_CODE_LENGTH_)
+FINAL_LAT_PRECISION_ = PAIR_PRECISION_ * GRID_ROWS_ ** (
+    MAX_DIGIT_COUNT_ - PAIR_CODE_LENGTH_
+)
 
 # Multiply longitude by this much to make it a multiple of the finest
 # precision.
-FINAL_LNG_PRECISION_ = PAIR_PRECISION_ * GRID_COLUMNS_**(MAX_DIGIT_COUNT_ -
-                                                         PAIR_CODE_LENGTH_)
+FINAL_LNG_PRECISION_ = PAIR_PRECISION_ * GRID_COLUMNS_ ** (
+    MAX_DIGIT_COUNT_ - PAIR_CODE_LENGTH_
+)
 
 # Length for Bushwick plus codes
 BWK_CODE_LENGTH_ = 8
@@ -64,25 +67,29 @@ BWK_CODE_LENGTH_ = 8
 # Precision for latitude values
 LATITUDE_PRECISION_ = pow(20, math.floor((BWK_CODE_LENGTH_ / -2) + 2))
 
-"""
- Encode a location into an Open Location Code.
- Produces a code of length BWK_CODE_LENGTH_ = 8.
- Args:
-   latitude: A latitude in signed decimal degrees. Will be clipped to the
-       range -90 to 90.
-   longitude: A longitude in signed decimal degrees. Will be normalised to
-       the range -180 to 180.
-"""
 
-def encode(latitude, longitude):
+def encode(
+    latitude: Optional[float], longitude: Optional[float]
+) -> Optional[str]:
+    """
+    Encode a location into an Open Location Code.
+    Produces a code of length BWK_CODE_LENGTH_ = 8.
+    Args:
+    latitude: A latitude in signed decimal degrees. Will be clipped to the
+        range -90 to 90.
+    longitude: A longitude in signed decimal degrees. Will be normalized to
+        the range -180 to 180.
+    """
+    if not latitude or not longitude:
+        return None
     # Ensure that latitude and longitude are valid.
-    latitude = clipLatitude(latitude)
-    longitude = normalizeLongitude(longitude)
+    latitude = clip_latitude(latitude)
+    longitude = normalize_longitude(longitude)
     # Latitude 90 needs to be adjusted to be just less, so the returned code
     # can also be decoded.
     if latitude == 90:
         latitude = latitude - LATITUDE_PRECISION_
-    code = ''
+    code = ""
 
     # Compute the code.
     # This approach converts each value to an integer after multiplying it by
@@ -107,25 +114,24 @@ def encode(latitude, longitude):
     code = code[:SEPARATOR_POSITION_] + SEPARATOR_ + code[SEPARATOR_POSITION_:]
 
     # Return the truncated section.
-    return code[0:BWK_CODE_LENGTH_ + 1]
+    return code[0 : BWK_CODE_LENGTH_ + 1]
 
-"""
- Clip a latitude into the range -90 to 90.
- Args:
-   latitude: A latitude in signed decimal degrees.
-"""
 
-def clipLatitude(latitude):
+def clip_latitude(latitude):
+    """
+    Clip a latitude into the range -90 to 90.
+    Args:
+        latitude: A latitude in signed decimal degrees.
+    """
     return min(90, max(-90, latitude))
 
 
-"""
- Normalize a longitude into the range -180 to 180, not including 180.
- Args:
-   longitude: A longitude in signed decimal degrees.
-"""
-
-def normalizeLongitude(longitude):
+def normalize_longitude(longitude):
+    """
+    Normalize a longitude into the range -180 to 180, not including 180.
+    Args:
+    longitude: A longitude in signed decimal degrees.
+    """
     while longitude < -180:
         longitude = longitude + 360
     while longitude >= 180:
