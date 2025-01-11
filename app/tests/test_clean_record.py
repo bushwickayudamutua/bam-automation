@@ -1,9 +1,11 @@
 import dotenv
+
 dotenv.load_dotenv()
 
 from fastapi.testclient import TestClient
 from bam_app.main import app
 from bam_app.settings import APIKEY
+from unittest.mock import patch
 
 client = TestClient(app)
 
@@ -22,7 +24,16 @@ def test_clean_record_with_valid_input():
     }
 
 
-def test_clean_record_with_valid_address():
+@patch("bam_app.main.format_address")
+def test_clean_record_with_valid_address(mock_format_address):
+    mock_format_address.return_value = {
+        "cleaned_address": "323 LINDEN ST BROOKLYN NY 11237-5603",
+        "bin": "3076151",
+        "cleaned_address_accuracy": "Building",
+        "plus_code": "87G8M3XP+",
+        "lat": 40.703,
+        "lng": -73.920,
+    }
     response = client.get(
         f"/clean-record?apikey={APIKEY}&phone=626-420-6969&email=test@test.com&address=323 Linden St&city_state=Brooklyn, NY&zipcode=11237"
     )
@@ -37,10 +48,21 @@ def test_clean_record_with_valid_address():
         "bin": "3076151",
         "cleaned_address_accuracy": "Building",
         "plus_code": "87G8M3XP+",
+        "lat": 40.703,
+        "lng": -73.920,
     }
 
 
-def test_clean_record_with_invalid_address():
+@patch("bam_app.main.format_address")
+def test_clean_record_with_invalid_address(mock_format_address):
+    mock_format_address.return_value = {
+        "cleaned_address": "",
+        "bin": "",
+        "cleaned_address_accuracy": "No result",
+        "plus_code": "",
+        "lat": None,
+        "lng": None,
+    }
     response = client.get(
         f"/clean-record?apikey={APIKEY}&phone=626-420-6969&email=test@test.com&address=124 Conch St&city_state=Bikini Bottom&zipcode=11111"
     )
@@ -55,6 +77,8 @@ def test_clean_record_with_invalid_address():
         "bin": "",
         "cleaned_address_accuracy": "No result",
         "plus_code": "",
+        "lat": None,
+        "lng": None,
     }
 
 

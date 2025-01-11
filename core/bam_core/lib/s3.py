@@ -1,6 +1,7 @@
 """
 Utilities for interacting with AWS S3 / Digital Ocean Spaces
 """
+
 import os
 from io import BytesIO
 import tempfile
