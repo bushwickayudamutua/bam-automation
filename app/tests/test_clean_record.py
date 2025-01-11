@@ -1,7 +1,3 @@
-import dotenv
-
-dotenv.load_dotenv()
-
 from fastapi.testclient import TestClient
 from bam_app.main import app
 from bam_app.settings import APIKEY
