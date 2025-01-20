@@ -446,9 +446,9 @@ def main(
                         )
                         break
                 else:
-                    message[
-                        "from_phone_number"
-                    ] = TWILIO_SMS_RESPONSE_PHONE_NUMBER
+                    message["from_phone_number"] = (
+                        TWILIO_SMS_RESPONSE_PHONE_NUMBER
+                    )
                     message["campaign_name"] = campaign_name
                     click.echo(
                         f"({i}) Sending and waiting for response... {log_message}"

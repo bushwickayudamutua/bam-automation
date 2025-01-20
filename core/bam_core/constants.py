@@ -111,6 +111,7 @@ BED_REQUESTS_SCHEMA = {
     },
 }
 
+# Common Tags for Furniture Requests
 FURNITURE_REQUEST_BED = "Cama / Bed / 床"
 
 # Mapping of furniture requests to statuses.
@@ -167,6 +168,7 @@ FURNITURE_REQUESTS_SCHEMA = {
     },
 }
 
+# Common Tags for Kitchen Requests
 KITCHEN_REQUEST_POTS_AND_PANS = "Ollas y Sartenes / Pots & Pans / 鍋碗瓢盆"
 
 # Mapping of kitchen requests to statuses
@@ -209,6 +211,7 @@ KITCHEN_REQUESTS_SCHEMA = {
     },
 }
 
+# Common Tags for EG Requests
 EG_REQUEST_PADS = (
     "Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾"
 )
