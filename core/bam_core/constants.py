@@ -314,10 +314,6 @@ SOCIAL_SERVICES_REQUESTS_SCHEMA = {
     "request_field": SOCIAL_SERVICES_REQUESTS_FIELD,
     "status_field": SOCIAL_SERVICES_STATUS_FIELD,
     "items": {
-        "Asistencia legal de inmigración / Immigration legal assistance / 移民法律協助": {
-            "delivered": "Immigration Assistance Delivered",
-            "timeout": "Immigration Assistance Timeout",
-        },
         "Asistencia legal de inquilinos / Tenant legal assistance / 租戶法律協助": {
             "delivered": "Tenant Support Delivered - CUFFH",
             "timeout": "Tenant Legal Assistance Timeout",
@@ -427,7 +423,6 @@ OLD_REQUEST_TAGS = {
     "Tazas / Cups / 杯具": "Tazas / Cups / 杯子",
     "Cafetera / Coffee Maker / 咖啡机": "Cafetera / Coffee Maker / 咖啡機",
     "Otras / Other / 其他东西": "Otras / Other / 其他廚房用品",
-    "Asistencia legal de inmigración / Immigration legal assistance / 移民法律援助": "Asistencia legal de inmigración / Immigration legal assistance / 移民法律協助",
     "Asistencia legal de inquilinos / Tenant legal assistance / 租户法律援助": "Asistencia legal de inquilinos / Tenant legal assistance / 租戶法律協助",
     "Asistencia con servicios escolares / Assistance with in-school services / 公立学校入学": "Asistencia con servicios escolares / Assistance with in-school services / 學校服務協助",
     "Tutoría estudiantil / Tutoring for students / 学生辅导": "Tutoría estudiantil / Tutoring for students / 學生輔導",
@@ -582,11 +577,6 @@ SOCIAL_SERVICES_VIEWS = [
         name="Social Services: K-12 Assistance",
         status_field_name="Social Services Request Status",
         timeout_flag_value="In School Services Assistance Timeout",
-    ),
-    View(
-        name="Social Services: Immigration Legal Assistance",
-        status_field_name="Social Services Request Status",
-        timeout_flag_value="Immigration Assistance Timeout",
     ),
     View(
         name="Social Services: Housing Assistance",
