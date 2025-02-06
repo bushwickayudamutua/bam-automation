@@ -1,5 +1,24 @@
 from typing import TypedDict
 
+# For outreach:
+FIRST_NAME_FIELD = "First Name"
+INVALID_NUMBER_FIELD = "Invalid Phone Number?"
+EXPECTED_EG_DATE_FIELD = "Expected EG Distribution Date"
+LAST_TEXTED_DATE_FIELD = "Last Auto Texted"
+DATE_SUBMITTED_FIELD = "Date Submitted"
+LANGUAGE_FIELD = "Language"
+VALID_LANGUAGES = {
+    "Spanish": "Español / Spanish / 西班牙语",
+    "English": "Inglés / English / 英文",
+    "Chinese": ["Chino Mandarín / Mandarin / 普通话", "Chino Cantonese / Cantonese / 广东话", "Chino Toishanese / Toishanese / 台山话"],
+    "Arabic": "Arabic / 阿拉伯語",
+    "Tagalog": "Tagalo/ Tagalog/ 他加禄语",
+    "Portuguese": "Portuguese / 葡萄牙語",
+    "French": "Francés / French / 法語",
+    "Quechua": "Quechua el dialecto / Quechua Dialect / 克丘亞語",
+    "Haitian": "Criollo Haitiano / Haitian Creole / 法屬歸融語"
+}
+
 # datetime format in Airtable
 AIRTABLE_DATETIME_FORMAT = r"%Y-%m-%dT%H:%M:%S.%fZ"
 
