@@ -133,4 +133,4 @@ for item in params["items"]:
         output_file = os.path.join(params["output"], str(i)+"-"+item["name"]+"-"+language+"-outreach.csv")
         n_records = records_df.shape[0]
         logger.info("Saving "+str(n_records)+" phone numbers for "+item["name"]+";"+language+" to "+output_file)
-        records_df.to_csv(output_file)
+        records_df.to_csv(output_file, index=False)
