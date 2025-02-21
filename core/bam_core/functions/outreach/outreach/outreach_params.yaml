@@ -1,0 +1,46 @@
+output: "/Users/zakieh.tayyebi/Desktop/outreach_Feb22/"
+
+# Filtering by expected eg distro date:
+# Note: Empty fields are always included.
+eg_distro_date: "IS_BEFORE({Expected EG Distribution Date}, DATETIME_PARSE('2/22/2025', 'MM/DD/YYYY'))"
+
+# Filtering by last auto texted date:
+# Note: Empty fields are always included.
+auto_texted_date: "IS_BEFORE({Last Auto Texted}, DATETIME_PARSE('2/21/2025', 'MM/DD/YYYY'))"
+
+# Other filters with pyairtable format:
+filter_other: [
+    "NOT(FIND('A', {Cita Group}))", # filter out Cita Group A (food)
+    "NOT(FIND('Needs Delivery', {Cita Availability}))", # filter out people requiring delivery
+]
+
+# Languages, in order of texting:
+# Note: "Chinese" includes Cantonese, Mandarin, and Toishanese.
+languages: ["Chinese", "Spanish", "English"]
+
+# Maximum number of texts:
+# Note: By default (i.e., if this line is removed), there is no limit.
+total_capacity: 300
+
+# EG items, in order of texting:
+# Note: By default, there is no limit per item.
+# Note: By default, requests are ordered by oldest first.
+items:
+-
+    name: "baby_diapers_old"
+    EG_item: ["Pañales / Baby Diapers / 嬰兒紙尿褲"]
+    sort: ["Date Submitted"] # oldest first (default)
+    capacity: 100
+-
+    name: "baby_diapers_new"
+    EG_item: ["Pañales / Baby Diapers / 嬰兒紙尿褲"]
+    capacity: 50
+    sort: ["-Date Submitted"] # newest first
+-
+    name: "soap_and_clothing"
+    EG_item: ["Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品", "Ropa / Clothing / 服裝"]
+-
+    name: "plates_and_cups"
+    kitchen_items: ["Platos / Plates / 盤子", "Tazas / Cups / 杯子"]
+    view: "Essential Goods: Plates + Cups"
+
