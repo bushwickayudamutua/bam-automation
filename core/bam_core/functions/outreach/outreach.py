@@ -1,3 +1,9 @@
+# Changes:
+# - no new line at the end
+# - move filters to functions
+# - log all filters
+# - fix skipping?! (skips item instead of just language)
+
 import pandas as pd
 import numpy as np
 from pyairtable import Api
@@ -58,6 +64,13 @@ for item in params["items"]:
         break
     # Find open requests for this eg item (or kitchen items):
     conditions_item = []
+    if "EG_item" in item:
+        for item_name in item["EG_item"]:
+            item_delivered = EG_REQUESTS_SCHEMA["items"][item_name]["delivered"]
+            item_timeout = EG_REQUESTS_SCHEMA["items"][item_name]["timeout"]
+            conditions_item.append(FIND(item_name, Field(EG_REQUESTS_FIELD)))
+            conditions_item.append(NOT(FIND(item_delivered, Field(EG_STATUS_FIELD))))
+            conditions_item.append(NOT(FIND(item_timeout, Field(EG_STATUS_FIELD))))
     if "kitchen_items" in item:
         for item_name in item["kitchen_items"]:
             item_delivered = KITCHEN_REQUESTS_SCHEMA["items"][item_name]["delivered"]
@@ -68,13 +81,6 @@ for item in params["items"]:
         item_name = "Cosas de Cocina / Kitchen Supplies / 廚房用品"
         item_delivered = EG_REQUESTS_SCHEMA["items"][item_name]["delivered"]
         item_timeout = EG_REQUESTS_SCHEMA["items"][item_name]["timeout"]
-        conditions_item.append(NOT(FIND(item_delivered, Field(EG_STATUS_FIELD))))
-        conditions_item.append(NOT(FIND(item_timeout, Field(EG_STATUS_FIELD))))
-    elif "EG_item" in item:
-        item_name = item["EG_item"]
-        item_delivered = EG_REQUESTS_SCHEMA["items"][item_name]["delivered"]
-        item_timeout = EG_REQUESTS_SCHEMA["items"][item_name]["timeout"]
-        conditions_item.append(FIND(item_name, Field(EG_REQUESTS_FIELD)))
         conditions_item.append(NOT(FIND(item_delivered, Field(EG_STATUS_FIELD))))
         conditions_item.append(NOT(FIND(item_timeout, Field(EG_STATUS_FIELD))))
     # Loop through languages in order of priority:
@@ -134,3 +140,4 @@ for item in params["items"]:
         n_records = records_df.shape[0]
         logger.info("Saving "+str(n_records)+" phone numbers for "+item["name"]+";"+language+" to "+output_file)
         records_df.to_csv(output_file, index=False)
+
