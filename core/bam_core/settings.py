@@ -47,6 +47,9 @@ S3_REGION_NAME = os.getenv("BAM_S3_REGION_NAME", "nyc3")
 S3_PLATFORM = os.getenv("BAM_S3_PLATFORM", "do")
 S3_CDN_ID = os.getenv("BAM_S3_CDN_ID", None)
 
+# SALT for hashing
+SALT = os.getenv("BAM_SALT", "bam")
+
 # logging settings
 LOG_LEVEL = os.getenv("BAM_LOG_LEVEL", "INFO")
 LOG_FORMAT = os.getenv(

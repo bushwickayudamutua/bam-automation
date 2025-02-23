@@ -94,6 +94,16 @@ class GoogleSheets(object):
         return gspread.service_account_from_dict(GOOGLE_SERVICE_ACCOUNT_CONFIG)
 
     @retry(times=5, wait=10, backoff=1.5)
+    def get_sheet(self, sheet_name: str, sheet_index: int):
+        """
+        Get a Google Sheet
+        Args:
+            sheet_name (str): The name of the sheet to get
+            sheet_index (int): The index of the sheet to get
+        """
+        return self.client.open(sheet_name).get_worksheet(sheet_index)
+
+    @retry(times=5, wait=10, backoff=1.5)
     def upload_to_sheet(
         self,
         sheet_name: str,

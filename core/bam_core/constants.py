@@ -640,4 +640,4 @@ MAYDAY_RADIUS = 16093.44  # 10 miles in meters
 
 # Google Sheets constants
 
-FULFILLED_REQUESTS_SHEET_NAME = "BAM Fulfilled Requests"
+FULFILLED_REQUESTS_SHEET_NAME = "BAM Fulfilled and Open Requests"

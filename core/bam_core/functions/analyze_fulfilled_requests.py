@@ -2,12 +2,14 @@ from datetime import datetime, timedelta
 import logging
 from collections import defaultdict
 import os
+import hashlib
 import tempfile
 from typing import Any, Dict, List
 from zoneinfo import ZoneInfo
 
 from bam_core.functions.base import Function
 from bam_core.functions.params import Params, Param
+from bam_core.settings import SALT
 from bam_core.constants import (
     BED_REQUESTS_SCHEMA,
     FULFILLED_REQUESTS_SHEET_NAME,
@@ -20,6 +22,7 @@ from bam_core.constants import (
     EG_REQUEST_CLOTHING,
     EG_REQUEST_SCHOOL_SUPPLIES,
     FOOD_REQUEST_GROCERIES,
+    PHONE_FIELD,
 )
 from bam_core.utils.serde import json_to_obj, obj_to_json
 from bam_core.lib.airtable import Airtable
@@ -124,7 +127,7 @@ class AnalyzeFulfilledRequests(Function):
                     grouped_records[record["id"]].append(record)
         return grouped_records
 
-    def analyze_grouped_records(
+    def get_fulfilled_requests(
         self, grouped_records: Dict[str, List[Dict[str, Any]]]
     ) -> List[Dict[str, Any]]:
         """
@@ -172,17 +175,57 @@ class AnalyzeFulfilledRequests(Function):
             )
         )
 
-    def upload_fulfilled_requests_to_google_sheet(self, fulfilled_requests):
+    def get_open_requests(
+        self, grouped_records: Dict[str, List[Dict[str, Any]]]
+    ) -> List[Dict[str, Any]]:
+        """
+        Analyze grouped records and return a list of open requests
+        """
+        open_requests = []
+        # iterate through list of snapshots for each record id
+        for request_id, group_records in grouped_records.items():
+            # get most recent snapshot for this record id
+            last_snapshot = list(
+                sorted(
+                    group_records,
+                    key=lambda r: r[SNAPSHOT_DATE_FIELD],
+                    reverse=True,
+                )
+            )[0]
+
+            # analyze requests for this snapshot
+            statuses = Airtable.analyze_requests(last_snapshot)
+            for tag_type, tag_statuses in statuses.items():
+                for item in tag_statuses.get("open", []):
+                    h = hashlib.new("sha256")
+                    h.update(
+                        (last_snapshot.get(PHONE_FIELD, "") + SALT).encode()
+                    )
+                    phone_number_hash = str(h.hexdigest())
+                    open_requests.append(
+                        {
+                            "Request Type": tag_type,
+                            "Status": "Open",
+                            "Item": item,
+                            "Phone Number Hash": phone_number_hash,
+                            "Airtable Link": self.airtable.get_assistance_request_link(
+                                request_id
+                            ),
+                        }
+                    )
+        return open_requests
+
+    def upload_requests_to_google_sheet(self, requests, sheet_index=0):
         """
         Upload fulfilled requests to Google Sheet
         """
         self.log.info(
-            f"Writing fulfilled requests to Google Sheet: '{FULFILLED_REQUESTS_SHEET_NAME}'"
+            f"Writing requests to Google Sheet: '{FULFILLED_REQUESTS_SHEET_NAME}'"
         )
         self.gsheets.upload_to_sheet(
             sheet_name=FULFILLED_REQUESTS_SHEET_NAME,
-            sheet_index=0,
-            data=fulfilled_requests,
+            sheet_index=sheet_index,
+            data=requests,
         )
 
     def summarize_fulfilled_item(
@@ -242,12 +285,17 @@ class AnalyzeFulfilledRequests(Function):
         """
         # fetch records and group by ID
         grouped_records = self.get_grouped_records()
-        fulfilled_requests = self.analyze_grouped_records(grouped_records)
+        fulfilled_requests = self.get_fulfilled_requests(grouped_records)
         self.log.info(f"Found {len(fulfilled_requests)} fulfilled requests")
+        open_requests = self.get_open_requests(grouped_records)
+        self.log.info(f"Found {len(open_requests)} open requests")
         summary = self.summarize_fulfilled_requests(fulfilled_requests)
 
         if not params.get("dry_run", False):
-            self.upload_fulfilled_requests_to_google_sheet(fulfilled_requests)
+            self.upload_requests_to_google_sheet(
+                fulfilled_requests, sheet_index=0
+            )
+            self.upload_requests_to_google_sheet(open_requests, sheet_index=1)
             self.upload_summarized_fulfilled_requests_to_s3(summary)
         else:
             self.log.info(
@@ -255,6 +303,7 @@ class AnalyzeFulfilledRequests(Function):
             )
         return {
             "num_fulfilled_requests": len(fulfilled_requests),
+            "num_open_requests": len(open_requests),
             "summary": summary,
         }
 
