@@ -17,6 +17,7 @@ from bam_core.constants import (
     REQUESTS_SCHEMA,
     REQUEST_FIELDS,
     OLD_REQUEST_TAGS,
+    OLD_FIELD_NAMES,
 )
 
 
@@ -124,6 +125,17 @@ class Airtable(object):
         """
         fields = record.pop("fields", {})
         record.update(fields)
+        return record
+
+    @classmethod
+    def _standardize_field_names(
+        cls,
+        record: Dict[str, Any],
+        field_mapping: Dict[str, str] = OLD_FIELD_NAMES,
+    ) -> Dict[str, Any]:
+        for old_field, new_field in field_mapping.items():
+            if old_field in record:
+                record[new_field] = record.pop(old_field)
         return record
 
     def get_phone_number_to_requests_lookup(
@@ -261,6 +273,9 @@ class Airtable(object):
 
         # flatten record
         record = cls._flatten_record(record)
+
+        # standardize field names
+        record = cls._standardize_field_names(record)
 
         analysis = defaultdict(lambda: defaultdict(list))
 
