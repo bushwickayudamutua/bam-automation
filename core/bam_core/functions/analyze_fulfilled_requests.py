@@ -4,7 +4,7 @@ from collections import defaultdict
 import os
 import hashlib
 import tempfile
-from typing import Any, Dict, List
+from typing import Any, Dict, Generator, List
 from zoneinfo import ZoneInfo
 
 from bam_core.functions.base import Function
@@ -135,7 +135,7 @@ class AnalyzeFulfilledRequests(Function):
         """
         fulfilled_requests = []
         # iterate through list of snapshots for each record id
-        for request_id, group_records in grouped_records.items():
+        for record_id, group_records in grouped_records.items():
             # If there is only one snapshot for this record id, skip it
             if len(group_records) <= 1:
                 continue
@@ -162,7 +162,7 @@ class AnalyzeFulfilledRequests(Function):
                                         SNAPSHOT_DATE_FIELD
                                     ],
                                     "Airtable Link": self.airtable.get_assistance_request_link(
-                                        request_id
+                                        record_id
                                     ),
                                 }
                             )
@@ -175,15 +175,41 @@ class AnalyzeFulfilledRequests(Function):
             )
         )
 
-    def get_open_requests(
-        self, grouped_records: Dict[str, List[Dict[str, Any]]]
+    def get_open_requests_for_snapshot(
+        self, record_id: str, snapshot: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
         """
-        Analyze grouped records and return a list of open requests
+        Get open requests for a snapshot
         """
+        # analyze requests for this snapshot
         open_requests = []
+        statuses = Airtable.analyze_requests(snapshot)
+        for tag_type, tag_statuses in statuses.items():
+            for item in tag_statuses.get("open", []):
+                h = hashlib.new("sha256")
+                h.update((snapshot.get(PHONE_FIELD, "") + SALT).encode())
+                phone_number_hash = str(h.hexdigest())
+                open_requests.append(
+                    {
+                        "Request Type": tag_type,
+                        "Status": "Open",
+                        "Item": item,
+                        "Phone Number Hash": phone_number_hash,
+                        "Airtable Link": self.airtable.get_assistance_request_link(
+                            record_id
+                        ),
+                    }
+                )
+        return open_requests
+
+    def get_last_snapshots(
+        self, grouped_records: List[Dict[str, Any]]
+    ) -> Generator[None, None, Dict[str, Any]]:
+        """
+        Get the most recent snapshots for every record
+        """
         # iterate through list of snapshots for each record id
-        for request_id, group_records in grouped_records.items():
+        for record_id, group_records in grouped_records.items():
             # get most recent snapshot for this record id
             last_snapshot = list(
                 sorted(
@@ -192,27 +218,22 @@ class AnalyzeFulfilledRequests(Function):
                     reverse=True,
                 )
             )[0]
+            yield record_id, last_snapshot
 
-            # analyze requests for this snapshot
-            statuses = Airtable.analyze_requests(last_snapshot)
-            for tag_type, tag_statuses in statuses.items():
-                for item in tag_statuses.get("open", []):
-                    h = hashlib.new("sha256")
-                    h.update(
-                        (last_snapshot.get(PHONE_FIELD, "") + SALT).encode()
-                    )
-                    phone_number_hash = str(h.hexdigest())
-                    open_requests.append(
-                        {
-                            "Request Type": tag_type,
-                            "Status": "Open",
-                            "Item": item,
-                            "Phone Number Hash": phone_number_hash,
-                            "Airtable Link": self.airtable.get_assistance_request_link(
-                                request_id
-                            ),
-                        }
-                    )
+    def get_open_requests(
+        self, grouped_records: Dict[str, List[Dict[str, Any]]]
+    ) -> List[Dict[str, Any]]:
+        """
+        Analyze grouped records and return a list of open requests
+        """
+        open_requests = []
+        # iterate through list of last snapshot for each record id
+        for record_id, last_snapshot in self.get_last_snapshots(
+            grouped_records
+        ):
+            open_requests.extend(
+                self.get_open_requests_for_snapshot(record_id, last_snapshot)
+            )
         return open_requests
 
     def upload_requests_to_google_sheet(self, requests, sheet_index=0):

@@ -11,6 +11,9 @@ ESSENTIAL_GOODS_TABLE_NAME = "Essential Good Donations: Main"
 # Airtable field name for phone numbers
 PHONE_FIELD = "Phone Number"
 
+# Date fields
+DATE_SUBMITTED_FIELD = "Date Submitted"
+
 # Airtable field names for EG requests/statuses
 EG_REQUESTS_FIELD = "Essential Goods Requests?"
 EG_STATUS_FIELD = "Essential Goods Requests Status"
@@ -32,14 +35,15 @@ KITCHEN_REQUESTS_FIELD = "Which Kitchen Items"
 FURNITURE_REQUESTS_FIELD = "Which Furniture Items"
 
 # Airtable field name for bed requests
-BED_REQUESTS_FIELD = "Which Bed Size"
+OLD_BED_REQUESTS_FIELD = "Which Bed Size"
+NEW_BED_REQUESTS_FIELD = "Bed Needs"
 
 REQUEST_FIELDS = [
     PHONE_FIELD,
     EG_REQUESTS_FIELD,
     KITCHEN_REQUESTS_FIELD,
     FURNITURE_REQUESTS_FIELD,
-    BED_REQUESTS_FIELD,
+    NEW_BED_REQUESTS_FIELD,
     EG_STATUS_FIELD,
     FOOD_REQUESTS_FIELD,
     FOOD_STATUS_FIELD,
@@ -49,7 +53,7 @@ REQUEST_FIELDS = [
 
 # Mapping of bed requests to statuses
 BED_REQUESTS_SCHEMA = {
-    "request_field": BED_REQUESTS_FIELD,
+    "request_field": NEW_BED_REQUESTS_FIELD,
     "status_field": EG_STATUS_FIELD,
     "items": {
         "Cuna / Crib / 婴儿床": {
@@ -218,6 +222,8 @@ EG_REQUEST_PADS = (
 EG_REQUEST_BABY_DIAPERS = "Pañales / Baby Diapers / 嬰兒紙尿褲"
 EG_REQUEST_CLOTHING = "Ropa / Clothing / 服裝"
 EG_REQUEST_SCHOOL_SUPPLIES = "Cosas de Escuela / School Supplies / 學校用品"
+EG_REQUEST_FURNITURE = "Muebles / Furniture / 家具"
+EG_REQUEST_KITCHEN_SUPPLIES = "Cosas de Cocina / Kitchen Supplies / 廚房用品"
 
 # Mapping of EG requests to statuses
 # Note that kitchen requests and furniture requests are nested under EG requests.
@@ -255,13 +261,13 @@ EG_REQUESTS_SCHEMA = {
             "timeout": "School Supplies Timeout",
             "missed": EG_MISSED_APPT_STATUS,
         },
-        "Cosas de Cocina / Kitchen Supplies / 廚房用品": {
+        EG_REQUEST_KITCHEN_SUPPLIES: {
             "delivered": "Kitchen Supplies Delivered",
             "timeout": "Kitchen Supplies Timeout",
             "missed": EG_MISSED_APPT_STATUS,
             "items": KITCHEN_REQUESTS_SCHEMA,
         },
-        "Muebles / Furniture / 家具": {
+        EG_REQUEST_FURNITURE: {
             "delivered": "Furniture Delivered",
             "timeout": "Furniture Timeout",
             "missed": EG_MISSED_APPT_STATUS,
@@ -316,15 +322,24 @@ SOCIAL_SERVICES_REQUESTS_SCHEMA = {
     "items": {
         "Asistencia legal de inquilinos / Tenant legal assistance / 租戶法律協助": {
             "delivered": "Tenant Support Delivered - CUFFH",
-            "timeout": "Tenant Legal Assistance Timeout",
+            "timeout": [
+                "Tenant Legal Assistance Timeout",
+                "All Social Services Timeout",
+            ],
         },
         "Asistencia con servicios escolares / Assistance with in-school services / 學校服務協助": {
             "delivered": "In School Services Assistance Delivered",
-            "timeout": "In School Services Assistance Timeout",
+            "timeout": [
+                "In School Services Assistance Timeout",
+                "All Social Services Timeout",
+            ],
         },
         "Tutoría estudiantil / Tutoring for students / 學生輔導": {
             "delivered": "Tutoring Assigned (K-12)",
-            "timeout": "Tutoring Assistance Timeout",
+            "timeout": [
+                "Tutoring Assistance Timeout",
+                "All Social Services Timeout",
+            ],
         },
         "Clases de inglés / English Classes / 英語課": {
             "delivered": [
@@ -334,7 +349,10 @@ SOCIAL_SERVICES_REQUESTS_SCHEMA = {
                 "Registered for DOE ESL Classes",
                 "ContraCovid - English Class Intake Scheduled",
             ],
-            "timeout": "English Classes Timeout",
+            "timeout": [
+                "English Classes Timeout",
+                "All Social Services Timeout",
+            ],
             "invalid": ["No Longer Interested - English Classes"],
         },
         "Asistencia asegurando vivienda/ Securing housing / 住房協助": {
@@ -342,7 +360,10 @@ SOCIAL_SERVICES_REQUESTS_SCHEMA = {
                 "Referred to Riseboro for Housing Assistance",
                 "ContraCovid - Housing Intake Scheduled",
             ],
-            "timeout": "Securing Housing Timeout",
+            "timeout": [
+                "Securing Housing Timeout",
+                "All Social Services Timeout",
+            ],
         },
         "Asistencia con seguro médico / Medical insurance support / 醫療保險協助": {
             "delivered": [
@@ -350,16 +371,25 @@ SOCIAL_SERVICES_REQUESTS_SCHEMA = {
                 "Health Insurance Secured - HFNYC",
                 "ContraCovid - Health Insurance Intake Scheduled",
             ],
-            "timeout": "Health Insurance Assistance Timeout",
+            "timeout": [
+                "Health Insurance Assistance Timeout",
+                "All Social Services Timeout",
+            ],
             "invalid": ["Already has Health Insurance"],
         },
         "Asistencia de Negocios / Small Business Support / 小型企業協助": {
             "delivered": "Small Business Support Delivered",
-            "timeout": "Small Business Support Timeout",
+            "timeout": [
+                "Small Business Support Timeout",
+                "All Social Services Timeout",
+            ],
         },
         "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助": {
-            "delivered": "Low-Cost Internet Access Delivered",
-            "timeout": "Low-Cost Internet Access TImeout",
+            "delivered": "Low-Cost Internet Access Delivered - MESH",
+            "timeout": [
+                "Low-Cost Internet Access TImeout",
+                "All Social Services Timeout",
+            ],
         },
         "Asistencia con beneficios de comida / Assistance with food benefits / 食品福利協助（WIC, SNAP, P-EBT）": {
             "delivered": [
@@ -367,7 +397,10 @@ SOCIAL_SERVICES_REQUESTS_SCHEMA = {
                 "WIC Signup Completed through WSCAH",
                 "ContraCovid - Food Benefits Intake Scheduled",
             ],
-            "timeout": "Food Benefits Assistance Timeout",
+            "timeout": [
+                "Food Benefits Assistance Timeout",
+                "All Social Services Timeout",
+            ],
             "invalid": [
                 "No Longer Interested in Food Benefits",
                 "Not Eligible for Food Benefits HFNYC",
@@ -381,15 +414,24 @@ SOCIAL_SERVICES_REQUESTS_SCHEMA = {
         },
         "Asistencia con Transporte / Transportation Assistance / 交通運輸協助": {
             "delivered": "MetroCard Delivered",
-            "timeout": "MetroCard Request Timeout",
+            "timeout": [
+                "MetroCard Request Timeout",
+                "All Social Services Timeout",
+            ],
         },
         "Asistencia para niños discapacitados / Assistance for disabled children / 殘疾兒童協助": {
             "delivered": "Child Disability Assistance Delivered",
-            "timeout": "Child Disability Assistance Timeout",
+            "timeout": [
+                "Child Disability Assistance Timeout",
+                "All Social Services Timeout",
+            ],
         },
         "Asistencia para mascotas / Pet Assistance / 寵物協助": {
             "delivered": "Pet Assistance Delivered",
-            "timeout": "Pet Assistance Timeout",
+            "timeout": [
+                "Pet Assistance Timeout",
+                "All Social Services Timeout",
+            ],
         },
     },
 }
@@ -409,7 +451,7 @@ OLD_REQUEST_TAGS = {
     "Productos Femenino - Toallitas / Feminine Products - Pads / 卫生巾": EG_REQUEST_PADS,
     "Cosas de Escuela / School Supplies / 学校用品": EG_REQUEST_SCHOOL_SUPPLIES,
     "Ropa / Clothing / 服装协助": EG_REQUEST_CLOTHING,
-    "Muebles / Furniture / 家俱": "Muebles / Furniture / 家具",
+    "Muebles / Furniture / 家俱": EG_REQUEST_FURNITURE,
     "Cosas de Cocina / Kitchen Supplies / 厨房用品": "Cosas de Cocina / Kitchen Supplies / 廚房用品",
     "Comida de mascota / Pet Food / 寵物食品": "Comida de mascota / Pet Food / 寵物食品",
     "Cajonera / Clothes Dresser / 衣服梳妆台": "Cajonera / Clothes Dresser / 衣櫃",
@@ -435,6 +477,10 @@ OLD_REQUEST_TAGS = {
     "Asistencia con Transporte / Transportation Assistance": "Asistencia con Transporte / Transportation Assistance / 交通運輸協助",
     "Asistencia para niños discapacitados / Assistance for disabled children / 残疾儿童援助": "Asistencia para niños discapacitados / Assistance for disabled children / 殘疾兒童協助",
     "Asistencia para mascotas / Pet Assistance / 宠物协助": "Asistencia para mascotas / Pet Assistance / 寵物協助",
+}
+
+OLD_FIELD_NAMES = {
+    OLD_BED_REQUESTS_FIELD: NEW_BED_REQUESTS_FIELD,
 }
 
 # Airtable Views

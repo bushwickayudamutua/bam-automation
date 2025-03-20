@@ -5,7 +5,7 @@ description = "Shared code for BAM Automations"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
-    "pyairtable==2.1.0.post1",
+    "pyairtable==3.0.2",
     "requests==2.31.0",
     "urllib3==1.26.16",
     "boto3==1.28.34",
