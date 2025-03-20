@@ -1,13 +1,16 @@
 from collections import defaultdict
+
+import pandas as pd
+
 from bam_core.settings import (
     AIRTABLE_BASE_ID,
     AIRTABLE_TOKEN,
     AIRTABLE_V2_BASE_ID,
     AIRTABLE_V2_TOKEN,
-    AIRTABLE_V2_ASSISTANCE_REQUESTS_TABLE_ID,
 )
 from bam_core.lib.airtable import Airtable
-from bam_core.utils.phone import format_phone_number
+from bam_core.utils.phone import format_phone_number, is_international_phone_number
+from bam_core.utils.email import format_email, NO_EMAIL_ERROR
 from bam_core.functions.analyze_fulfilled_requests import (
     AnalyzeFulfilledRequests,
 )
@@ -30,9 +33,7 @@ afr = AnalyzeFulfilledRequests()
 
 
 # merge functions
-def select_first(
-    old_field_name: str, new_field_name: str, records: list[dict]
-):
+def select_first(old_field_name: str, new_field_name: str, records: list[dict]):
     return {new_field_name: records[0].get(old_field_name)}
 
 
@@ -45,12 +46,14 @@ def select_first_non_null(
     return {}
 
 
-def merge_date_submitted(
-    old_field_name: str, new_field_name: str, records: list[dict]
-):
+def merge_date_submitted(old_field_name: str, new_field_name: str, records: list[dict]):
     return {
-        f"First {new_field_name}": min([r[old_field_name] for r in records]),
-        f"Last {new_field_name}": max([r[old_field_name] for r in records]),
+        f"First {new_field_name}": min([r[old_field_name] for r in records]).split("T")[
+            0
+        ],
+        f"Last {new_field_name}": max([r[old_field_name] for r in records]).split("T")[
+            0
+        ],
     }
 
 
@@ -58,31 +61,64 @@ def merge_invalid_phone_number(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
     # we only migrate valid phone numbers
-    return {new_field_name: True}
+    return {new_field_name: False}
+
+
+def merge_intl_phone_number(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
+    return {new_field_name: is_international_phone_number(records[0].get(PHONE_FIELD))}
 
 
 def merge_email(old_field_name: str, new_field_name: str, records: list[dict]):
     # If there are valid emails, set the new field to the first valid email
+    email = ""
+    email_error = str(NO_EMAIL_ERROR)
     for r in records:
         if r.get("Email Error", "") == "" and r.get(old_field_name):
-            return {new_field_name: r.get(old_field_name), "Email Error": ""}
-    return {}
+            email_output = format_email(r.get(old_field_name))
+            email = email_output.get("email")
+            email_error = email_output.get("error")
+            if not email_error:
+                return {new_field_name: email_output.get("email"), "Email Error": ""}
+
+    return {new_field_name: email, "Email Error": email_error}
 
 
-def merge_all_lists(
-    old_field_name: str, new_field_name: str, records: list[dict]
-):
+def merge_all_lists(old_field_name: str, new_field_name: str, records: list[dict]):
     all_items = set()
     for r in records:
         all_items.update(r.get(old_field_name, []))
     return {new_field_name: list(all_items)}
 
 
-def merge_open_requests(
+def merge_roof_accessible(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
-    # declare schema of sub-items
-    SUB_ITEMS = [
+    tag = "Tengo acceso de mi techo / Roof access in my building"
+
+    return {new_field_name: any([tag in r.get(old_field_name, []) for r in records])}
+
+
+def merge_case_notes(old_field_name: str, new_field_name: str, records: list[dict]):
+    return {
+        new_field_name: "\n-------\n".join(
+            [r.get(old_field_name, "").strip() for r in records if r.get(old_field_name)]
+        )
+    }
+
+
+def merge_airtable_urls(old_field_name: str, new_field_name: str, records: list[dict]):
+    return {
+        new_field_name: "\n\n".join(
+            [at_og.get_assistance_request_link(r[old_field_name]) for r in records]
+        )
+    }
+
+
+def merge_open_requests(old_field_name: str, new_field_name: str, records: list[dict]):
+    # declare schema of request sub-items
+    REQUEST_SUB_ITEMS = [
         {
             "new_request_type": "Cama / Bed / 床",
             "old_request_type": FURNITURE_REQUEST_BED,
@@ -114,9 +150,7 @@ def merge_open_requests(
     ]
 
     # get the unique set of all items
-    all_items = list(
-        set([item for r in records for item in r.get(old_field_name, [])])
-    )
+    all_items = list(set([item for r in records for item in r.get(old_field_name, [])]))
 
     # make a copy of the list to remove items from
     all_items_copy = all_items.copy()
@@ -124,7 +158,7 @@ def merge_open_requests(
     output = defaultdict(list)
     for item in all_items:
         # first check for sub-items and remove them from the top-level list
-        for sub_item in SUB_ITEMS:
+        for sub_item in REQUEST_SUB_ITEMS:
             # unpack sub_item
             new_request_type = sub_item["new_request_type"]
             old_request_type = sub_item["old_request_type"]
@@ -134,9 +168,7 @@ def merge_open_requests(
 
             # merge top-level request type
             if old_request_type and item == old_request_type:
-                if new_request_type not in output.get(
-                    request_type_output_field, []
-                ):
+                if new_request_type not in output.get(request_type_output_field, []):
                     output[request_type_output_field].append(new_request_type)
                 # remove the item from the top-level list
                 if item in all_items_copy:
@@ -157,44 +189,21 @@ def merge_open_requests(
                     all_items_copy.remove(item)
 
     # add any remaining items to the top-level list
-    output[new_field_name] = all_items_copy
+    output[new_field_name].extend(all_items_copy)
     return output
-
-
-def merge_roof_accessible(
-    old_field_name: str, new_field_name: str, records: list[dict]
-):
-    tag = "Tengo acceso de mi techo / Roof access in my building"
-
-    return {
-        new_field_name: any(
-            [tag in r.get(old_field_name, []) for r in records]
-        )
-    }
-
-
-def merge_case_notes(
-    old_field_name: str, new_field_name: str, records: list[dict]
-):
-    return {
-        new_field_name: "\n".join(
-            [r.get(old_field_name) for r in records if r.get(old_field_name)]
-        )
-    }
 
 
 # og schema:new schema
 FIELD_MAPPING = {
     "First Name": {"new_field": "Name", "merge_fx": select_first_non_null},
     PHONE_FIELD: {"new_field": PHONE_FIELD, "merge_fx": select_first},
-    # Creates First Date Submitted and Last Date Submitted fields
-    DATE_SUBMITTED_FIELD: {
-        "new_field": DATE_SUBMITTED_FIELD,
-        "merge_fx": merge_date_submitted,
-    },
     "Invalid Phone Number?": {
         "new_field": "Invalid Phone Number?",
         "merge_fx": merge_invalid_phone_number,
+    },
+    "Intl Phone Number?": {
+        "new_field": "Int'l Phone Number?",
+        "merge_fx": merge_intl_phone_number,
     },
     # includes both Email and Email Error
     "Email": {"new_field": "Email", "merge_fx": merge_email},
@@ -204,13 +213,14 @@ FIELD_MAPPING = {
         "merge_fx": select_first_non_null,
     },
     "Current Address - City, State": {
-        "new_field": "City",
+        "new_field": "City, State",
         "merge_fx": select_first_non_null,
     },
     "Current Address - Zip Code": {
         "new_field": "Zip Code",
         "merge_fx": select_first_non_null,
     },
+    "Geocode": {"new_field": "Geocode", "merge_fx": select_first_non_null},
     # We create the "Open Requests" field when we get all open requests per household; It doesn't exist in the old schema.
     # We then:
     # 1. Merge all the open requests into one list
@@ -229,6 +239,12 @@ FIELD_MAPPING = {
         "merge_fx": merge_roof_accessible,
     },
     "Case Notes": {"new_field": "General Notes", "merge_fx": merge_case_notes},
+    "id": {"new_field": "Airtable URLs", "merge_fx": merge_airtable_urls},
+    # Creates First Date Submitted and Last Date Submitted fields
+    DATE_SUBMITTED_FIELD: {
+        "new_field": DATE_SUBMITTED_FIELD,
+        "merge_fx": merge_date_submitted,
+    },
 }
 
 
@@ -265,30 +281,30 @@ def merge_household_records(household):
     records = list(
         sorted(household, key=lambda x: x[DATE_SUBMITTED_FIELD], reverse=True)
     )
-
     # merge fields
     merged_record = {}
     for old_field_name, mapping in FIELD_MAPPING.items():
         new_field_name = mapping["new_field"]
         merge_fx = mapping["merge_fx"]
-        merged_record.update(merge_fx(old_field_name, new_field_name, records))
+        try:
+            merged_record.update(merge_fx(old_field_name, new_field_name, records))
+        except Exception as e:
+            raise Exception(f"Error merging {old_field_name} into {new_field_name}: {e}")
     return merged_record
 
 
 def merge_households(households):
     output = []
     for records in households.values():
-        merged_record = merge_household_records(records)
-        output.append(merged_record)
+        output.append(merge_household_records(records))
     return output
 
 
 def main():
-    output = []
-    households = get_open_records_for_households()
-    output = merge_households(households)
-    print(f"Total households: {len(output)}")
-    print(output[-750])
+    output = merge_households(get_open_records_for_households())
+    df = pd.DataFrame(output)
+    df.to_csv("households.csv", index=False)
+    print(f"Wrote {len(output)} households to households.csv")
 
 
 if __name__ == "__main__":

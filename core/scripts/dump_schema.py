@@ -38,6 +38,6 @@ if __name__ == '__main__':
     columns = ['request_field', 'status_field', 'parent_request_field', 'parent_status_field', 'request_tag', 'delivered_tags', 'timeout_tags', 'invalid_tags', 'missed_tags']
     writer = csv.DictWriter(open('schema.csv', 'w'), fieldnames=columns)
     writer.writeheader()
-    print("wrtiting schema to schema.csv")
+    print("writing schema to schema.csv")
     for schema in REQUESTS_SCHEMA:
         write_schema(writer, schema=schema)
