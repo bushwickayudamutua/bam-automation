@@ -43,7 +43,7 @@ REQUEST_FIELDS = [
     EG_REQUESTS_FIELD,
     KITCHEN_REQUESTS_FIELD,
     FURNITURE_REQUESTS_FIELD,
-    NEW_BED_REQUESTS_FIELD,
+    NEW_BED_REQUESTS_FIELD, 
     EG_STATUS_FIELD,
     FOOD_REQUESTS_FIELD,
     FOOD_STATUS_FIELD,
@@ -56,15 +56,15 @@ BED_REQUESTS_SCHEMA = {
     "request_field": NEW_BED_REQUESTS_FIELD,
     "status_field": EG_STATUS_FIELD,
     "items": {
-        "Cuna / Crib / 婴儿床": {
+        "Cuna / Crib / 嬰兒床": {
             "delivered": "Crib Delivered",
             "timeout": "Crib Timeout",
         },
-        "Colchón individual / Twin Mattress / 双人床垫": {
+        "Colchón individual / Twin Mattress / 單人床墊": {
             "delivered": "Twin Mattress Delivered",
             "timeout": "Twin Mattress Timeout",
         },
-        "Colchón matrimonio / Full Mattress / 全床垫": {
+        "Colchón matrimonio / Full Mattress / 雙人床墊": {
             "delivered": "Full Mattress Delivered",
             "timeout": "Full Mattress Timeout",
         },
@@ -444,6 +444,9 @@ REQUESTS_SCHEMA = [
 ]
 
 OLD_REQUEST_TAGS = {
+    "Cuna / Crib / 婴儿床": "Cuna / Crib / 嬰兒床",
+    "Colchón individual / Twin Mattress / 双人床垫": "Colchón individual / Twin Mattress / 單人床墊",
+    "Colchón matrimonio / Full Mattress / 全床垫": "Colchón matrimonio / Full Mattress / 雙人床墊",
     "Alimentos / Groceries / 杂货": FOOD_REQUEST_GROCERIES,
     "Pañales / Baby Diapers / 婴儿纸尿裤": EG_REQUEST_BABY_DIAPERS,
     "Pañales de adultos / Adult Diapers / 成人纸尿裤": "Pañales de adultos / Adult Diapers / 成人紙尿褲",
