@@ -179,14 +179,14 @@ def test_analyze_requests_two_levels_of_nesting_specific_delivered_tag():
                 "Cama / Bed / 床",
             ],
             NEW_BED_REQUESTS_FIELD: [
-                "Cama tamaño Queen / Queen Mattress + Frame / 全床垫+框架"
+                "Cama tamaño Queen / Queen Mattress + Frame / 雙人加大床墊+床架"
             ],
             EG_STATUS_FIELD: ["Queen Bed Set Delivered"],
         }
     }
     analysis = Airtable.analyze_requests(record)
     assert analysis[NEW_BED_REQUESTS_FIELD]["delivered"] == [
-        "Cama tamaño Queen / Queen Mattress + Frame / 全床垫+框架"
+        "Cama tamaño Queen / Queen Mattress + Frame / 雙人加大床墊+床架"
     ]
 
 
@@ -200,14 +200,14 @@ def test_analyze_requests_two_levels_of_nesting_parent_delivered_tag():
                 "Cama / Bed / 床",
             ],
             OLD_BED_REQUESTS_FIELD: [
-                "Cama tamaño Queen / Queen Mattress + Frame / 全床垫+框架"
+                "Cama tamaño Queen / Queen Mattress + Frame / 雙人加大床墊+床架"
             ],
             EG_STATUS_FIELD: ["Mattress Delivered"],
         }
     }
     analysis = Airtable.analyze_requests(record)
     assert analysis[NEW_BED_REQUESTS_FIELD]["delivered"] == [
-        "Cama tamaño Queen / Queen Mattress + Frame / 全床垫+框架"
+        "Cama tamaño Queen / Queen Mattress + Frame / 雙人加大床墊+床架"
     ]
 
 
@@ -221,14 +221,14 @@ def test_analyze_requests_two_levels_of_nesting_specific_timeout_tag():
                 "Cama / Bed / 床",
             ],
             NEW_BED_REQUESTS_FIELD: [
-                "Cama tamaño Queen / Queen Mattress + Frame / 全床垫+框架"
+                "Cama tamaño Queen / Queen Mattress + Frame / 雙人加大床墊+床架"
             ],
             EG_STATUS_FIELD: ["Queen Bed Set Timeout"],
         }
     }
     analysis = Airtable.analyze_requests(record)
     assert analysis[NEW_BED_REQUESTS_FIELD]["timeout"] == [
-        "Cama tamaño Queen / Queen Mattress + Frame / 全床垫+框架"
+        "Cama tamaño Queen / Queen Mattress + Frame / 雙人加大床墊+床架"
     ]
 
 
@@ -241,13 +241,13 @@ def test_analyze_requests_two_levels_of_nesting_parent_timeout_tag():
             "Cama / Bed / 床",
         ],
         OLD_BED_REQUESTS_FIELD: [
-            "Cama tamaño Queen / Queen Mattress + Frame / 全床垫+框架"
+            "Cama tamaño Queen / Queen Mattress + Frame / 雙人加大床墊+床架"
         ],
         EG_STATUS_FIELD: ["Mattress Timeout"],
     }
     analysis = Airtable.analyze_requests(record)
     assert analysis[NEW_BED_REQUESTS_FIELD]["timeout"] == [
-        "Cama tamaño Queen / Queen Mattress + Frame / 全床垫+框架"
+        "Cama tamaño Queen / Queen Mattress + Frame / 雙人加大床墊+床架"
     ]
 
 
@@ -261,12 +261,12 @@ def test_analyze_requests_two_levels_of_nesting_grandparent_timeout_tag():
                 "Cama / Bed / 床",
             ],
             NEW_BED_REQUESTS_FIELD: [
-                "Cama tamaño Queen / Queen Mattress + Frame / 全床垫+框架"
+                "Cama tamaño Queen / Queen Mattress + Frame / 雙人加大床墊+床架"
             ],
             EG_STATUS_FIELD: ["Furniture Timeout"],
         }
     }
     analysis = Airtable.analyze_requests(record)
     assert analysis[NEW_BED_REQUESTS_FIELD]["timeout"] == [
-        "Cama tamaño Queen / Queen Mattress + Frame / 全床垫+框架"
+        "Cama tamaño Queen / Queen Mattress + Frame / 雙人加大床墊+床架"
     ]
