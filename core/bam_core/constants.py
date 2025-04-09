@@ -208,7 +208,7 @@ KITCHEN_REQUESTS_SCHEMA = {
             "delivered": "Coffee Maker Delivered",
             "timeout": "Coffee Maker Timeout",
         },
-        "Otras / Other / 其他家具": {
+        "Otras / Other / 其他廚房用品": {
             "delivered": "Kitchen Supplies Delivered",
             "timeout": "Kitchen Supplies Timeout",
         },
