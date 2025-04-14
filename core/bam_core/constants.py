@@ -157,10 +157,6 @@ FURNITURE_REQUESTS_SCHEMA = {
             "delivered": "Dining Table Delivered",
             "timeout": "Dining Table Timeout",
         },
-        "Microwave / Microonda": {
-            "delivered": "Microwave Delivered",
-            "timeout": "Microwave Timeout",
-        },
         "Nevera / Refrigerator / 冰箱": {
             "delivered": "Fridge Delivered",
             "timeout": "Fridge Timeout",
