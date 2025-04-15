@@ -204,7 +204,7 @@ KITCHEN_REQUESTS_SCHEMA = {
             "delivered": "Coffee Maker Delivered",
             "timeout": "Coffee Maker Timeout",
         },
-        "Otras / Other / 其他家具": {
+        "Otras / Other / 其他廚房用品": {
             "delivered": "Kitchen Supplies Delivered",
             "timeout": "Kitchen Supplies Timeout",
         },
@@ -273,7 +273,7 @@ EG_REQUESTS_SCHEMA = {
             "missed": EG_MISSED_APPT_STATUS,
             "items": FURNITURE_REQUESTS_SCHEMA,
         },
-        "Coche / Stroller / 婴儿车": {
+        "Coche / Stroller / 嬰兒車": {
             "delivered": "Stroller Delivered",
             "timeout": "Stroller Timeout",
             "missed": EG_MISSED_APPT_STATUS,
@@ -289,12 +289,24 @@ EG_REQUESTS_SCHEMA = {
             "missed": EG_MISSED_APPT_STATUS,
             "active": False,
         },
-        "Historical: Productos Femenino - Tampones / Feminine Products - Tampons / 卫生棉条": {
+        "Historical: Productos Femenino - Tampones / Feminine Products - Tampons / 衛生棉條": {
             "delivered": "Tampons Delivered",
             "timeout": "Tampons Timeout",
             "missed": EG_MISSED_APPT_STATUS,
             "active": False,
         },
+        "Historical: Comida para bebé / Baby Food / 嬰兒食品": {
+            "delivered": "Baby Food Delivered",
+            "timeout": "Baby Food Timeout",
+            "missed": EG_MISSED_APPT_STATUS,
+            "active": False,
+        },
+        "Historical: Formulario para bebé / Baby Formula / 嬰儿奶粉": {
+            "delivered": "Baby Formula Delivered",
+            "timeout": "Baby Formula Timeout",
+            "missed": EG_MISSED_APPT_STATUS,
+            "active": False,
+        }
     },
 }
 
@@ -490,7 +502,9 @@ OLD_REQUEST_TAGS = {
     "Bastidor matrimonio / Full Bed Frame / 全床垫框架": "Bastidor matrimonio / Full Bed Frame / 雙人床架",
     "Bastidor tamaño Queen / Queen Bed Frame / 女王床垫框架": "Bastidor tamaño Queen / Queen Bed Frame / 雙人加大床架",
     "Bastidor tamaño King / King Bed Frame / 国王床垫框架": "Bastidor tamaño King / King Bed Frame / 雙人特大床架",
-    "Litera / Loft or Bunk Bed": "Litera / Loft or Bunk Bed / 閣樓床或上下床" 
+    "Litera / Loft or Bunk Bed": "Litera / Loft or Bunk Bed / 閣樓床或上下床",
+    "Coche / Stroller / 婴儿车": "Coche / Stroller / 嬰兒車",
+    "Historical: Productos Femenino - Tampones / Feminine Products - Tampons / 卫生棉条":"Historical: Productos Femenino - Tampones / Feminine Products - Tampons / 衛生棉條"
 }
 
 OLD_FIELD_NAMES = {
