@@ -301,7 +301,7 @@ EG_REQUESTS_SCHEMA = {
             "missed": EG_MISSED_APPT_STATUS,
             "active": False,
         },
-        "Historical: Formulario para bebé / Baby Formula / 嬰兒奶粉": {
+        "Historical: Formulario para bebé / Baby Formula / 嬰儿奶粉": {
             "delivered": "Baby Formula Delivered",
             "timeout": "Baby Formula Timeout",
             "missed": EG_MISSED_APPT_STATUS,
