@@ -445,7 +445,7 @@ FORM_SUBMISSION_EXCLUDE_FIELDS = [
 # 2. For each record get only the open requests
 # 3. Replace the existing requests with only the open requests
 # 4. Group all the requests by formatted phone number (aka "Household")
-def get_open_records_for_households():
+def get_open_requests_by_household():
     households = defaultdict(list)
     """Get all snapshots from the old base"""
     grouped_records = afr.get_grouped_records()
@@ -490,7 +490,7 @@ def merge_households(households):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Migrate requests from old base to new base"
+        description="Migrate requests from old base to new base. MAKE SURE YOU HAVE YOUR .env FILE SET UP CORRECTLY."
     )
     parser.add_argument(
         "--start-at",
@@ -499,7 +499,8 @@ def main():
         help="Start at this record number (for debugging)",
     )
     args = parser.parse_args()
-    output = merge_households(get_open_records_for_households())
+    open_requests = get_open_requests_by_household()
+    output = merge_households(open_requests)
     filtered_output = output[args.start_at - 1 :]
     print(f"Total records to migrate: {len(filtered_output)}")
     for record in filtered_output:
