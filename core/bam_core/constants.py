@@ -68,47 +68,47 @@ BED_REQUESTS_SCHEMA = {
             "delivered": "Full Mattress Delivered",
             "timeout": "Full Mattress Timeout",
         },
-        "Colchón tamaño Queen / Queen Mattress / 女王床垫": {
+        "Colchón tamaño Queen / Queen Mattress / 雙人加大床墊": {
             "delivered": "Queen Mattress Delivered",
             "timeout": "Queen Mattress Timeout",
         },
-        "Colchón tamaño King / King Mattress / 国王床垫": {
+        "Colchón tamaño King / King Mattress / 雙人特大床墊": {
             "delivered": "King Mattress Delivered",
             "timeout": "King Mattress Timeout",
         },
-        "Cama individual / Twin Mattress + Frame / 双人床垫+框架": {
+        "Cama individual / Twin Mattress + Frame / 單人床墊+床架": {
             "delivered": "Twin Bed Set Delivered",
             "timeout": "Twin Bed Set Timeout",
         },
-        "Cama matrimonio / Full Mattress + Frame / 完整的床垫和框架": {
+        "Cama matrimonio / Full Mattress + Frame / 雙人床墊+床架": {
             "delivered": "Full Bed Set Delivered",
             "timeout": "Full Bed Set Timeout",
         },
-        "Cama tamaño Queen / Queen Mattress + Frame / 全床垫+框架": {
+        "Cama tamaño Queen / Queen Mattress + Frame / 雙人加大床墊+床架": {
             "delivered": "Queen Bed Set Delivered",
             "timeout": "Queen Bed Set Timeout",
         },
-        "Cama tamaño King / King Mattress + Frame / 国王床垫+框架": {
+        "Cama tamaño King / King Mattress + Frame / 雙人特大床墊+床架": {
             "delivered": "King Bed Set Delivered",
             "timeout": "King Bed Set Timeout",
         },
-        "Bastidor individual / Twin Bed Frame 双人床垫框架": {
+        "Bastidor individual / Twin Bed Frame 單人床架": {
             "delivered": "Twin Bed Frame Delivered",
             "timeout": "Twin Bed Frame Timeout",
         },
-        "Bastidor matrimonio / Full Bed Frame / 全床垫框架": {
+        "Bastidor matrimonio / Full Bed Frame / 雙人床架": {
             "delivered": "Full Bed Frame Delivered",
             "timeout": "Full Bed Frame Timeout",
         },
-        "Bastidor tamaño Queen / Queen Bed Frame / 女王床垫框架": {
+        "Bastidor tamaño Queen / Queen Bed Frame / 雙人加大床架": {
             "delivered": "Queen Bed Frame Delivered",
             "timeout": "Queen Bed Frame Timeout",
         },
-        "Bastidor tamaño King / King Bed Frame / 国王床垫框架": {
+        "Bastidor tamaño King / King Bed Frame / 雙人特大床架": {
             "delivered": "King Bed Frame Delivered",
             "timeout": "King Bed Frame Timeout",
         },
-        "Litera / Loft or Bunk Bed": {
+        "Litera / Loft or Bunk Bed / 閣樓床或上下床": {
             "delivered": "Loft/Bunk Bed Delivered",
             "timeout": "Loft/Bunk Bed Timeout",
         },
@@ -204,7 +204,7 @@ KITCHEN_REQUESTS_SCHEMA = {
             "delivered": "Coffee Maker Delivered",
             "timeout": "Coffee Maker Timeout",
         },
-        "Otras / Other / 其他家具": {
+        "Otras / Other / 其他廚房用品": {
             "delivered": "Kitchen Supplies Delivered",
             "timeout": "Kitchen Supplies Timeout",
         },
@@ -273,7 +273,7 @@ EG_REQUESTS_SCHEMA = {
             "missed": EG_MISSED_APPT_STATUS,
             "items": FURNITURE_REQUESTS_SCHEMA,
         },
-        "Coche / Stroller / 婴儿车": {
+        "Coche / Stroller / 嬰兒車": {
             "delivered": "Stroller Delivered",
             "timeout": "Stroller Timeout",
             "missed": EG_MISSED_APPT_STATUS,
@@ -289,12 +289,24 @@ EG_REQUESTS_SCHEMA = {
             "missed": EG_MISSED_APPT_STATUS,
             "active": False,
         },
-        "Historical: Productos Femenino - Tampones / Feminine Products - Tampons / 卫生棉条": {
+        "Historical: Productos Femenino - Tampones / Feminine Products - Tampons / 衛生棉條": {
             "delivered": "Tampons Delivered",
             "timeout": "Tampons Timeout",
             "missed": EG_MISSED_APPT_STATUS,
             "active": False,
         },
+        "Historical: Comida para bebé / Baby Food / 嬰兒食品": {
+            "delivered": "Baby Food Delivered",
+            "timeout": "Baby Food Timeout",
+            "missed": EG_MISSED_APPT_STATUS,
+            "active": False,
+        },
+        "Historical: Formulario para bebé / Baby Formula / 嬰儿奶粉": {
+            "delivered": "Baby Formula Delivered",
+            "timeout": "Baby Formula Timeout",
+            "missed": EG_MISSED_APPT_STATUS,
+            "active": False,
+        }
     },
 }
 
@@ -387,7 +399,7 @@ SOCIAL_SERVICES_REQUESTS_SCHEMA = {
         "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助": {
             "delivered": "Low-Cost Internet Access Delivered - MESH",
             "timeout": [
-                "Low-Cost Internet Access TImeout",
+                "Low-Cost Internet Access Timeout",
                 "All Social Services Timeout",
             ],
         },
@@ -480,6 +492,22 @@ OLD_REQUEST_TAGS = {
     "Asistencia con Transporte / Transportation Assistance": "Asistencia con Transporte / Transportation Assistance / 交通運輸協助",
     "Asistencia para niños discapacitados / Assistance for disabled children / 残疾儿童援助": "Asistencia para niños discapacitados / Assistance for disabled children / 殘疾兒童協助",
     "Asistencia para mascotas / Pet Assistance / 宠物协助": "Asistencia para mascotas / Pet Assistance / 寵物協助",
+    "Cuna / Crib / 婴儿床": "Cuna / Crib / 嬰兒床",
+    "Colchón individual / Twin Mattress / 双人床垫": "Colchón individual / Twin Mattress / 單人床墊",
+    "Colchón matrimonio / Full Mattress / 全床垫": "Colchón matrimonio / Full Mattress / 雙人床墊",
+    "Colchón tamaño Queen / Queen Mattress / 女王床垫": "Colchón tamaño Queen / Queen Mattress / 雙人加大床墊",
+    "Colchón tamaño King / King Mattress / 国王床垫": "Colchón tamaño King / King Mattress / 雙人特大床墊",
+    "Cama individual / Twin Mattress + Frame / 双人床垫+框架": "Cama individual / Twin Mattress + Frame / 單人床墊+床架",
+    "Cama matrimonio / Full Mattress + Frame / 完整的床垫和框架": "Cama matrimonio / Full Mattress + Frame / 雙人床墊+床架",
+    "Cama tamaño Queen / Queen Mattress + Frame / 全床垫+框架": "Cama tamaño Queen / Queen Mattress + Frame / 雙人加大床墊+床架",
+    "Cama tamaño King / King Mattress + Frame / 国王床垫+框架": "Cama tamaño King / King Mattress + Frame / 雙人特大床墊+床架",
+    "Bastidor individual / Twin Bed Frame 双人床垫框架": "Bastidor individual / Twin Bed Frame 單人床架",
+    "Bastidor matrimonio / Full Bed Frame / 全床垫框架": "Bastidor matrimonio / Full Bed Frame / 雙人床架",
+    "Bastidor tamaño Queen / Queen Bed Frame / 女王床垫框架": "Bastidor tamaño Queen / Queen Bed Frame / 雙人加大床架",
+    "Bastidor tamaño King / King Bed Frame / 国王床垫框架": "Bastidor tamaño King / King Bed Frame / 雙人特大床架",
+    "Litera / Loft or Bunk Bed": "Litera / Loft or Bunk Bed / 閣樓床或上下床",
+    "Coche / Stroller / 婴儿车": "Coche / Stroller / 嬰兒車",
+    "Historical: Productos Femenino - Tampones / Feminine Products - Tampons / 卫生棉条":"Historical: Productos Femenino - Tampones / Feminine Products - Tampons / 衛生棉條"
 }
 
 OLD_FIELD_NAMES = {
