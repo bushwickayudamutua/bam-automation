@@ -4,6 +4,35 @@ import phonenumbers
 
 log = logging.getLogger(__name__)
 
+MIN_PHONE_LENGTH = 7
+
+
+def _prepare_phone_number(phone_number: str) -> Optional[str]:
+    """
+    Fix common issues with phone numbers
+    """
+    if not phone_number:
+        return None
+
+    prep_phone_number = phone_number.strip().lower()
+    prep_phone_number = (
+        prep_phone_number.replace("#invalido", "")
+        .replace("#sin servicio", "")
+        .replace("# invalido", "")
+        .replace("# sin servicio", "")
+        .strip()
+    )
+    if "alternativ" in prep_phone_number:
+        prep_phone_number = prep_phone_number.split("alternativ")[0].strip()
+    if len(prep_phone_number) < MIN_PHONE_LENGTH:
+        return None
+
+    # check if there are numbers in the phone number
+    if not any(char.isdigit() for char in prep_phone_number):
+        return None
+
+    return prep_phone_number
+
 
 def is_international_phone_number(phone_number: str) -> bool:
     """
@@ -12,6 +41,9 @@ def is_international_phone_number(phone_number: str) -> bool:
     :return: True if the phone number is international AND valid, False otherwise
     """
     try:
+        phone_number = _prepare_phone_number(phone_number)
+        if not phone_number:
+            return False
         parsed_phone_number = phonenumbers.parse(phone_number, "US")
         # if the phone number is not valid, we can't be sure if it's international or not.
         if not phonenumbers.is_valid_number(parsed_phone_number):
@@ -34,6 +66,9 @@ def format_phone_number(phone_number: str) -> Optional[str]:
     :return: The formatted phone number
     """
     try:
+        phone_number = _prepare_phone_number(phone_number)
+        if not phone_number:
+            return None
         parsed_phone_number = phonenumbers.parse(phone_number, "US")
         if not phonenumbers.is_valid_number(parsed_phone_number):
             return None
@@ -49,9 +84,7 @@ def format_phone_number(phone_number: str) -> Optional[str]:
         )
 
     except Exception as e:
-        log.warning(
-            f"Error formatting phone number {phone_number} because of {e}"
-        )
+        log.warning(f"Error formatting phone number {phone_number} because of {e}")
         return None
 
 

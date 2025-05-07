@@ -1,6 +1,6 @@
 import re
 from string import punctuation
-from typing import Dict
+from typing import Dict, Union
 from email_validator import validate_email, EmailNotValidError
 
 NO_EMAIL_ERROR = "No email address provided"
@@ -230,13 +230,15 @@ def clean_email(email: str) -> str:
     return email
 
 
-def format_email(email: str, dns_check: bool = False) -> Dict[str, str]:
+def format_email(email: Union[str, None], dns_check: bool = False) -> Dict[str, str]:
     """
     Format an email address to the standard
     :param email: The email address to format
     :return: The formatted email address
     """
     # first perform basic cleaning on the email address before validating
+    if not email:
+        return {"email": "", "error": NO_EMAIL_ERROR}
     email = email.strip().lower()
 
     # check for common nulls

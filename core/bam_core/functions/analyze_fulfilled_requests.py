@@ -34,6 +34,7 @@ SNAPSHOT_DATE_FIELD = "Snapshot Date"
 
 
 class AnalyzeFulfilledRequests(Function):
+    use_cache = False
     params = Params(
         Param(
             name="dry_run",
@@ -108,23 +109,45 @@ class AnalyzeFulfilledRequests(Function):
 
     def get_grouped_records(self):
         """
-        Get records from Digital Ocean Space
+        Get records from Digital Ocean Space with local caching
         """
         grouped_records = defaultdict(list)
+        cache_dir = os.path.join(tempfile.gettempdir(), "airtable_snapshots_cache")
+        os.makedirs(cache_dir, exist_ok=True)
+
         self.log.info("Fetching snapshots from Digital Ocean Space...")
+        if self.use_cache:
+            self.log.info(
+                f"Using cache directory: {cache_dir}"
+            )
         for filepath in self.s3.list_keys(
             "airtable-snapshots/assistance-requests-main/"
         ):
             if not filepath.endswith(".json"):
                 continue
-            log.debug(f"Fetching records from {filepath}")
-            snapshot_date = self.get_snapshot_date(filepath)
-            contents = self.s3.get_contents(filepath).decode("utf-8")
+            
+            if self.use_cache:
+                cache_file = os.path.join(cache_dir, os.path.basename(filepath))
+                if os.path.exists(cache_file):
+                    self.log.debug(f"Using cached file for {filepath}")
+                    with open(cache_file, "r") as f:
+                        contents = f.read()
+                else:
+                    self.log.debug(f"Fetching records from {filepath}")
+                    contents = self.s3.get_contents(filepath).decode("utf-8")
+                    with open(cache_file, "w") as f:
+                        f.write(contents)
+            else:
+                self.log.debug(f"Fetching records from {filepath}")
+                contents = self.s3.get_contents(filepath).decode("utf-8")
+
             if contents:
+                snapshot_date = self.get_snapshot_date(filepath)
                 file_records = json_to_obj(contents)
                 for record in file_records:
                     record[SNAPSHOT_DATE_FIELD] = snapshot_date
                     grouped_records[record["id"]].append(record)
+
         return grouped_records
 
     def get_fulfilled_requests(
