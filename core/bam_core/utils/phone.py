@@ -24,11 +24,14 @@ def _prepare_phone_number(phone_number: str) -> Optional[str]:
     )
     if "alternativ" in prep_phone_number:
         prep_phone_number = prep_phone_number.split("alternativ")[0].strip()
+
+    # check if the phone number is long enough
     if len(prep_phone_number) < MIN_PHONE_LENGTH:
         return None
 
-    # check if there are numbers in the phone number
-    if not any(char.isdigit() for char in prep_phone_number):
+    # check if there are enough digits in the phone number
+    prep_phone_number = "".join([c for c in prep_phone_number if c.isdigit() or c in ["(", ")", "-", " ", "+"]])
+    if len(prep_phone_number) < MIN_PHONE_LENGTH:
         return None
 
     return prep_phone_number
@@ -84,7 +87,9 @@ def format_phone_number(phone_number: str) -> Optional[str]:
         )
 
     except Exception as e:
-        log.warning(f"Error formatting phone number {phone_number} because of {e}")
+        log.warning(
+            f"Error formatting phone number {phone_number} because of {e}"
+        )
         return None
 
 

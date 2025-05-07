@@ -2,7 +2,44 @@ from bam_core.utils.phone import (
     format_phone_number,
     extract_phone_numbers,
     is_international_phone_number,
+    _prepare_phone_number,
 )
+
+
+def test_prepare_phone_number():
+    # Test valid phone number
+    valid_phone_number = "  9294206969  "
+    assert _prepare_phone_number(valid_phone_number) == "9294206969"
+
+    # Test phone number with invalid tags
+    phone_number_with_invalid_tag = "9294206969 #invalido"
+    assert _prepare_phone_number(phone_number_with_invalid_tag) == "9294206969"
+
+    # Test phone number with alternative text
+    phone_number_with_alternative = "9294206969 alternativ contact"
+    assert _prepare_phone_number(phone_number_with_alternative) == "9294206969"
+
+    # Test phone number with insufficient digits
+    short_phone_number = "12345"
+    assert _prepare_phone_number(short_phone_number) is None
+
+    # Test phone number with non-digit characters
+    phone_number_with_non_digits = "abc1234567xyz"
+    assert _prepare_phone_number(phone_number_with_non_digits) == "1234567"
+
+    # Test empty phone number
+    empty_phone_number = ""
+    assert _prepare_phone_number(empty_phone_number) is None
+
+    # Test phone number with only invalid tags
+    phone_number_with_only_invalid_tags = "#invalido #sin servicio"
+    assert _prepare_phone_number(phone_number_with_only_invalid_tags) is None
+
+    # Test phone number with mixed valid and invalid content
+    mixed_phone_number = (
+        "  #invalido 9294206969 alternativ contact #sin servicio"
+    )
+    assert _prepare_phone_number(mixed_phone_number) == "9294206969"
 
 
 def test_format_phone_number():

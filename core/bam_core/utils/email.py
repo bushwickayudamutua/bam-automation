@@ -230,7 +230,9 @@ def clean_email(email: str) -> str:
     return email
 
 
-def format_email(email: Union[str, None], dns_check: bool = False) -> Dict[str, str]:
+def format_email(
+    email: Union[str, None], dns_check: bool = False
+) -> Dict[str, str]:
     """
     Format an email address to the standard
     :param email: The email address to format

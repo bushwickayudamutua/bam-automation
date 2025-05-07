@@ -43,7 +43,7 @@ REQUEST_FIELDS = [
     EG_REQUESTS_FIELD,
     KITCHEN_REQUESTS_FIELD,
     FURNITURE_REQUESTS_FIELD,
-    NEW_BED_REQUESTS_FIELD, 
+    NEW_BED_REQUESTS_FIELD,
     EG_STATUS_FIELD,
     FOOD_REQUESTS_FIELD,
     FOOD_STATUS_FIELD,
@@ -306,7 +306,7 @@ EG_REQUESTS_SCHEMA = {
             "timeout": "Baby Formula Timeout",
             "missed": EG_MISSED_APPT_STATUS,
             "active": False,
-        }
+        },
     },
 }
 
@@ -507,7 +507,7 @@ OLD_REQUEST_TAGS = {
     "Bastidor tamaño King / King Bed Frame / 国王床垫框架": "Bastidor tamaño King / King Bed Frame / 雙人特大床架",
     "Litera / Loft or Bunk Bed": "Litera / Loft or Bunk Bed / 閣樓床或上下床",
     "Coche / Stroller / 婴儿车": "Coche / Stroller / 嬰兒車",
-    "Historical: Productos Femenino - Tampones / Feminine Products - Tampons / 卫生棉条":"Historical: Productos Femenino - Tampones / Feminine Products - Tampons / 衛生棉條"
+    "Historical: Productos Femenino - Tampones / Feminine Products - Tampons / 卫生棉条": "Historical: Productos Femenino - Tampones / Feminine Products - Tampons / 衛生棉條",
 }
 
 OLD_FIELD_NAMES = {

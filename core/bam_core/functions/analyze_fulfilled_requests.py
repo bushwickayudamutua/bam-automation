@@ -112,22 +112,24 @@ class AnalyzeFulfilledRequests(Function):
         Get records from Digital Ocean Space with local caching
         """
         grouped_records = defaultdict(list)
-        cache_dir = os.path.join(tempfile.gettempdir(), "airtable_snapshots_cache")
+        cache_dir = os.path.join(
+            tempfile.gettempdir(), "airtable_snapshots_cache"
+        )
         os.makedirs(cache_dir, exist_ok=True)
 
         self.log.info("Fetching snapshots from Digital Ocean Space...")
         if self.use_cache:
-            self.log.info(
-                f"Using cache directory: {cache_dir}"
-            )
+            self.log.info(f"Using cache directory: {cache_dir}")
         for filepath in self.s3.list_keys(
             "airtable-snapshots/assistance-requests-main/"
         ):
             if not filepath.endswith(".json"):
                 continue
-            
+
             if self.use_cache:
-                cache_file = os.path.join(cache_dir, os.path.basename(filepath))
+                cache_file = os.path.join(
+                    cache_dir, os.path.basename(filepath)
+                )
                 if os.path.exists(cache_file):
                     self.log.debug(f"Using cached file for {filepath}")
                     with open(cache_file, "r") as f:

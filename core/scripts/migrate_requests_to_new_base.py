@@ -1,3 +1,4 @@
+import argparse
 from collections import defaultdict
 import copy
 import json
@@ -11,7 +12,10 @@ from bam_core.settings import (
     AIRTABLE_V2_TOKEN,
 )
 from bam_core.lib.airtable import Airtable
-from bam_core.utils.phone import format_phone_number, is_international_phone_number
+from bam_core.utils.phone import (
+    format_phone_number,
+    is_international_phone_number,
+)
 from bam_core.utils.email import format_email, NO_EMAIL_ERROR
 from bam_core.functions.analyze_fulfilled_requests import (
     AnalyzeFulfilledRequests,
@@ -36,7 +40,9 @@ afr.use_cache = True
 
 
 # merge functions
-def select_first(old_field_name: str, new_field_name: str, records: list[dict]):
+def select_first(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
     return {new_field_name: records[0].get(old_field_name)}
 
 
@@ -57,19 +63,33 @@ def set_empty(old_field_name: str, new_field_name: str, records: list[dict]):
     return {new_field_name: ""}
 
 
-def merge_zip_code(old_field_name: str, new_field_name: str, records: list[dict]):
+def merge_zip_code(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
     # we only migrate valid zip codes
     output = select_first_non_null(old_field_name, new_field_name, records)
+    zip_code = output.get(new_field_name)
+
+    # attempt to format the zip code #
+    # remove all non-digit characters
+    zip_code = "".join([c for c in str(zip_code).strip() if c.isdigit()])
+    # Take the first 5 digits
+    if len(zip_code) > 5:
+        zip_code = zip_code[:5]
+
     try:
-        if output[new_field_name]:
-            output[new_field_name] = int(output[new_field_name])
+        # attempt to convert to int
+        output[new_field_name] = int(zip_code)
     except (ValueError, KeyError):
-        # if the zip code is not a number, set it to None
+        # otherwise set it to None
         output[new_field_name] = None
+
     return output
 
 
-def merge_date_submitted(old_field_name: str, new_field_name: str, records: list[dict]):
+def merge_date_submitted(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
     return {
         f"Legacy First {new_field_name}": min(
             [r[old_field_name] for r in records]
@@ -90,7 +110,11 @@ def merge_invalid_phone_number(
 def merge_intl_phone_number(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
-    return {new_field_name: is_international_phone_number(records[0].get(PHONE_FIELD))}
+    return {
+        new_field_name: is_international_phone_number(
+            records[0].get(PHONE_FIELD)
+        )
+    }
 
 
 def merge_email(old_field_name: str, new_field_name: str, records: list[dict]):
@@ -112,76 +136,116 @@ def merge_email(old_field_name: str, new_field_name: str, records: list[dict]):
     return {new_field_name: email, "Email Error": email_error}
 
 
-def merge_all_lists(old_field_name: str, new_field_name: str, records: list[dict]):
+def merge_all_lists(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
     all_items = set()
     for r in records:
         all_items.update(r.get(old_field_name, []))
     return {new_field_name: list(all_items)}
 
 
-LANGUAGE_MAPPING = {
-    "Chino Toishanese / Toishanese / 台山话": "Chino Toishanés / Toishanese / 台山话",
-    "Chino Cantonese / Cantonese / 广东话": "Chino Cantonés / Cantonese / 广东话",
-    "Arabic / 阿拉伯語": "Árabe / Arabic / 阿拉伯語"
-}
+def merge_languages(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
 
+    LANGUAGE_MAPPING = {
+        "Chino Toishanese / Toishanese / 台山话": "Chino Toishanés / Toishanese / 台山话",
+        "Chino Cantonese / Cantonese / 广东话": "Chino Cantonés / Cantonese / 广东话",
+        "Arabic / 阿拉伯語": "Árabe / Arabic / 阿拉伯語",
+        "Portuguese / 葡萄牙語": "Portugués / Portuguese / 葡萄牙語",
+        "Portuguese": "Portugués / Portuguese / 葡萄牙語",
+        "Otro / Other / 别的方言": "Otro / Other / 其他語言",
+        "Haitian Creole / French Creole / 法屬歸融語": "Criollo Haitiano / Haitian Creole / 法屬歸融語",
+    }
 
-def merge_languages(old_field_name: str, new_field_name: str, records: list[dict]):
     output = merge_all_lists(old_field_name, new_field_name, records)
     # apply language mapping and deduplicate
-    output[new_field_name] = list(set([
-        LANGUAGE_MAPPING.get(item, item) for item in output[new_field_name]
-    ]))
+    output[new_field_name] = list(
+        set(
+            [
+                LANGUAGE_MAPPING.get(item, item)
+                for item in output[new_field_name]
+            ]
+        )
+    )
     return output
 
-INTERNET_MAPPING = {
-    "El red es lento / My network is slow": "El red es lento / My network is slow / 我的網絡很慢",
-    "El red es caro / My internet is expensive": "El red es caro / My internet is expensive / 我的網絡很貴",
-    "No tengo acceso al red / I don't have internet access at all": "No tengo acceso al red / I don't have internet access at all / 我無法上網",
-    "Lo accedo con mi cellular / I access it with my cell": "Lo accedo con mi cellular / I access it with my cell / 我只能使用手機網絡上網"
-}
 
 def merge_internet_access(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
+    INTERNET_MAPPING = {
+        "El red es lento / My network is slow": "El red es lento / My network is slow / 我的網絡很慢",
+        "El red es caro / My internet is expensive": "El red es caro / My internet is expensive / 我的網絡很貴",
+        "No tengo acceso al red / I don't have internet access at all": "No tengo acceso al red / I don't have internet access at all / 我無法上網",
+        "Lo accedo con mi cellular / I access it with my cell": "Lo accedo con mi cellular / I access it with my cell / 我只能使用手機網絡上網",
+        "Uso el red público afuera / I use public internet access": "Uso el red público afuera / I use public internet access / 我只能使用公共網絡上網",
+    }
     # we only migrate valid internet access
     output = merge_all_lists(old_field_name, new_field_name, records)
     # apply internet mapping
-    output[new_field_name] = [
-        INTERNET_MAPPING.get(item, item) for item in output[new_field_name]
-    ]
+    output[new_field_name] = list(
+        set(
+            [
+                INTERNET_MAPPING.get(item, item)
+                for item in output[new_field_name]
+            ]
+        )
+    )
     return output
+
 
 def merge_roof_accessible(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
     tag = "Tengo acceso de mi techo / Roof access in my building"
 
-    return {new_field_name: any([tag in r.get(old_field_name, []) for r in records])}
-
-
-def merge_case_notes(old_field_name: str, new_field_name: str, records: list[dict]):
     return {
-        new_field_name: "\n-------\n".join(
-            [
-                r.get(old_field_name, "").strip()
-                for r in records
-                if r.get(old_field_name)
-            ]
+        new_field_name: any(
+            [tag in r.get(old_field_name, []) for r in records]
         )
     }
 
 
-def merge_airtable_urls(old_field_name: str, new_field_name: str, records: list[dict]):
+def merge_case_notes(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
+    """
+    Merge case notes into a single field and add a link to the original assistance request record.
+    """
+    case_notes = ""
+    for r in records:
+        date_submitted = r.get(DATE_SUBMITTED_FIELD)
+        link = at_og.get_assistance_request_link(r["id"])
+        notes = r.get(old_field_name)
+        if notes:
+            note_lines = "\n".join(
+                [f"    - {n.strip()}" for n in notes.split("\n") if n.strip()]
+            )
+            case_notes += f"- [{date_submitted[0:10]}]({link})\n"
+            case_notes += note_lines
+            case_notes += "\n\n"
+    return {
+        new_field_name: case_notes,
+    }
+
+
+def merge_airtable_urls(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
     airtable_links = ""
     for r in records:
         if record_id := r.get(old_field_name):
+            date_submitted = r.get(DATE_SUBMITTED_FIELD)
             link = at_og.get_assistance_request_link(r[old_field_name])
-            airtable_links += f"- [{record_id}]({link})\n"
+            airtable_links += f"- [{date_submitted[0:10]}]({link})\n"
     return {new_field_name: airtable_links}
 
 
-def merge_open_requests(old_field_name: str, new_field_name: str, records: list[dict]):
+def merge_open_requests(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
     # declare schema of request sub-items
     REQUEST_SUB_ITEMS = [
         {
@@ -213,12 +277,11 @@ def merge_open_requests(old_field_name: str, new_field_name: str, records: list[
             "request_type_output_field": None,
         },
     ]
-    
+
     # exclude these items from migration
     EXCLUDE_ITEMS = [
         "Asistencia para mascotas / Pet Assistance / 寵物協助",
-        "Comida de mascota / Pet Food / 寵物食品"
-        
+        "Comida de mascota / Pet Food / 寵物食品",
     ]
 
     ITEM_MAPPING = {
@@ -228,12 +291,22 @@ def merge_open_requests(old_field_name: str, new_field_name: str, records: list[
 
     # get the unique set of all items
     all_items = list(
-        set([item.strip() for r in records for item in r.get(old_field_name, [])])
+        set(
+            [
+                item.strip()
+                for r in records
+                for item in r.get(old_field_name, [])
+            ]
+        )
     )
 
     # filter out items we aren't migrating and "Historical" items
-    all_items = [item for item in all_items if "historical" not in item.lower() and item not in EXCLUDE_ITEMS]
-    
+    all_items = [
+        item
+        for item in all_items
+        if "historical" not in item.lower() and item not in EXCLUDE_ITEMS
+    ]
+
     # make a copy of the list to remove items from
     all_items_copy = all_items.copy()
 
@@ -250,7 +323,9 @@ def merge_open_requests(old_field_name: str, new_field_name: str, records: list[
 
             # merge top-level request type
             if old_request_type and item == old_request_type:
-                if new_request_type not in output.get(request_type_output_field, []):
+                if new_request_type not in output.get(
+                    request_type_output_field, []
+                ):
                     output[request_type_output_field].append(new_request_type)
                 # remove the item from the top-level list
                 if item in all_items_copy:
@@ -340,7 +415,7 @@ FIELD_MAPPING = {
         "merge_fx": merge_roof_accessible,
     },
     "Case Notes": {"new_field": "General Notes", "merge_fx": merge_case_notes},
-    "id": {"new_field": "Legacy Airtable Records", "merge_fx": merge_airtable_urls},
+    # "id": {"new_field": "Legacy Airtable Records", "merge_fx": merge_airtable_urls},
     # Creates First Date Submitted and Last Date Submitted fields
     DATE_SUBMITTED_FIELD: {
         "new_field": DATE_SUBMITTED_FIELD,
@@ -349,7 +424,7 @@ FIELD_MAPPING = {
 }
 
 # Fields to exclude from the request table.
-REQUEST_FIELDS_EXCLUDE = [
+FORM_SUBMISSION_EXCLUDE_FIELDS = [
     "Invalid Phone Number?",
     "Email Error",
     "Int'l Phone Number?",
@@ -396,7 +471,9 @@ def merge_household_records(household):
         new_field_name = mapping["new_field"]
         merge_fx = mapping["merge_fx"]
         try:
-            merged_record.update(merge_fx(old_field_name, new_field_name, records))
+            merged_record.update(
+                merge_fx(old_field_name, new_field_name, records)
+            )
         except Exception as e:
             raise Exception(
                 f"Error merging {old_field_name} into {new_field_name}: {e}"
@@ -412,19 +489,36 @@ def merge_households(households):
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="Migrate requests from old base to new base"
+    )
+    parser.add_argument(
+        "--start-at",
+        type=int,
+        default=1,
+        help="Start at this record number (for debugging)",
+    )
+    args = parser.parse_args()
     output = merge_households(get_open_records_for_households())
-    df = pd.DataFrame(output)
-    df.to_csv("households_to_migrate.csv", index=False)
-    print(f"Wrote {len(output)} records to households_to_migrate.csv")
-    for record in output:
-        request = {k: v for k, v in record.items() if k not in REQUEST_FIELDS_EXCLUDE}
+    filtered_output = output[args.start_at - 1 :]
+    print(f"Total records to migrate: {len(filtered_output)}")
+    for record in filtered_output:
+        form_submission = {
+            k: v
+            for k, v in record.items()
+            if k not in FORM_SUBMISSION_EXCLUDE_FIELDS
+        }
         try:
-            at_v2.get_table("Assistance Request Form Submissions").create(request)
+            response = at_v2.get_table(
+                "Assistance Request Form Submissions"
+            ).create(form_submission)
         except Exception as e:
-            print(f"Error creating request from record:")
+            print(f"Error creating form submission from record:")
             print(json.dumps(record, indent=2))
-            print(e)
+            print(f"Error: {e}")
             return
+        # TODO: Update the household and request tables by linking to the form submission
+
 
 if __name__ == "__main__":
     main()
