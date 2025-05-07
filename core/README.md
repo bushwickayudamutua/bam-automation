@@ -10,6 +10,7 @@ Re-usable functions and settings for automations.
 * [`bam_core.settings`](bam_core/settings.py): Shared env-based settings.
 * [`bam_core.constants`](bam_core/constants.py): References to Airtable fields, values, views, and schemas.
 * [`tests`](tests/): tests run via `pytest -vv .`
+* [`scripts`](scripts/): assorted one-off scripts.
 
 ## How do I install this locally?
 

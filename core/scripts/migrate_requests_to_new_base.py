@@ -16,6 +16,7 @@ from bam_core.utils.phone import (
     format_phone_number,
     is_international_phone_number,
 )
+from bam_core.utils.retry import retry
 from bam_core.utils.email import format_email, NO_EMAIL_ERROR
 from bam_core.functions.analyze_fulfilled_requests import (
     AnalyzeFulfilledRequests,
@@ -32,6 +33,10 @@ from bam_core.constants import (
     SOCIAL_SERVICES_REQUESTS_SCHEMA,
 )
 
+#######################################
+#  Setup References To Airtable Bases #
+#######################################
+
 at_og = Airtable(base_id=AIRTABLE_BASE_ID, token=AIRTABLE_TOKEN)
 at_v2 = Airtable(base_id=AIRTABLE_V2_BASE_ID, token=AIRTABLE_V2_TOKEN)
 form_submission_table = at_v2.get_table("Assistance Request Form Submissions")
@@ -39,11 +44,56 @@ ss_requests_table = at_v2.get_table("Social Service Requests")
 requests_table = at_v2.get_table("Requests")
 households_table = at_v2.get_table("Households")
 
+
+#######################################
+#  Initialize Snapshot Analysis FX    #
+#######################################
+# NOTE: We use the AnalyzeFulfilledRequests class to get the most recent snapshot of each record.
+# This is mostly a matter of convenience, since it already has the logic to identify open requests.
+# We could also pull the records directly from the Airtable API, but that would require more work lol.
+
 afr = AnalyzeFulfilledRequests()
 afr.use_cache = True
 
 
-# merge functions
+#######################################
+#  Fetch Open Requests Per Household  #
+#######################################
+
+
+def extract_open_requests_per_household():
+    """
+    Get all open requests per household from digital ocean snapshots.
+    :return: A dictionary of household records, where the key is the phone number
+    and the value is a list of records for that household.
+    """
+    households = defaultdict(list)
+    # get all snapshots
+    grouped_records = afr.get_grouped_records()
+
+    # get the last snapshot for each record
+    for record_id, snapshot in afr.get_last_snapshots(grouped_records):
+
+        # identify the open requests for the snapshot
+        open_requests = afr.get_open_requests_for_snapshot(record_id, snapshot)
+
+        # if there are open requests, add them to the household
+        # and format the phone number
+        # only add the household if there are open requests
+        # and the phone number is valid
+        if len(open_requests) > 0 and PHONE_FIELD in snapshot:
+            snapshot["Open Requests"] = [r["Item"] for r in open_requests]
+            phone_number = format_phone_number(snapshot[PHONE_FIELD])
+            if phone_number:
+                households[phone_number].append(snapshot)
+    return households
+
+
+#######################################
+#   Generic Transformation Functions  #
+#######################################
+
+
 def select_first(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
@@ -67,9 +117,18 @@ def set_empty(old_field_name: str, new_field_name: str, records: list[dict]):
     return {new_field_name: ""}
 
 
-def merge_zip_code(
+############################################
+#  Field-Specific Transformation Functions #
+############################################
+
+
+def transform_zip_code(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
+    """
+    Attempt to format the zip code into a 5 digit integer.
+    If it fails, set it to None.
+    """
     # we only migrate valid zip codes
     output = select_first_non_null(old_field_name, new_field_name, records)
     zip_code = output.get(new_field_name)
@@ -91,9 +150,13 @@ def merge_zip_code(
     return output
 
 
-def merge_date_submitted(
+def transform_date_submitted(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
+    """
+    Create two new fields: "Legacy First Date Submitted" and "Legacy Last Date Submitted"
+    representing the first and last date a request was submitted for the household.
+    """
     return {
         f"Legacy First {new_field_name}": min(
             [r[old_field_name] for r in records]
@@ -104,16 +167,21 @@ def merge_date_submitted(
     }
 
 
-def merge_invalid_phone_number(
+def transform_invalid_phone_number(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
-    # we only migrate valid phone numbers
+    """
+    We're only migrating valid phone numbers, so we set this field to False for all records.
+    """
     return {new_field_name: False}
 
 
-def merge_intl_phone_number(
+def transform_intl_phone_number(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
+    """
+    Check if first phone number is international
+    """
     return {
         new_field_name: is_international_phone_number(
             records[0].get(PHONE_FIELD)
@@ -121,8 +189,14 @@ def merge_intl_phone_number(
     }
 
 
-def merge_email(old_field_name: str, new_field_name: str, records: list[dict]):
-    # If there are valid emails, set the new field to the first valid email
+def transform_email(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
+    """
+    If there are valid emails, set the new field to the first valid email
+    otherwise set it to an empty string.
+    """
+    #
     email = ""
     # only merge valid emails
     email_error = str(NO_EMAIL_ERROR)
@@ -140,18 +214,26 @@ def merge_email(old_field_name: str, new_field_name: str, records: list[dict]):
     return {new_field_name: email, "Email Error": email_error}
 
 
-def merge_all_lists(
+def transform_lists(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
+    """
+    Given a list of records, merge all the values of the old field into a single list
+    and remove duplicates.
+    """
     all_items = set()
     for r in records:
         all_items.update(r.get(old_field_name, []))
     return {new_field_name: list(all_items)}
 
 
-def merge_languages(
+def transform_languages(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
+    """
+    Transform the languages field into a single list of languages.
+    Also apply a mapping to the languages to map from the old names to the new names.
+    """
 
     LANGUAGE_MAPPING = {
         "Chino Toishanese / Toishanese / 台山话": "Chino Toishanés / Toishanese / 台山话",
@@ -163,7 +245,7 @@ def merge_languages(
         "Haitian Creole / French Creole / 法屬歸融語": "Criollo Haitiano / Haitian Creole / 法屬歸融語",
     }
 
-    output = merge_all_lists(old_field_name, new_field_name, records)
+    output = transform_lists(old_field_name, new_field_name, records)
     # apply language mapping and deduplicate
     output[new_field_name] = list(
         set(
@@ -176,9 +258,13 @@ def merge_languages(
     return output
 
 
-def merge_internet_access(
+def transform_internet_access(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
+    """
+    Transform the internet access field into a single list of internet access requests.
+    Also apply a mapping to the internet access requests to map from the old names to the new names.
+    """
     INTERNET_MAPPING = {
         "El red es lento / My network is slow": "El red es lento / My network is slow / 我的網絡很慢",
         "El red es caro / My internet is expensive": "El red es caro / My internet is expensive / 我的網絡很貴",
@@ -187,7 +273,7 @@ def merge_internet_access(
         "Uso el red público afuera / I use public internet access": "Uso el red público afuera / I use public internet access / 我只能使用公共網絡上網",
     }
     # we only migrate valid internet access
-    output = merge_all_lists(old_field_name, new_field_name, records)
+    output = transform_lists(old_field_name, new_field_name, records)
     # apply internet mapping
     output[new_field_name] = list(
         set(
@@ -200,9 +286,13 @@ def merge_internet_access(
     return output
 
 
-def merge_roof_accessible(
+def transform_roof_accessible(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
+    """
+    Transform the roof access field into a single boolean value by checking if
+    any of the records have the tag "Tengo acceso de mi techo / Roof access in my building".
+    """
     tag = "Tengo acceso de mi techo / Roof access in my building"
 
     return {
@@ -212,11 +302,12 @@ def merge_roof_accessible(
     }
 
 
-def merge_case_notes(
+def transform_case_notes(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
     """
-    Merge case notes into a single field and add a link to the original assistance request record.
+    Merge case notes into a single value and add a link to the original
+    assistance request record.
     """
     case_notes = ""
     for r in records:
@@ -235,21 +326,21 @@ def merge_case_notes(
     }
 
 
-def merge_airtable_urls(
-    old_field_name: str, new_field_name: str, records: list[dict]
-):
-    airtable_links = ""
-    for r in records:
-        if record_id := r.get(old_field_name):
-            date_submitted = r.get(DATE_SUBMITTED_FIELD)
-            link = at_og.get_assistance_request_link(r[old_field_name])
-            airtable_links += f"- [{date_submitted[0:10]}]({link})\n"
-    return {new_field_name: airtable_links}
+#######################################
+#   Open Requests Transformation      #
+#######################################
 
 
-def merge_open_requests(
+def transform_open_requests(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
+    """
+    We create the "Open Requests" field when we get all open requests per household; It doesn't exist in the old schema.
+    We then:
+    1. Merge all the open requests into one list
+    2. Remove duplicates
+    3. Detect instances where sub request types are present and split them into their own fields
+    """
     # declare schema of request sub-items
     REQUEST_SUB_ITEMS = [
         {
@@ -288,6 +379,7 @@ def merge_open_requests(
         "Comida de mascota / Pet Food / 寵物食品",
     ]
 
+    # rename these items
     ITEM_MAPPING = {
         "Otras / Other / 其他家具": "Otras Muebles / Other Furniture / 其他家具",
         "Otras / Other / 其他廚房用品": "Otras Cosas de Cocina / Other Kitchen Items / 其他廚房用品",
@@ -369,123 +461,156 @@ def merge_open_requests(
     return output
 
 
-# og schema:new schema
-FIELD_MAPPING = {
-    "First Name": {"new_field": "Name", "merge_fx": select_first_non_null},
-    PHONE_FIELD: {"new_field": PHONE_FIELD, "merge_fx": select_first},
-    "Invalid Phone Number?": {
-        "new_field": "Invalid Phone Number?",
-        "merge_fx": merge_invalid_phone_number,
-    },
-    "Intl Phone Number?": {
-        "new_field": "Int'l Phone Number?",
-        "merge_fx": merge_intl_phone_number,
-    },
-    # includes both Email and Email Error
-    "Email": {"new_field": "Email", "merge_fx": merge_email},
-    "Language": {"new_field": "Languages", "merge_fx": merge_languages},
-    "Current Address": {
-        "new_field": "Street Address",
-        "merge_fx": select_first_non_null,
-    },
-    "Current Address - City, State": {
-        "new_field": "City, State",
-        "merge_fx": select_first_non_null,
-    },
-    "Current Address - Zip Code": {
-        "new_field": "Zip Code",
-        "merge_fx": merge_zip_code,
-    },
-    "Furniture Acknowledgement": {
-        "new_field": "Furniture Acknowledgement",
-        "merge_fx": set_true,
-    },
-    "Geocode": {"new_field": "Geocode", "merge_fx": select_first_non_null},
-    # We create the "Open Requests" field when we get all open requests per household; It doesn't exist in the old schema.
-    # We then:
-    # 1. Merge all the open requests into one list
-    # 2. Remove duplicates
-    # 3. Detect instances where sub request types are present and split them into their own fields
-    "Open Requests": {
-        "new_field": "Request Types",
-        "merge_fx": merge_open_requests,
-    },
-    "Internet Access": {
-        "new_field": "Internet Access",
-        "merge_fx": merge_internet_access,
-    },
-    "MESH - To confirm during outreach (before install)": {
-        "new_field": "Roof Accessible?",
-        "merge_fx": merge_roof_accessible,
-    },
-    "Case Notes": {"new_field": "Notes", "merge_fx": merge_case_notes},
-    # "id": {"new_field": "Legacy Airtable Records", "merge_fx": merge_airtable_urls},
-    # Creates First Date Submitted and Last Date Submitted fields
-    DATE_SUBMITTED_FIELD: {
-        "new_field": DATE_SUBMITTED_FIELD,
-        "merge_fx": merge_date_submitted,
-    },
-}
+#########################################
+# Transform Households                  #
+#########################################
 
 
-# Steps:
-# 1. Get the most recent snapshot for each record
-# 2. For each record get only the open requests
-# 3. Replace the existing requests with only the open requests
-# 4. Group all the requests by phone number (aka "Household")
-# 5. For each Household group, merge/select fields from the requests into one household record.
-#    - Follow instructions here: https://docs.google.com/spreadsheets/d/1fBwNU1RSBJtUrp_mjwxYZFgiknfaHU8IXiigAQjuj1I/edit?gid=0#gid=0
+def transform_household_records(household_records: list[dict]) -> dict:
+    """
+    Given a list of household records, transform them into a single record
+    by applying a series of transformation functions to each field.
+    :param household_records: A list of household records
+    :return: A single transformed household record
+    """
+    # og schema:new schema
+    FIELD_MAPPING = {
+        "First Name": {
+            "new_field": "Name",
+            "transform_fx": select_first_non_null,
+        },
+        PHONE_FIELD: {"new_field": PHONE_FIELD, "transform_fx": select_first},
+        "Invalid Phone Number?": {
+            "new_field": "Invalid Phone Number?",
+            "transform_fx": transform_invalid_phone_number,
+        },
+        "Intl Phone Number?": {
+            "new_field": "Int'l Phone Number?",
+            "transform_fx": transform_intl_phone_number,
+        },
+        # includes both Email and Email Error
+        "Email": {"new_field": "Email", "transform_fx": transform_email},
+        "Language": {
+            "new_field": "Languages",
+            "transform_fx": transform_languages,
+        },
+        "Current Address": {
+            "new_field": "Street Address",
+            "transform_fx": select_first_non_null,
+        },
+        "Current Address - City, State": {
+            "new_field": "City, State",
+            "transform_fx": select_first_non_null,
+        },
+        "Current Address - Zip Code": {
+            "new_field": "Zip Code",
+            "transform_fx": transform_zip_code,
+        },
+        "Furniture Acknowledgement": {
+            "new_field": "Furniture Acknowledgement",
+            "transform_fx": set_true,
+        },
+        "Geocode": {
+            "new_field": "Geocode",
+            "transform_fx": select_first_non_null,
+        },
+        "Open Requests": {
+            "new_field": "Request Types",
+            "transform_fx": transform_open_requests,
+        },
+        "Internet Access": {
+            "new_field": "Internet Access",
+            "transform_fx": transform_internet_access,
+        },
+        "MESH - To confirm during outreach (before install)": {
+            "new_field": "Roof Accessible?",
+            "transform_fx": transform_roof_accessible,
+        },
+        "Case Notes": {
+            "new_field": "Notes",
+            "transform_fx": transform_case_notes,
+        },
+        # Creates First Date Submitted and Last Date Submitted fields
+        DATE_SUBMITTED_FIELD: {
+            "new_field": DATE_SUBMITTED_FIELD,
+            "transform_fx": transform_date_submitted,
+        },
+    }
 
-
-# 1. Get the most recent snapshot for each record
-# 2. For each record get only the open requests
-# 3. Replace the existing requests with only the open requests
-# 4. Group all the requests by formatted phone number (aka "Household")
-def get_open_requests_by_household():
-    households = defaultdict(list)
-    """Get all snapshots from the old base"""
-    grouped_records = afr.get_grouped_records()
-    for record_id, snapshot in afr.get_last_snapshots(grouped_records):
-        open_requests = afr.get_open_requests_for_snapshot(record_id, snapshot)
-        if len(open_requests) > 0 and PHONE_FIELD in snapshot:
-            snapshot["Open Requests"] = [r["Item"] for r in open_requests]
-            phone_number = format_phone_number(snapshot[PHONE_FIELD])
-            # only allow valid phone numbers
-            if phone_number:
-                households[phone_number].append(snapshot)
-    return households
-
-
-def merge_household_records(household):
     # sort records by Date Submitted
     records = list(
-        sorted(household, key=lambda x: x[DATE_SUBMITTED_FIELD], reverse=True)
+        sorted(
+            household_records,
+            key=lambda x: x[DATE_SUBMITTED_FIELD],
+            reverse=True,
+        )
     )
-    # merge fields
-    merged_record = {}
+    # transform/merge fields
+    transformed_record = {}
     for old_field_name, mapping in FIELD_MAPPING.items():
         new_field_name = mapping["new_field"]
-        merge_fx = mapping["merge_fx"]
+        transform_fx = mapping["transform_fx"]
         try:
-            merged_record.update(
-                merge_fx(old_field_name, new_field_name, records)
+            transformed_record.update(
+                transform_fx(old_field_name, new_field_name, records)
             )
         except Exception as e:
             raise Exception(
-                f"Error merging {old_field_name} into {new_field_name}: {e}"
+                f"Error transforming {old_field_name} into {new_field_name}: {e}"
             )
-    return merged_record
+    return transformed_record
 
 
-def merge_households(households):
+def transform_households(households: dict[str, list[dict]]) -> list[dict]:
+    """
+    Given a dictionary of households, transform each household into a single record
+    by applying a series of transformation functions to each field.
+    :param households: A dictionary of households, where the key is the phone number
+    and the value is a list of records for that household.
+    :return: A list of transformed household records
+    """
     output = []
     for records in households.values():
-        output.append(merge_household_records(records))
+        output.append(transform_household_records(records))
     return output
 
 
-def get_records_for_requests_table(record: dict):
+#######################################
+#   Airtable Record Creation          #
+#######################################
 
+
+@retry(attempts=5, wait=1, backoff=2)
+def create_form_submission_record(record: dict):
+    """
+    Create a form submission record from the transformed legacy assistance request record.
+    :param record: The legacy assistance request record
+    :return: The form submission ID
+    """
+    # Fields to exclude from the request table.
+    FORM_SUBMISSION_EXCLUDE_FIELDS = [
+        "Invalid Phone Number?",
+        "Email Error",
+        "Int'l Phone Number?",
+        "Geocode",
+    ]
+
+    form_submission = {
+        k: v
+        for k, v in record.items()
+        if k not in FORM_SUBMISSION_EXCLUDE_FIELDS
+    }
+    form_submission_response = form_submission_table.create(form_submission)
+    return form_submission_response["id"]
+
+
+@retry(attempts=5, wait=1, backoff=2)
+def create_requests_records(record: dict):
+    """
+    Create a list of requests records from the transformed legacy assistance request record.
+    :param record: The legacy assistance request record
+    :return: A list of request IDs
+    """
     TYPES_TO_EXCLUDE = [
         "Muebles / Furniture / 家具",
         "Cosas de Cocina / Kitchen Supplies / 廚房用品",
@@ -498,12 +623,20 @@ def get_records_for_requests_table(record: dict):
     all_reqs.extend(record.get("Kitchen Items", []))
     all_reqs.extend(record.get("Bed Details", []))
     # remove duplicates and remove excluded types
-    return [
+    request_records = [
         {"Type": r} for r in list(set(all_reqs)) if r not in TYPES_TO_EXCLUDE
     ]
+    requests_response = requests_table.batch_create(request_records)
+    return [r["id"] for r in requests_response]
 
 
-def get_records_for_ss_requests_table(record: dict):
+@retry(attempts=5, wait=1, backoff=2)
+def create_ss_requests_records(record: dict):
+    """
+    Create a list of social service requests records from the transformed legacy assistance request record.
+    :param record: The legacy assistance request record
+    :return: A list of social service request IDs
+    """
     ss_reqs = record.get("Social Service Requests", [])
     ss_records = []
     for req in ss_reqs:
@@ -519,56 +652,25 @@ def get_records_for_ss_requests_table(record: dict):
                 "Roof Accessible?", False
             )
         ss_records.append(ss_record)
-    return ss_records
+
+    ss_requests_response = ss_requests_table.batch_create(ss_records)
+    return [r["id"] for r in ss_requests_response]
 
 
-def migrate_household(record: dict):
-    # Fields to exclude from the request table.
-    FORM_SUBMISSION_EXCLUDE_FIELDS = [
-        "Invalid Phone Number?",
-        "Email Error",
-        "Int'l Phone Number?",
-        "Geocode",
-    ]
-
-    form_submission = {
-        k: v
-        for k, v in record.items()
-        if k not in FORM_SUBMISSION_EXCLUDE_FIELDS
-    }
-    # create form submission
-    try:
-        form_submission_response = form_submission_table.create(
-            form_submission
-        )
-        form_submission_id = form_submission_response["id"]
-    except Exception as e:
-        print(f"Error creating form submission from record:")
-        print(json.dumps(record, indent=2))
-        raise e
-
-    try:
-        ss_request_records = get_records_for_ss_requests_table(record)
-        ss_requests_response = ss_requests_table.batch_create(
-            ss_request_records
-        )
-        ss_request_ids = [r["id"] for r in ss_requests_response]
-    except Exception as e:
-        print(f"Error creating social service requests from records:")
-        print(json.dumps(ss_request_records, indent=2))
-        raise e
-
-    try:
-        request_records = get_records_for_requests_table(record)
-        requests_response = requests_table.batch_create(request_records)
-        request_ids = [r["id"] for r in requests_response]
-    except Exception as e:
-        print(f"Error creating requests from records:")
-        print(json.dumps(request_records, indent=2))
-        print(f"Error: {e}")
-        raise e
-
-    # create household record
+@retry(attempts=5, wait=1, backoff=2)
+def create_household_record(
+    record: dict,
+    request_ids: list[str],
+    ss_request_ids: list[str],
+    form_submission_id: str,
+):
+    """
+    Create a household record from the transformed legacy assistance request record.
+    :param record: The legacy assistance request record
+    :param request_ids: The list of request IDs to link to the household
+    :param ss_request_ids: The list of social service request IDs to link to the household
+    :param form_submission_id: The form submission ID to link to the household
+    """
 
     HOUSEHOLD_INCLUDE_FIELDS = [
         "Name",
@@ -593,19 +695,35 @@ def migrate_household(record: dict):
     household["Requests"] = request_ids
     household["Social Service Requests"] = ss_request_ids
     household["Form Submissions"] = [form_submission_id]
+    households_table.create(household)
 
-    try:
-        household_response = households_table.create(household)
-    except Exception as e:
-        print(f"Error creating household from record:")
-        print(json.dumps(household, indent=2))
-        print(f"Error: {e}")
-        raise e
+
+def load_household(record: dict):
+    """
+    Migrate an assistance request from the old base to the new base,
+    creating records in all the necessary tables.
+    :param record: The legacy assistance request record
+    :return: None
+    """
+    form_submission_id = create_form_submission_record(record)
+    ss_request_ids = create_ss_requests_records(record)
+    request_ids = create_requests_records(record)
+    # create the household record
+    create_household_record(
+        record, request_ids, ss_request_ids, form_submission_id
+    )
+
+
+#######################################
+#   CLI                               #
+#######################################
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Migrate requests from old base to new base. MAKE SURE YOU HAVE YOUR .env FILE SET UP CORRECTLY."
+        description="""
+            Migrate requests from old base to new base. MAKE SURE YOU HAVE YOUR .env FILE SET UP CORRECTLY.
+        """
     )
     parser.add_argument(
         "--start-at",
@@ -614,13 +732,22 @@ def main():
         help="Start at this record number (for debugging)",
     )
     args = parser.parse_args()
-    open_requests = get_open_requests_by_household()
-    output = merge_households(open_requests)
-    filtered_output = output[args.start_at - 1 :]
-    print(f"Total records to migrate: {len(filtered_output)}")
-    for record in filtered_output:
-        migrate_household(record)
-        # TODO: Update the household and request tables by linking to the form submission
+    legacy_requests = extract_open_requests_per_household()
+    transformed_requests = transform_households(legacy_requests)
+    transformed_requests_subset = transformed_requests[args.start_at - 1 :]
+    print(f"Total records to migrate: {len(transformed_requests_subset)}")
+    for i, household_request in enumerate(
+        transformed_requests_subset, start=args.start_at
+    ):
+        if i % 100 == 0:
+            print(
+                f"Migrated {i} records. {len(transformed_requests_subset) - i} records left."
+            )
+        try:
+            load_household(household_request)
+        except Exception as e:
+            print("Restart at:", i)
+            raise e
 
 
 if __name__ == "__main__":
