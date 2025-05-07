@@ -30,7 +30,13 @@ def _prepare_phone_number(phone_number: str) -> Optional[str]:
         return None
 
     # check if there are enough digits in the phone number
-    prep_phone_number = "".join([c for c in prep_phone_number if c.isdigit() or c in ["(", ")", "-", " ", "+"]])
+    prep_phone_number = "".join(
+        [
+            c
+            for c in prep_phone_number
+            if c.isdigit() or c in ["(", ")", "-", " ", "+"]
+        ]
+    )
     if len(prep_phone_number) < MIN_PHONE_LENGTH:
         return None
 

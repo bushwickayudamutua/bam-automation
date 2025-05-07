@@ -34,6 +34,10 @@ from bam_core.constants import (
 
 at_og = Airtable(base_id=AIRTABLE_BASE_ID, token=AIRTABLE_TOKEN)
 at_v2 = Airtable(base_id=AIRTABLE_V2_BASE_ID, token=AIRTABLE_V2_TOKEN)
+form_submission_table = at_v2.get_table("Assistance Request Form Submissions")
+ss_requests_table = at_v2.get_table("Social Service Requests")
+requests_table = at_v2.get_table("Requests")
+households_table = at_v2.get_table("Households")
 
 afr = AnalyzeFulfilledRequests()
 afr.use_cache = True
@@ -414,7 +418,7 @@ FIELD_MAPPING = {
         "new_field": "Roof Accessible?",
         "merge_fx": merge_roof_accessible,
     },
-    "Case Notes": {"new_field": "General Notes", "merge_fx": merge_case_notes},
+    "Case Notes": {"new_field": "Notes", "merge_fx": merge_case_notes},
     # "id": {"new_field": "Legacy Airtable Records", "merge_fx": merge_airtable_urls},
     # Creates First Date Submitted and Last Date Submitted fields
     DATE_SUBMITTED_FIELD: {
@@ -422,14 +426,6 @@ FIELD_MAPPING = {
         "merge_fx": merge_date_submitted,
     },
 }
-
-# Fields to exclude from the request table.
-FORM_SUBMISSION_EXCLUDE_FIELDS = [
-    "Invalid Phone Number?",
-    "Email Error",
-    "Int'l Phone Number?",
-    "Geocode",
-]
 
 
 # Steps:
@@ -488,6 +484,125 @@ def merge_households(households):
     return output
 
 
+def get_records_for_requests_table(record: dict):
+
+    TYPES_TO_EXCLUDE = [
+        "Muebles / Furniture / 家具",
+        "Cosas de Cocina / Kitchen Supplies / 廚房用品",
+        "Cama / Bed / 床",
+    ]
+
+    # flatten the list of requests
+    all_reqs = record.get("Request Types", [])
+    all_reqs.extend(record.get("Furniture Items", []))
+    all_reqs.extend(record.get("Kitchen Items", []))
+    all_reqs.extend(record.get("Bed Details", []))
+    # remove duplicates and remove excluded types
+    return [
+        {"Type": r} for r in list(set(all_reqs)) if r not in TYPES_TO_EXCLUDE
+    ]
+
+
+def get_records_for_ss_requests_table(record: dict):
+    ss_reqs = record.get("Social Service Requests", [])
+    ss_records = []
+    for req in ss_reqs:
+        ss_record = {
+            "Type": req,
+        }
+        if (
+            req
+            == "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助"
+        ):
+            ss_record["Internet Access"] = record.get("Internet Access", [])
+            ss_record["Roof Accessible?"] = record.get(
+                "Roof Accessible?", False
+            )
+        ss_records.append(ss_record)
+    return ss_records
+
+
+def migrate_household(record: dict):
+    # Fields to exclude from the request table.
+    FORM_SUBMISSION_EXCLUDE_FIELDS = [
+        "Invalid Phone Number?",
+        "Email Error",
+        "Int'l Phone Number?",
+        "Geocode",
+    ]
+
+    form_submission = {
+        k: v
+        for k, v in record.items()
+        if k not in FORM_SUBMISSION_EXCLUDE_FIELDS
+    }
+    # create form submission
+    try:
+        form_submission_response = form_submission_table.create(
+            form_submission
+        )
+        form_submission_id = form_submission_response["id"]
+    except Exception as e:
+        print(f"Error creating form submission from record:")
+        print(json.dumps(record, indent=2))
+        raise e
+
+    try:
+        ss_request_records = get_records_for_ss_requests_table(record)
+        ss_requests_response = ss_requests_table.batch_create(
+            ss_request_records
+        )
+        ss_request_ids = [r["id"] for r in ss_requests_response]
+    except Exception as e:
+        print(f"Error creating social service requests from records:")
+        print(json.dumps(ss_request_records, indent=2))
+        raise e
+
+    try:
+        request_records = get_records_for_requests_table(record)
+        requests_response = requests_table.batch_create(request_records)
+        request_ids = [r["id"] for r in requests_response]
+    except Exception as e:
+        print(f"Error creating requests from records:")
+        print(json.dumps(request_records, indent=2))
+        print(f"Error: {e}")
+        raise e
+
+    # create household record
+
+    HOUSEHOLD_INCLUDE_FIELDS = [
+        "Name",
+        PHONE_FIELD,
+        "Invalid Phone Number?",
+        "Int'l Phone Number?",
+        "Email",
+        "Email Error",
+        "Languages",
+        "Notes",
+        "Legacy First Date Submitted",
+        "Legacy Last Date Submitted",
+        "Street Address",
+        "City, State",
+        "Zip Code",
+        "Geocode",
+    ]
+
+    household = {
+        k: v for k, v in record.items() if k in HOUSEHOLD_INCLUDE_FIELDS
+    }
+    household["Requests"] = request_ids
+    household["Social Service Requests"] = ss_request_ids
+    household["Form Submissions"] = [form_submission_id]
+
+    try:
+        household_response = households_table.create(household)
+    except Exception as e:
+        print(f"Error creating household from record:")
+        print(json.dumps(household, indent=2))
+        print(f"Error: {e}")
+        raise e
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Migrate requests from old base to new base. MAKE SURE YOU HAVE YOUR .env FILE SET UP CORRECTLY."
@@ -504,20 +619,7 @@ def main():
     filtered_output = output[args.start_at - 1 :]
     print(f"Total records to migrate: {len(filtered_output)}")
     for record in filtered_output:
-        form_submission = {
-            k: v
-            for k, v in record.items()
-            if k not in FORM_SUBMISSION_EXCLUDE_FIELDS
-        }
-        try:
-            response = at_v2.get_table(
-                "Assistance Request Form Submissions"
-            ).create(form_submission)
-        except Exception as e:
-            print(f"Error creating form submission from record:")
-            print(json.dumps(record, indent=2))
-            print(f"Error: {e}")
-            return
+        migrate_household(record)
         # TODO: Update the household and request tables by linking to the form submission
 
 
