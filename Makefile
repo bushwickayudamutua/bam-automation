@@ -11,6 +11,7 @@ copy-core-to-functions:
 	cp -R core functions/packages/cron/hourly/
 	cp -R core functions/packages/cron/daily/
 	cp -R core functions/packages/airtable/dedupe_views/
+	cp -R core functions/packages/airtable/send_dialpad_sms/
 	cp -R core functions/packages/airtable/consolidate_eg_requests/
 	cp -R core functions/packages/airtable/timeout_eg_requests/
 	cp -R core functions/packages/airtable/update_field_value/
