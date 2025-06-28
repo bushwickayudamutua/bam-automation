@@ -54,6 +54,10 @@ S3_REGION_NAME = os.getenv("BAM_S3_REGION_NAME", "nyc3")
 S3_PLATFORM = os.getenv("BAM_S3_PLATFORM", "do")
 S3_CDN_ID = os.getenv("BAM_S3_CDN_ID", None)
 
+# dialpad settings
+DIALPAD_API_TOKEN = os.getenv("BAM_DIALPAD_API_TOKEN", None)
+DIALPAD_USER_ID = os.getenv("BAM_DIALPAD_USER_ID", None)
+
 # SALT for hashing
 SALT = os.getenv("BAM_SALT", "bam")
 

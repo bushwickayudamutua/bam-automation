@@ -4,6 +4,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from bam_core.lib.airtable import Airtable
+from bam_core.lib.dialpad import Dialpad
 from bam_core.lib.mailjet import Mailjet
 from bam_core.lib.s3 import S3
 from bam_core.utils.etc import now_utc
@@ -60,6 +61,7 @@ class Function(object):
             formatter_class=ArgumentDefaultsHelpFormatter,
         )
         self.log = FunctionLogger(self.__class__.__name__)
+        self.dialpad = Dialpad(logger=self.log)
 
     @property
     def params(self) -> Params:

@@ -47,15 +47,25 @@ class Airtable(object):
         table_name: str,
         view_name: str,
         fields: List[str] = [],
+        flatten: bool = False,
     ) -> Table:
         """
         Get a table object from the Airtable API
         :param table_name: The name of the table to get
         :return Table
         """
-        return self.api.table(self.base_id, table_name).all(
+        records = self.api.table(self.base_id, table_name).all(
             view=view_name, fields=fields
         )
+        if not flatten:
+            return records
+
+        # flatten records
+        flattened_records = []
+        for record in records:
+            record = self._flatten_record(record)
+            flattened_records.append(record)
+        return flattened_records
 
     def get_view_count(
         self, table: str, view: str, fields: List[str] = [], unique=False
