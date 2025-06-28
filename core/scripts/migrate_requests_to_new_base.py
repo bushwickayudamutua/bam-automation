@@ -91,7 +91,9 @@ def extract_open_requests_per_household():
 #######################################
 
 
-def select_first(old_field_name: str, new_field_name: str, records: list[dict]):
+def select_first(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
     return {new_field_name: records[0].get(old_field_name)}
 
 
@@ -117,7 +119,9 @@ def set_empty(old_field_name: str, new_field_name: str, records: list[dict]):
 ############################################
 
 
-def transform_zip_code(old_field_name: str, new_field_name: str, records: list[dict]):
+def transform_zip_code(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
     """
     Attempt to format the zip code into a 5 digit integer.
     If it fails, set it to None.
@@ -175,10 +179,16 @@ def transform_intl_phone_number(
     """
     Check if first phone number is international
     """
-    return {new_field_name: is_international_phone_number(records[0].get(PHONE_FIELD))}
+    return {
+        new_field_name: is_international_phone_number(
+            records[0].get(PHONE_FIELD)
+        )
+    }
 
 
-def transform_email(old_field_name: str, new_field_name: str, records: list[dict]):
+def transform_email(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
     """
     If there are valid emails, set the new field to the first valid email
     otherwise set it to an empty string.
@@ -201,7 +211,9 @@ def transform_email(old_field_name: str, new_field_name: str, records: list[dict
     return {new_field_name: email, "Email Error": email_error}
 
 
-def transform_lists(old_field_name: str, new_field_name: str, records: list[dict]):
+def transform_lists(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
     """
     Given a list of records, merge all the values of the old field into a single list
     and remove duplicates.
@@ -212,7 +224,9 @@ def transform_lists(old_field_name: str, new_field_name: str, records: list[dict
     return {new_field_name: list(all_items)}
 
 
-def transform_languages(old_field_name: str, new_field_name: str, records: list[dict]):
+def transform_languages(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
     """
     Transform the languages field into a single list of languages.
     Also apply a mapping to the languages to map from the old names to the new names.
@@ -231,7 +245,12 @@ def transform_languages(old_field_name: str, new_field_name: str, records: list[
     output = transform_lists(old_field_name, new_field_name, records)
     # apply language mapping and deduplicate
     output[new_field_name] = list(
-        set([LANGUAGE_MAPPING.get(item, item) for item in output[new_field_name]])
+        set(
+            [
+                LANGUAGE_MAPPING.get(item, item)
+                for item in output[new_field_name]
+            ]
+        )
     )
     return output
 
@@ -254,7 +273,12 @@ def transform_internet_access(
     output = transform_lists(old_field_name, new_field_name, records)
     # apply internet mapping
     output[new_field_name] = list(
-        set([INTERNET_MAPPING.get(item, item) for item in output[new_field_name]])
+        set(
+            [
+                INTERNET_MAPPING.get(item, item)
+                for item in output[new_field_name]
+            ]
+        )
     )
     return output
 
@@ -268,10 +292,16 @@ def transform_roof_accessible(
     """
     tag = "Tengo acceso de mi techo / Roof access in my building"
 
-    return {new_field_name: any([tag in r.get(old_field_name, []) for r in records])}
+    return {
+        new_field_name: any(
+            [tag in r.get(old_field_name, []) for r in records]
+        )
+    }
 
 
-def transform_case_notes(old_field_name: str, new_field_name: str, records: list[dict]):
+def transform_case_notes(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
     """
     Merge case notes into a single value and add a link to the original
     assistance request record.
@@ -354,7 +384,13 @@ def transform_open_requests(
 
     # get the unique set of all items
     all_items = list(
-        set([item.strip() for r in records for item in r.get(old_field_name, [])])
+        set(
+            [
+                item.strip()
+                for r in records
+                for item in r.get(old_field_name, [])
+            ]
+        )
     )
 
     # filter out items we aren't migrating and "Historical" items
@@ -380,7 +416,9 @@ def transform_open_requests(
 
             # merge top-level request type
             if old_request_type and item == old_request_type:
-                if new_request_type not in output.get(request_type_output_field, []):
+                if new_request_type not in output.get(
+                    request_type_output_field, []
+                ):
                     output[request_type_output_field].append(new_request_type)
                 # remove the item from the top-level list
                 if item in all_items_copy:
@@ -555,7 +593,9 @@ def create_form_submission_record(record: dict):
     ]
 
     form_submission = {
-        k: v for k, v in record.items() if k not in FORM_SUBMISSION_EXCLUDE_FIELDS
+        k: v
+        for k, v in record.items()
+        if k not in FORM_SUBMISSION_EXCLUDE_FIELDS
     }
     form_submission_response = form_submission_table.create(form_submission)
     return form_submission_response["id"]
@@ -605,7 +645,9 @@ def create_ss_requests_records(record: dict):
             == "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助"
         ):
             ss_record["Internet Access"] = record.get("Internet Access", [])
-            ss_record["Roof Accessible?"] = record.get("Roof Accessible?", False)
+            ss_record["Roof Accessible?"] = record.get(
+                "Roof Accessible?", False
+            )
         ss_records.append(ss_record)
 
     ss_requests_response = ss_requests_table.batch_create(ss_records)
@@ -644,7 +686,9 @@ def create_household_record(
         "Geocode",
     ]
 
-    household = {k: v for k, v in record.items() if k in HOUSEHOLD_INCLUDE_FIELDS}
+    household = {
+        k: v for k, v in record.items() if k in HOUSEHOLD_INCLUDE_FIELDS
+    }
     household["Requests"] = request_ids
     household["Social Service Requests"] = ss_request_ids
     household["Form Submissions"] = [form_submission_id]
@@ -662,7 +706,9 @@ def load_household(record: dict):
     ss_request_ids = create_ss_requests_records(record)
     request_ids = create_requests_records(record)
     # create the household record
-    create_household_record(record, request_ids, ss_request_ids, form_submission_id)
+    create_household_record(
+        record, request_ids, ss_request_ids, form_submission_id
+    )
 
 
 #######################################
