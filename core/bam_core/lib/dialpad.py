@@ -73,10 +73,10 @@ class Dialpad:
         return split_messages
 
     def send_sms(
-        self, rows: list[dict[str, Any]], message: str
+        self, rows: list[dict[str, Any]], message: str, testing: bool = False
     ) -> Generator[dict[str, Any], None, None]:
         for i, row in enumerate(rows):
-            if i % 30 == 0 and i != 0:
+            if not testing and i % 30 == 0 and i != 0:
                 self.log.info(
                     "Taking a little nap so that we don't get rate limited, will start back up in 30 seconds 😴"
                 )
@@ -109,26 +109,28 @@ class Dialpad:
                     "authorization": f"Bearer {self.api_token}",
                 }
                 self.log.info(
-                    f"***SENDING SPLIT MESSAGE: {current_split_message}"
+                    f"""[{phone_num}] {"WOULD SEND" if testing else "SENDING"}: '{current_split_message}'"""
                 )
-                try:
-                    response = requests.post(
-                        DIALPAD_API_URL, json=payload, headers=headers
-                    )
-                    json_resp = response.json()
-                    self.log.info(f"Response: {json_resp}")
-                    if not response.ok:
-                        api_error_message = json_resp.get("error", {}).get(
-                            "message", "Unknown error"
+                if not testing:
+                    try:
+                        response = requests.post(
+                            DIALPAD_API_URL, json=payload, headers=headers
                         )
-                        self.log.error(
-                            f"Error sending message to {first_name} at {phone_num}: {api_error_message}"
-                        )
-                        break
-                except Exception as e:
-                    self.log.error(f"Error: {e}")
-            time.sleep(2)
-        yield row
+                        json_resp = response.json()
+                        self.log.info(f"Response: {json_resp}")
+                        if not response.ok:
+                            api_error_message = json_resp.get("error", {}).get(
+                                "message", "Unknown error"
+                            )
+                            self.log.error(
+                                f"Error sending message to {first_name} at {phone_num}: {api_error_message}"
+                            )
+                            break
+                    except Exception as e:
+                        self.log.error(f"Error: {e}")
+            if not testing:
+                time.sleep(2)
+            yield row
 
     def send_sms_from_csv(self, file_path, user_message):
         with open(file_path, newline="", encoding="utf-8") as csv_file:
