@@ -1,46 +1,56 @@
-output: "/Users/zakieh.tayyebi/Desktop/outreach_Feb22/"
+output: "/Users/zakieh.tayyebi/Desktop/outreach_Aug19/"
+
+# exclude_numbers: "/Users/zakieh.tayyebi/Desktop/exclude.csv"
 
 # Filtering by expected eg distro date:
 # Note: Empty fields are always included.
-eg_distro_date: "IS_BEFORE({Expected EG Distribution Date}, DATETIME_PARSE('2/22/2025', 'MM/DD/YYYY'))"
+eg_distro_date: "IS_BEFORE({Expected EG Distribution Date}, DATETIME_PARSE('08/19/2025', 'MM/DD/YYYY'))"
 
 # Filtering by last auto texted date:
 # Note: Empty fields are always included.
-auto_texted_date: "IS_BEFORE({Last Auto Texted}, DATETIME_PARSE('2/21/2025', 'MM/DD/YYYY'))"
+auto_texted_date: "IS_BEFORE({Last Auto Texted}, DATETIME_PARSE('08/18/2025', 'MM/DD/YYYY'))"
 
 # Other filters with pyairtable format:
 filter_other: [
-    "NOT(FIND('A', {Cita Group}))", # filter out Cita Group A (food)
+    # "NOT(FIND('A', {Cita Group}))", # filter out Cita Group A (food)
     "NOT(FIND('Needs Delivery', {Cita Availability}))", # filter out people requiring delivery
+    # "IS_BEFORE({Date Submitted}, DATETIME_PARSE('08/04/2025', 'MM/DD/YYYY'))"
 ]
 
 # Languages, in order of texting:
 # Note: "Chinese" includes Cantonese, Mandarin, and Toishanese.
-languages: ["Chinese", "Spanish", "English"]
+languages: ["Spanish", "English"]
 
 # Maximum number of texts:
 # Note: By default (i.e., if this line is removed), there is no limit.
-total_capacity: 300
+# total_capacity: 300
 
 # EG items, in order of texting:
 # Note: By default, there is no limit per item.
 # Note: By default, requests are ordered by oldest first.
 items:
 -
-    name: "baby_diapers_old"
+    name: "adult_diapers"
+    EG_item: ["Pañales de adultos / Adult Diapers / 成人紙尿褲"]
+-
+    name: "baby_diapers"
     EG_item: ["Pañales / Baby Diapers / 嬰兒紙尿褲"]
-    sort: ["Date Submitted"] # oldest first (default)
-    capacity: 100
--
-    name: "baby_diapers_new"
-    EG_item: ["Pañales / Baby Diapers / 嬰兒紙尿褲"]
-    capacity: 50
-    sort: ["-Date Submitted"] # newest first
--
-    name: "soap_and_clothing"
-    EG_item: ["Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品", "Ropa / Clothing / 服裝"]
--
-    name: "plates_and_cups"
-    kitchen_items: ["Platos / Plates / 盤子", "Tazas / Cups / 杯子"]
-    view: "Essential Goods: Plates + Cups"
-
+# -
+#     name: "school_supp"
+#     EG_item: ["Cosas de Escuela / School Supplies / 學校用品"]
+# -
+#     name: "plates_cups"
+#     kitchen_items: ["Platos / Plates / 盤子", "Tazas / Cups / 杯子"]
+#     view: "Zakieh Plates + Cups"
+# -
+#     name: "clothing"
+#     EG_item: ["Ropa / Clothing / 服裝"]
+# -
+#     name: "pads_soap"
+#     EG_item: ["Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾", "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品"]
+# -
+#     name: "pads"
+#     EG_item: ["Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾"]
+# -
+#     name: "soap"
+#     EG_item: ["Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品"]
