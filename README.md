@@ -27,7 +27,7 @@ Finally, configure your local environment by copying [`.env.sample`](.env.sample
 cp .env.sample .env
 ```
 
-### Subfolders
+## Subfolders
 ## [`app`](app/)
 This folder contains a [`fastapi`](https://fastapi.tiangolo.com/) application designed to provide additional functionality to Airtable automations via HTTP requests.
 
