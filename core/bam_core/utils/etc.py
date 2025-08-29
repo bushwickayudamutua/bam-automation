@@ -108,7 +108,7 @@ def retry(
             while attempt < times:
                 try:
                     return func(*args, **kwargs)
-                except exceptions as e:
+                except tuple(exceptions) as e:
                     attempt += 1
                     wait_time = wait * (backoff**attempt)
                     log.warning(
