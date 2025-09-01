@@ -1,20 +1,20 @@
-output: "/Users/zakieh.tayyebi/Desktop/outreach_Aug19/"
+output: "/Users/zakieh.tayyebi/Desktop/outreach_Sep2/"
 
 # exclude_numbers: "/Users/zakieh.tayyebi/Desktop/exclude.csv"
 
 # Filtering by expected eg distro date:
 # Note: Empty fields are always included.
-eg_distro_date: "IS_BEFORE({Expected EG Distribution Date}, DATETIME_PARSE('08/19/2025', 'MM/DD/YYYY'))"
+eg_distro_date: "IS_BEFORE({Expected EG Distribution Date}, DATETIME_PARSE('09/02/2025', 'MM/DD/YYYY'))"
 
 # Filtering by last auto texted date:
 # Note: Empty fields are always included.
-auto_texted_date: "IS_BEFORE({Last Auto Texted}, DATETIME_PARSE('08/18/2025', 'MM/DD/YYYY'))"
+auto_texted_date: "IS_BEFORE({Last Auto Texted}, DATETIME_PARSE('09/01/2025', 'MM/DD/YYYY'))"
 
 # Other filters with pyairtable format:
 filter_other: [
     # "NOT(FIND('A', {Cita Group}))", # filter out Cita Group A (food)
-    "NOT(FIND('Needs Delivery', {Cita Availability}))", # filter out people requiring delivery
-    # "IS_BEFORE({Date Submitted}, DATETIME_PARSE('08/04/2025', 'MM/DD/YYYY'))"
+    # "NOT(FIND('Needs Delivery', {Cita Availability}))", # filter out people requiring delivery
+    # "IS_BEFORE({Date Submitted}, DATETIME_PARSE('08/01/2025', 'MM/DD/YYYY'))"
 ]
 
 # Languages, in order of texting:
@@ -29,9 +29,10 @@ languages: ["Spanish", "English"]
 # Note: By default, there is no limit per item.
 # Note: By default, requests are ordered by oldest first.
 items:
--
-    name: "adult_diapers"
-    EG_item: ["Pañales de adultos / Adult Diapers / 成人紙尿褲"]
+# -
+#     name: "adult_diapers"
+#     EG_item: ["Pañales de adultos / Adult Diapers / 成人紙尿褲"]
+    # view: "Essential Goods: Adult Diapers"
 -
     name: "baby_diapers"
     EG_item: ["Pañales / Baby Diapers / 嬰兒紙尿褲"]
@@ -42,15 +43,15 @@ items:
 #     name: "plates_cups"
 #     kitchen_items: ["Platos / Plates / 盤子", "Tazas / Cups / 杯子"]
 #     view: "Zakieh Plates + Cups"
-# -
-#     name: "clothing"
-#     EG_item: ["Ropa / Clothing / 服裝"]
-# -
-#     name: "pads_soap"
-#     EG_item: ["Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾", "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品"]
-# -
-#     name: "pads"
-#     EG_item: ["Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾"]
-# -
-#     name: "soap"
-#     EG_item: ["Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品"]
+-
+    name: "pads_soap"
+    EG_item: ["Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾", "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品"]
+-
+    name: "pads"
+    EG_item: ["Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾"]
+-
+    name: "soap"
+    EG_item: ["Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品"]
+-
+    name: "clothing"
+    EG_item: ["Ropa / Clothing / 服裝"]
