@@ -53,6 +53,11 @@ conditions_init = [
 ]
 conditions_init = conditions_init + [Formula(formula_str) for formula_str in params["filter_other"]] # custom filters with pyairtable format
 
+if "exclude_numbers" in params:
+    exclude = pd.read_csv(params["exclude_numbers"])["Phone Number"]
+else:
+    exclude = []
+
 i = 0
 phone_numbers_all = pd.Series()
 # Loop through eg items in order of priority:
@@ -115,7 +120,7 @@ for item in params["items"]:
             break
         records_df = pd.DataFrame([{"record_id": records[i]["id"], **records[i]["fields"]} for i in range(len(records))])
         # Remove duplicated phone numbers:
-        rmv = records_df[PHONE_FIELD].duplicated() | records_df[PHONE_FIELD].isin(phone_numbers_item) | records_df[PHONE_FIELD].isin(phone_numbers_all)
+        rmv = records_df[PHONE_FIELD].duplicated() | records_df[PHONE_FIELD].isin(phone_numbers_item) | records_df[PHONE_FIELD].isin(phone_numbers_all) | records_df[PHONE_FIELD].isin(exclude)
         records_df = records_df[~rmv]
         if records_df.shape[0] == 0:
             logger.warning("All phone numbers already included! Skipping "+item["name"]+";"+language)
@@ -140,4 +145,5 @@ for item in params["items"]:
         n_records = records_df.shape[0]
         logger.info("Saving "+str(n_records)+" phone numbers for "+item["name"]+";"+language+" to "+output_file)
         records_df.to_csv(output_file, index=False)
+
 

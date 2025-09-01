@@ -14,10 +14,10 @@ api = Api(BAM_AIRTABLE_TOKEN)
 table = api.table(BAM_AIRTABLE_BASE_ID, BAM_AIRTABLE_ASSISTANCE_REQUESTS_TABLE_ID)
 
 # Update last auto texted field:
-outreach_dir_path = "/Users/zakieh.tayyebi/Desktop/outreach_Aug12/"
+outreach_dir_path = "/Users/zakieh.tayyebi/Desktop/outreach_Sep2/"
 outreach_csv_paths = [f for f in os.listdir(outreach_dir_path) if re.match(r'.+\.csv', f)]
 outreach_csv_paths.sort()
-fn = outreach_csv_paths[1]
+fn = "3-pads_soap-Spanish-outreach-2.csv" # outreach_csv_paths[9]
 records_df = pd.read_csv(outreach_dir_path+fn)
 texted_date = datetime.today().strftime('%Y-%m-%d')
 
