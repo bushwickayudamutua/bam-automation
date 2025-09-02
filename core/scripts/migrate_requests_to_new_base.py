@@ -1,6 +1,9 @@
 import argparse
 from collections import defaultdict
 import copy
+from datetime import datetime
+from dateutil import parser
+import pandas as pd
 
 from bam_core.settings import (
     AIRTABLE_BASE_ID,
@@ -70,7 +73,7 @@ def extract_open_requests_per_household():
 
     # get the last snapshot for each record
     for record_id, snapshot in afr.get_last_snapshots(grouped_records):
-
+        
         # identify the open requests for the snapshot
         open_requests = afr.get_open_requests_for_snapshot(record_id, snapshot)
 
@@ -382,29 +385,29 @@ def transform_open_requests(
         "Otras / Other / 其他廚房用品": "Otras Cosas de Cocina / Other Kitchen Items / 其他廚房用品",
     }
 
-    # get the unique set of all items
-    all_items = list(
-        set(
-            [
-                item.strip()
-                for r in records
-                for item in r.get(old_field_name, [])
-            ]
-        )
-    )
+    def item_df(r, item):
+        df = pd.DataFrame({"item": [item]})
+        df.insert(column=DATE_SUBMITTED_FIELD, value=parser.parse(r.get(DATE_SUBMITTED_FIELD, [])), loc = 0)
+        return df
 
-    # filter out items we aren't migrating and "Historical" items
-    all_items = [
-        item
-        for item in all_items
-        if "historical" not in item.lower() and item not in EXCLUDE_ITEMS
-    ]
+    all_items_df = pd.concat([
+        item_df(r, item)
+        for r in records for item in r.get(old_field_name)
+    ])
+
+    # pick oldest request of each type:
+    all_items_df.sort_values(by=DATE_SUBMITTED_FIELD, ascending=True, inplace=True)
+    all_items_df.drop_duplicates(subset="item", keep='first', inplace=True)
+
+    keep_idx = pd.Series(["historical" not in item.lower() for item in all_items_df.get("item",[])])
+    keep_idx = keep_idx & (~all_items_df.get("item",[]).isin(EXCLUDE_ITEMS))
+    all_items_df = all_items_df[keep_idx]
 
     # make a copy of the list to remove items from
-    all_items_copy = all_items.copy()
+    all_items_df_copy = all_items_df.copy()
 
     output = defaultdict(list)
-    for item in all_items:
+    for item, date_submitted in zip(all_items_df.get("item",[]), all_items_df.get(DATE_SUBMITTED_FIELD,[])):
         # first check for sub-items and remove them from the top-level list
         for sub_item in REQUEST_SUB_ITEMS:
             # unpack sub_item
@@ -421,9 +424,10 @@ def transform_open_requests(
                 ):
                     output[request_type_output_field].append(new_request_type)
                 # remove the item from the top-level list
-                if item in all_items_copy:
-                    all_items_copy.remove(item)
 
+                keep_idx = all_items_df_copy.get("item",[]) != item
+                all_items_df_copy = all_items_df_copy[keep_idx]
+            
             elif item in sub_items:
                 #
                 # add the top-level request type if not already present
@@ -441,22 +445,21 @@ def transform_open_requests(
                     output[items_output_field].append(new_item)
 
                     # remove the old item from the top-level list
-                    if old_item in all_items_copy:
-                        all_items_copy.remove(old_item)
+                    keep_idx = all_items_df_copy.get("item",[]) != old_item
+                    all_items_df_copy = all_items_df_copy[keep_idx]
 
                 else:
                     # add the item to the output list
                     output[items_output_field].append(item)
 
                     # remove the item from the top-level list
-                    if item in all_items_copy:
-                        all_items_copy.remove(item)
-
+                    keep_idx = all_items_df_copy.get("item",[]) != item
+                    all_items_df_copy = all_items_df_copy[keep_idx]
+    
     # add any remaining items to the top-level list
-    output[new_field_name].extend(all_items_copy)
+    output = pd.concat([output, all_items_df_copy])
 
     return output
-
 
 #########################################
 # Transform Households                  #
@@ -615,13 +618,21 @@ def create_requests_records(record: dict):
     ]
 
     # flatten the list of requests
-    all_reqs = record.get("Request Types", [])
-    all_reqs.extend(record.get("Furniture Items", []))
-    all_reqs.extend(record.get("Kitchen Items", []))
-    all_reqs.extend(record.get("Bed Details", []))
+    all_reqs = pd.concat([
+        record.get("Request Types", []),
+        record.get("Furniture Items", []),
+        record.get("Kitchen Items", []),
+        record.get("Bed Details", []),
+    ])
+    
     # remove duplicates and remove excluded types
+    all_reqs.sort_values(by=DATE_SUBMITTED_FIELD, ascending=True, inplace=True)
+    all_reqs.drop_duplicates(subset="item", keep='first', inplace=True)
+    keep_idx = ~all_reqs.get("item",[]).isin(TYPES_TO_EXCLUDE)
+    all_reqs = all_reqs[keep_idx]
+    
     request_records = [
-        {"Type": r} for r in list(set(all_reqs)) if r not in TYPES_TO_EXCLUDE
+        {"Type": r, "Legacy " + DATE_SUBMITTED_FIELD: d} for r,d in zip(all_reqs.get("item",[]), all_reqs.get(DATE_SUBMITTED_FIELD,[]))
     ]
     requests_response = requests_table.batch_create(request_records)
     return [r["id"] for r in requests_response]
@@ -715,7 +726,6 @@ def load_household(record: dict):
 #   CLI                               #
 #######################################
 
-
 def main():
     parser = argparse.ArgumentParser(
         description="""
@@ -749,3 +759,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
