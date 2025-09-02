@@ -73,7 +73,7 @@ def extract_open_requests_per_household():
 
     # get the last snapshot for each record
     for record_id, snapshot in afr.get_last_snapshots(grouped_records):
-        
+
         # identify the open requests for the snapshot
         open_requests = afr.get_open_requests_for_snapshot(record_id, snapshot)
 
@@ -325,6 +325,11 @@ def transform_case_notes(
         new_field_name: case_notes,
     }
 
+def select_oldest_request(item_df):
+    item_df.sort_values(by=DATE_SUBMITTED_FIELD, ascending=True, inplace=True)
+    item_df.drop_duplicates(subset="item", keep='first', inplace=True)
+    item_df.reset_index(drop=True, inplace=True)
+    return item_df
 
 #######################################
 #   Open Requests Transformation      #
@@ -396,10 +401,9 @@ def transform_open_requests(
     ])
 
     # pick oldest request of each type:
-    all_items_df.sort_values(by=DATE_SUBMITTED_FIELD, ascending=True, inplace=True)
-    all_items_df.drop_duplicates(subset="item", keep='first', inplace=True)
-    all_items_df.reset_index(drop=True, inplace=True)
+    all_items_df = select_oldest_request(all_items_df)
 
+    # filter out items we aren't migrating and "Historical" items
     not_historical = pd.Series(["historical" not in item.lower() for item in all_items_df.get("item",[])])
     not_excluded_item = ~all_items_df.get("item",[]).isin(EXCLUDE_ITEMS)
     keep_idx = not_historical & not_excluded_item
@@ -420,10 +424,7 @@ def transform_open_requests(
             request_type_output_field = sub_item["request_type_output_field"]
             # merge top-level request type
             if old_request_type and item == old_request_type:
-                curr_output_type = output.get(request_type_output_field, [])
-                if len(curr_output_type) > 0:
-                    curr_output_type = curr_output_type.get("item", [])
-                if new_request_type not in curr_output_type:
+                if new_request_type:
                     new_item_row = pd.DataFrame({"item": [new_request_type], DATE_SUBMITTED_FIELD: [date_submitted]})
                     output[request_type_output_field] = pd.concat([output[request_type_output_field], new_item_row])
                 # remove the item from the top-level list
@@ -431,10 +432,7 @@ def transform_open_requests(
                 all_items_df_copy = all_items_df_copy[keep_idx]
             elif item in sub_items:
                 # add the top-level request type if not already present
-                curr_output_type = output.get(request_type_output_field, [])
-                if len(curr_output_type) > 0:
-                    curr_output_type = curr_output_type.get("item", [])
-                if new_request_type and new_request_type not in curr_output_type:
+                if new_request_type:
                     new_item_row = pd.DataFrame({"item": [new_request_type], DATE_SUBMITTED_FIELD: [date_submitted]})
                     output[request_type_output_field] = pd.concat([output[request_type_output_field], new_item_row])
                 # apply item mapping if present
@@ -457,6 +455,9 @@ def transform_open_requests(
 
     # add any remaining items to the top-level list
     output[new_field_name] = pd.concat([output[new_field_name], all_items_df_copy])
+
+    # pick oldest request of each type:
+    output = {name: select_oldest_request(item_df) for name, item_df in output.items()}
 
     return output
 
@@ -622,13 +623,13 @@ def create_requests_records(record: dict):
         record.get("Furniture Items"),
         record.get("Kitchen Items"),
         record.get("Bed Details"),
+        ignore_index=True
     ])
 
-    # remove duplicates and remove excluded types
-    all_reqs.sort_values(by=DATE_SUBMITTED_FIELD, ascending=True, inplace=True)
-    all_reqs.drop_duplicates(subset="item", keep='first', inplace=True)
+    # remove excluded types and pick oldest request of each type
     keep_idx = ~all_reqs.get("item",[]).isin(TYPES_TO_EXCLUDE)
     all_reqs = all_reqs[keep_idx]
+    all_reqs = select_oldest_request(all_reqs)
     
     request_records = [
         {"Type": r, "Legacy " + DATE_SUBMITTED_FIELD: d} for r,d in zip(all_reqs.get("item",[]), all_reqs.get(DATE_SUBMITTED_FIELD,[]))
