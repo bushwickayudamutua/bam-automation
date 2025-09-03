@@ -619,10 +619,10 @@ def create_requests_records(record: dict):
 
     # flatten the list of requests
     all_reqs = pd.concat([
-        record.get("Request Types"),
-        record.get("Furniture Items"),
-        record.get("Kitchen Items"),
-        record.get("Bed Details"),
+        record.get("Request Types", pd.DataFrame()),
+        record.get("Furniture Items", pd.DataFrame()),
+        record.get("Kitchen Items", pd.DataFrame()),
+        record.get("Bed Details", pd.DataFrame()),
     ], ignore_index=True)
 
     # remove excluded types and pick oldest request of each type
