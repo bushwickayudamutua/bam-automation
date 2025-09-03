@@ -117,6 +117,13 @@ def set_empty(old_field_name: str, new_field_name: str, records: list[dict]):
     return {new_field_name: ""}
 
 
+def select_oldest_request(item_df):
+    item_df.sort_values(by=DATE_SUBMITTED_FIELD, ascending=True, inplace=True)
+    item_df.drop_duplicates(subset="item", keep='first', inplace=True)
+    item_df.reset_index(drop=True, inplace=True)
+    return item_df
+
+
 ############################################
 #  Field-Specific Transformation Functions #
 ############################################
@@ -325,11 +332,6 @@ def transform_case_notes(
         new_field_name: case_notes,
     }
 
-def select_oldest_request(item_df):
-    item_df.sort_values(by=DATE_SUBMITTED_FIELD, ascending=True, inplace=True)
-    item_df.drop_duplicates(subset="item", keep='first', inplace=True)
-    item_df.reset_index(drop=True, inplace=True)
-    return item_df
 
 #######################################
 #   Open Requests Transformation      #
@@ -392,7 +394,7 @@ def transform_open_requests(
 
     def item_df(r, item):
         df = pd.DataFrame({"item": [item]})
-        df.insert(column=DATE_SUBMITTED_FIELD, value=date_parser.parse(r.get(DATE_SUBMITTED_FIELD, [])), loc = 0)
+        df.insert(column=DATE_SUBMITTED_FIELD, value=r.get(DATE_SUBMITTED_FIELD, []), loc = 0)
         return df
 
     all_items_df = pd.concat([
@@ -623,8 +625,7 @@ def create_requests_records(record: dict):
         record.get("Furniture Items"),
         record.get("Kitchen Items"),
         record.get("Bed Details"),
-        ignore_index=True
-    ])
+    ], ignore_index=True)
 
     # remove excluded types and pick oldest request of each type
     keep_idx = ~all_reqs.get("item",[]).isin(TYPES_TO_EXCLUDE)
@@ -726,37 +727,37 @@ def load_household(record: dict):
 #   CLI                               #
 #######################################
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="""
-            Migrate requests from old base to new base. MAKE SURE YOU HAVE YOUR .env FILE SET UP CORRECTLY.
-        """
-    )
-    parser.add_argument(
-        "--start-at",
-        type=int,
-        default=1,
-        help="Start at this record number (for debugging)",
-    )
-    args = parser.parse_args()
-    legacy_requests = extract_open_requests_per_household()
-    transformed_requests = transform_households(legacy_requests)
-    transformed_requests_subset = transformed_requests[args.start_at - 1 :]
-    print(f"Total records to migrate: {len(transformed_requests_subset)}")
-    for i, household_request in enumerate(
-        transformed_requests_subset, start=args.start_at
-    ):
-        if i % 100 == 0:
-            print(
-                f"Migrated {i} records. {len(transformed_requests_subset) - i} records left."
-            )
-        try:
-            load_household(household_request)
-        except Exception as e:
-            print("Restart at:", i)
-            raise e
+# def main():
+parser = argparse.ArgumentParser(
+    description="""
+        Migrate requests from old base to new base. MAKE SURE YOU HAVE YOUR .env FILE SET UP CORRECTLY.
+    """
+)
+parser.add_argument(
+    "--start-at",
+    type=int,
+    default=1,
+    help="Start at this record number (for debugging)",
+)
+args = parser.parse_args()
+legacy_requests = extract_open_requests_per_household()
+transformed_requests = transform_households(legacy_requests)
+#     transformed_requests_subset = transformed_requests[args.start_at - 1 :]
+#     print(f"Total records to migrate: {len(transformed_requests_subset)}")
+#     for i, household_request in enumerate(
+#         transformed_requests_subset, start=args.start_at
+#     ):
+#         if i % 100 == 0:
+#             print(
+#                 f"Migrated {i} records. {len(transformed_requests_subset) - i} records left."
+#             )
+#         try:
+#             load_household(household_request)
+#         except Exception as e:
+#             print("Restart at:", i)
+#             raise e
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
 
