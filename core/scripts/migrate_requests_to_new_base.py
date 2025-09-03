@@ -395,11 +395,12 @@ def transform_open_requests(
         df.insert(column=DATE_SUBMITTED_FIELD, value=r.get(DATE_SUBMITTED_FIELD, []), loc = 0)
         return df
 
-    all_items_df = pd.concat([
+    all_items_df = [
         item_df(r, item)
-        for r in records for item in r.get(old_field_name)
-    ])
-
+        for r in records for item in r.get(old_field_name, [])
+    ]
+    all_items_df = pd.concat(all_items_df or [pd.DataFrame()])
+    
     # pick oldest request of each type:
     all_items_df = select_oldest_request(all_items_df)
 
