@@ -727,37 +727,37 @@ def load_household(record: dict):
 #   CLI                               #
 #######################################
 
-# def main():
-parser = argparse.ArgumentParser(
-    description="""
-        Migrate requests from old base to new base. MAKE SURE YOU HAVE YOUR .env FILE SET UP CORRECTLY.
-    """
-)
-parser.add_argument(
-    "--start-at",
-    type=int,
-    default=1,
-    help="Start at this record number (for debugging)",
-)
-args = parser.parse_args()
-legacy_requests = extract_open_requests_per_household()
-transformed_requests = transform_households(legacy_requests)
-#     transformed_requests_subset = transformed_requests[args.start_at - 1 :]
-#     print(f"Total records to migrate: {len(transformed_requests_subset)}")
-#     for i, household_request in enumerate(
-#         transformed_requests_subset, start=args.start_at
-#     ):
-#         if i % 100 == 0:
-#             print(
-#                 f"Migrated {i} records. {len(transformed_requests_subset) - i} records left."
-#             )
-#         try:
-#             load_household(household_request)
-#         except Exception as e:
-#             print("Restart at:", i)
-#             raise e
+def main():
+    parser = argparse.ArgumentParser(
+        description="""
+            Migrate requests from old base to new base. MAKE SURE YOU HAVE YOUR .env FILE SET UP CORRECTLY.
+        """
+    )
+    parser.add_argument(
+        "--start-at",
+        type=int,
+        default=1,
+        help="Start at this record number (for debugging)",
+    )
+    args = parser.parse_args()
+    legacy_requests = extract_open_requests_per_household()
+    transformed_requests = transform_households(legacy_requests)
+    transformed_requests_subset = transformed_requests[args.start_at - 1 :]
+    print(f"Total records to migrate: {len(transformed_requests_subset)}")
+    for i, household_request in enumerate(
+        transformed_requests_subset, start=args.start_at
+    ):
+        if i % 100 == 0:
+            print(
+                f"Migrated {i} records. {len(transformed_requests_subset) - i} records left."
+            )
+        try:
+            load_household(household_request)
+        except Exception as e:
+            print("Restart at:", i)
+            raise e
 
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()
 
