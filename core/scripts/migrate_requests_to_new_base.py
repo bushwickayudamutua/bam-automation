@@ -1,8 +1,6 @@
 import argparse
 from collections import defaultdict
 import copy
-from datetime import datetime
-from dateutil import parser as date_parser
 import pandas as pd
 
 from bam_core.settings import (
