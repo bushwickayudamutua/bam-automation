@@ -727,6 +727,7 @@ def load_household(record: dict):
 #   CLI                               #
 #######################################
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="""
@@ -760,4 +761,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
