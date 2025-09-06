@@ -454,7 +454,11 @@ def transform_open_requests(
     # add any remaining items to the top-level list
     output[new_field_name] = pd.concat([output[new_field_name], all_items_df_copy])
 
+    # pick oldest request of each type:
+    output = {name: select_oldest_request(item_df) for name, item_df in output.items()}
+
     return output
+
 
 #########################################
 # Transform Households                  #
@@ -591,7 +595,7 @@ def create_form_submission_record(record: dict):
     ]
 
     form_submission = {
-        k: v
+        k: (v.get("item", []) if isinstance(v, pd.DataFrame) else v)
         for k, v in record.items()
         if k not in FORM_SUBMISSION_EXCLUDE_FIELDS
     }
@@ -612,21 +616,18 @@ def create_requests_records(record: dict):
         "Cama / Bed / 床",
     ]
 
-    # flatten the list of requests
+    # combine the list of requests
     all_reqs = pd.concat([
         record.get("Request Types", pd.DataFrame()),
         record.get("Furniture Items", pd.DataFrame()),
         record.get("Kitchen Items", pd.DataFrame()),
         record.get("Bed Details", pd.DataFrame()),
     ], ignore_index=True)
-
-    # remove excluded types and pick oldest request of each type
-    keep_idx = ~all_reqs.get("item",[]).isin(TYPES_TO_EXCLUDE)
-    all_reqs = all_reqs[keep_idx]
-    all_reqs = select_oldest_request(all_reqs)
     
     request_records = [
-        {"Type": r, "Legacy " + DATE_SUBMITTED_FIELD: d} for r,d in zip(all_reqs.get("item",[]), all_reqs.get(DATE_SUBMITTED_FIELD,[]))
+        {"Type": req, "Legacy " + DATE_SUBMITTED_FIELD: date}
+            for req, date in zip(all_reqs.get("item",[]), all_reqs.get(DATE_SUBMITTED_FIELD,[]))
+                if req not in TYPES_TO_EXCLUDE
     ]
     requests_response = requests_table.batch_create(request_records)
     return [r["id"] for r in requests_response]
@@ -639,20 +640,16 @@ def create_ss_requests_records(record: dict):
     :param record: The legacy assistance request record
     :return: A list of social service request IDs
     """
-    ss_reqs = record.get("Social Service Requests", [])
+    ss_reqs = record.get("Social Service Requests", pd.DataFrame())
     ss_records = []
-    for req in ss_reqs:
+    for req,date in zip(ss_reqs.get("item",[]), ss_reqs.get(DATE_SUBMITTED_FIELD,[])):
         ss_record = {
             "Type": req,
+            "Legacy " + DATE_SUBMITTED_FIELD: date
         }
-        if (
-            req
-            == "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助"
-        ):
+        if (req == "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助"):
             ss_record["Internet Access"] = record.get("Internet Access", [])
-            ss_record["Roof Accessible?"] = record.get(
-                "Roof Accessible?", False
-            )
+            ss_record["Roof Accessible?"] = record.get("Roof Accessible?", False)
         ss_records.append(ss_record)
 
     ss_requests_response = ss_requests_table.batch_create(ss_records)
@@ -754,3 +751,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
