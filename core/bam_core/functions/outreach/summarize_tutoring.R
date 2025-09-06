@@ -3,7 +3,7 @@ library(data.table)
 library(ggplot2)
 library(assertthat)
 
-df <- fread("~/Desktop/tutoring_tb.csv")
+df <- fread("~/Downloads/Imported table-Interested.csv")
 
 assert_that(all(df$`Still interested in tutoring` == "Yes"))
 assert_that(!any(duplicated(df$`Phone Number`)))
@@ -43,9 +43,10 @@ dummy <- lapply(names(TUTORING_COLS), function(col_name) {
     arrange(field_counts) %>%
     mutate(field_value = factor(field_value, levels = unique(field_value)))
   
-  pal <- RColorBrewer::brewer.pal(n = 12, name = "Paired") %>%
-    sample(size = n_cols-1, replace = F) %>%
-    c("#999999") %>% setNames(plot_data$field_value)
+  pal_names <- c(setdiff(plot_data$field_value, "NA"), "NA")
+  pal <- RColorBrewer::brewer.pal(n = 12, name = "Paired")
+  pal <- c(pal[seq(2, 12, 2)], pal[seq(1, 11, 2)])
+  pal <- c(rev(pal[1:(n_cols-1)]), "#999999") %>% setNames(pal_names)
   
   gp <- ggplot(plot_data, aes(x = field_value, y = field_counts)) +
     geom_col(aes(fill = field_value)) +
