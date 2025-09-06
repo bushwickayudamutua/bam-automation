@@ -399,10 +399,7 @@ def transform_open_requests(
         item_df(r, item)
         for r in records for item in r.get(old_field_name, [])
     ]
-    all_items_df = pd.concat(all_items_df or [pd.DataFrame()])
-    
-    # pick oldest request of each type:
-    all_items_df = select_oldest_request(all_items_df)
+    all_items_df = pd.concat(all_items_df or [pd.DataFrame()], ignore_index=True)
 
     # filter out items we aren't migrating and "Historical" items
     not_historical = pd.Series(["historical" not in item.lower() for item in all_items_df.get("item",[])])
@@ -456,9 +453,6 @@ def transform_open_requests(
 
     # add any remaining items to the top-level list
     output[new_field_name] = pd.concat([output[new_field_name], all_items_df_copy])
-
-    # pick oldest request of each type:
-    output = {name: select_oldest_request(item_df) for name, item_df in output.items()}
 
     return output
 
