@@ -390,13 +390,11 @@ def transform_open_requests(
         "Otras / Other / 其他廚房用品": "Otras Cosas de Cocina / Other Kitchen Items / 其他廚房用品",
     }
 
-    def item_df(r, item):
-        df = pd.DataFrame({"item": [item]})
-        df.insert(column=DATE_SUBMITTED_FIELD, value=r.get(DATE_SUBMITTED_FIELD, []), loc = 0)
-        return df
-
     all_items_df = [
-        item_df(r, item)
+        pd.DataFrame({
+            "item": [item],
+            DATE_SUBMITTED_FIELD: [r.get(DATE_SUBMITTED_FIELD, "").split("T")[0]]
+        })
         for r in records for item in r.get(old_field_name, [])
     ]
     all_items_df = pd.concat(all_items_df or [pd.DataFrame()], ignore_index=True)
@@ -595,7 +593,7 @@ def create_form_submission_record(record: dict):
     ]
 
     form_submission = {
-        k: (v.get("item", []) if isinstance(v, pd.DataFrame) else v)
+        k: (v.get("item", pd.Series()).to_list() if isinstance(v, pd.DataFrame) else v)
         for k, v in record.items()
         if k not in FORM_SUBMISSION_EXCLUDE_FIELDS
     }
