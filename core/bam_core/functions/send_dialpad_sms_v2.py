@@ -1,3 +1,4 @@
+from bam_core.lib import airtable_v2
 from bam_core.functions.base import Function
 from bam_core.functions.params import Params, Param
 from bam_core.constants import ASSISTANCE_REQUESTS_TABLE_NAME
