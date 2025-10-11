@@ -5,9 +5,6 @@ from pyairtable.orm import Model, fields as F
 from bam_core import settings
 
 
-log = logging.getLogger(__name__)
-
-
 class AirtableV2Meta(TypedDict):
     base_id: str
     api_key: str
