@@ -219,11 +219,14 @@ KITCHEN_REQUESTS_SCHEMA = {
 EG_REQUEST_PADS = (
     "Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾"
 )
-EG_REQUEST_BABY_DIAPERS = "Pañales / Baby Diapers / 嬰兒紙尿褲"
+EG_REQUEST_BABY_DIAPERS = "Pañales para Bebé / Baby Diapers / 嬰兒紙尿褲"
+EG_REQUEST_ADULT_DIAPERS = "Pañales para Adultos / Adult Diapers / 成人紙尿褲"
 EG_REQUEST_CLOTHING = "Ropa / Clothing / 服裝"
 EG_REQUEST_SCHOOL_SUPPLIES = "Cosas de Escuela / School Supplies / 學校用品"
 EG_REQUEST_FURNITURE = "Muebles / Furniture / 家具"
 EG_REQUEST_KITCHEN_SUPPLIES = "Cosas de Cocina / Kitchen Supplies / 廚房用品"
+EG_REQUEST_PLATES_AND_CUPS = "Platos y Vasos / Plates and Cups / 盤子和杯子"
+EG_REQUEST_SOAP = "Jabón / Soap / 肥皂"
 
 # Mapping of EG requests to statuses
 # Note that kitchen requests and furniture requests are nested under EG requests.
