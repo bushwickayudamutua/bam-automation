@@ -19,7 +19,7 @@ def build_meta(table_name: str) -> AirtableV2Meta:
 
 class Household(Model):
     name = F.TextField('Name')
-    id = F.AutoNumberField('ID')
+    ID = F.AutoNumberField('ID')
     phone_number = F.PhoneNumberField('Phone Number')
     last_texted = F.DateField('Last Texted')
 

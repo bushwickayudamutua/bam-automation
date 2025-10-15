@@ -58,14 +58,14 @@ class SendDialpadSMSV2(Function):
 
         requests = airtable_v2.Request.all(view=request_view_name)
         excluded_households = {
-            household.id
+            household.ID
             for household in airtable_v2.Household.all(view=exclude_households_view_name)
         }
 
         msg_recipients = {}
         for request in requests:
             household = requests.household
-            household_id = household.id
+            household_id = household.ID
             if household_id in msg_map or household_id in excluded_households:
                 continue
 

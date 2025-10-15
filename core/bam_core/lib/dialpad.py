@@ -134,7 +134,7 @@ class Dialpad:
             yield row
 
     def send_sms_v2(
-        self, households: list[airtable_v2.Household], message: str, testing: bool = False
+        self, households: list[Household], message: str, testing: bool = False
     ) -> Generator[Household, None, None]:
         for i, household in enumerate(households):
             if not testing and i % 30 == 0 and i != 0:
