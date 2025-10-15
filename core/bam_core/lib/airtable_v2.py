@@ -10,7 +10,7 @@ class AirtableV2Meta(TypedDict):
     api_key: str
     table_name: str
 
-def build_meta(table_name: string) -> AirtableV2Meta:
+def build_meta(table_name: str) -> AirtableV2Meta:
     return {
         'base_id': settings.AIRTABLE_V2_BASE_ID,
         'api_key': settings.AIRTABLE_V2_TOKEN,
