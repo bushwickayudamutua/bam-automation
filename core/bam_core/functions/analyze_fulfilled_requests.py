@@ -21,6 +21,9 @@ from bam_core.constants import (
     EG_REQUEST_BABY_DIAPERS,
     EG_REQUEST_CLOTHING,
     EG_REQUEST_SCHOOL_SUPPLIES,
+    EG_REQUEST_ADULT_DIAPERS,
+    EG_REQUEST_PLATES_AND_CUPS,
+    EG_REQUEST_SOAP,
     FOOD_REQUEST_GROCERIES,
     PHONE_FIELD,
 )
@@ -75,9 +78,14 @@ class AnalyzeFulfilledRequests(Function):
             "tags": [EG_REQUEST_PADS],
         },
         {
-            "name": "Diapers",
-            "translations": {"span": "Pañales", "eng": "Diapers"},
+            "name": "Baby Diapers",
+            "translations": {"span": "Pañales para Bebé", "eng": "Baby Diapers"},
             "tags": [EG_REQUEST_BABY_DIAPERS],
+        },
+        {
+            "name": "Adult Diapers",
+            "translations": {"span": "Pañales para Adultos", "eng": "Adult Diapers"},
+            "tags": [EG_REQUEST_ADULT_DIAPERS],
         },
         {
             "name": "Clothing Assistance",
@@ -91,6 +99,16 @@ class AnalyzeFulfilledRequests(Function):
                 "eng": "School Supplies",
             },
             "tags": [EG_REQUEST_SCHOOL_SUPPLIES],
+        },
+        {
+            "name": "Plates and Cups",
+            "translations": {"span": "Platos y Vasos", "eng": "Plates and Cups"},
+            "tags": [EG_REQUEST_PLATES_AND_CUPS],
+        },
+        {
+            "name": "Soap",
+            "translations": {"span": "Jabón", "eng": "Soap"},
+            "tags": [EG_REQUEST_SOAP],
         },
     ]
 
