@@ -1,9 +1,7 @@
 from bam_core.lib import airtable_v2
 from bam_core.functions.base import Function
 from bam_core.functions.params import Params, Param
-from bam_core.constants import ASSISTANCE_REQUESTS_TABLE_NAME
 from bam_core.utils.etc import now_est
-from bam_core.constants import PHONE_FIELD
 
 
 class SendDialpadSMSV2(Function):
@@ -64,9 +62,9 @@ class SendDialpadSMSV2(Function):
 
         msg_recipients = {}
         for request in requests:
-            household = requests.household
+            household = request.household
             household_id = household.ID
-            if household_id in msg_map or household_id in excluded_households:
+            if household_id in msg_recipients or household_id in excluded_households:
                 continue
 
             msg_recipients[household_id] = household
@@ -82,7 +80,7 @@ class SendDialpadSMSV2(Function):
             num_messages_sent += 1
             # update last auto-texted field in Airtable
             if not dry_run:
-                self.log.info(f"Setting {fields} Airtable")
+                self.log.info(f"Setting Last Texted for household {household.ID}")
                 household.last_texted = now_est().date().isoformat()
                 household.save()
             if num_messages_sent >= max_messages:
