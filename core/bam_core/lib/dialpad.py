@@ -146,7 +146,7 @@ class Dialpad:
 
             request_url = self._get_random_request_url()
             first_name = household.name
-            phone_num = household.phone_number
+            phone_num = self._clean_phone_number(household.phone_number)
 
             updated_message = message.replace(
                 "[FIRST_NAME]", first_name
