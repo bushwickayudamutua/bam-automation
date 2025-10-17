@@ -129,6 +129,22 @@ packages:
           logs: 256
           memory: 1024
 
+  - name: airtable_v2
+    parameters: {}
+    annotations: {}
+    functions:
+      - name: send_dialpad_sms
+        binary: false
+        main: ""
+        runtime: "python:3.9"
+        web: true
+        parameters: {}
+        annotations: {}
+        limits:
+          timeout: 900000
+          logs: 256
+          memory: 1024
+
   - name: website
     parameters: {}
     annotations: {}
