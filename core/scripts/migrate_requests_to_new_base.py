@@ -1,6 +1,7 @@
 import argparse
 from collections import defaultdict
 import copy
+import pandas as pd
 
 from bam_core.settings import (
     AIRTABLE_BASE_ID,
@@ -112,6 +113,13 @@ def set_true(old_field_name: str, new_field_name: str, records: list[dict]):
 
 def set_empty(old_field_name: str, new_field_name: str, records: list[dict]):
     return {new_field_name: ""}
+
+
+def select_oldest_request(item_df):
+    item_df.sort_values(by=DATE_SUBMITTED_FIELD, ascending=True, inplace=True)
+    item_df.drop_duplicates(subset="item", keep='first', inplace=True)
+    item_df.reset_index(drop=True, inplace=True)
+    return item_df
 
 
 ############################################
@@ -382,29 +390,26 @@ def transform_open_requests(
         "Otras / Other / 其他廚房用品": "Otras Cosas de Cocina / Other Kitchen Items / 其他廚房用品",
     }
 
-    # get the unique set of all items
-    all_items = list(
-        set(
-            [
-                item.strip()
-                for r in records
-                for item in r.get(old_field_name, [])
-            ]
-        )
-    )
+    all_items_df = [
+        pd.DataFrame({
+            "item": [item],
+            DATE_SUBMITTED_FIELD: [r.get(DATE_SUBMITTED_FIELD, "").split("T")[0]]
+        })
+        for r in records for item in r.get(old_field_name, [])
+    ]
+    all_items_df = pd.concat(all_items_df or [pd.DataFrame()], ignore_index=True)
 
     # filter out items we aren't migrating and "Historical" items
-    all_items = [
-        item
-        for item in all_items
-        if "historical" not in item.lower() and item not in EXCLUDE_ITEMS
-    ]
+    not_historical = pd.Series(["historical" not in item.lower() for item in all_items_df.get("item",[])])
+    not_excluded_item = ~all_items_df.get("item",[]).isin(EXCLUDE_ITEMS)
+    keep_idx = not_historical & not_excluded_item
+    all_items_df = all_items_df[keep_idx]
 
     # make a copy of the list to remove items from
-    all_items_copy = all_items.copy()
+    all_items_df_copy = all_items_df.copy()
 
-    output = defaultdict(list)
-    for item in all_items:
+    output = defaultdict(pd.DataFrame)
+    for item, date_submitted in zip(all_items_df.get("item",[]), all_items_df.get(DATE_SUBMITTED_FIELD,[])):
         # first check for sub-items and remove them from the top-level list
         for sub_item in REQUEST_SUB_ITEMS:
             # unpack sub_item
@@ -413,47 +418,42 @@ def transform_open_requests(
             sub_items = sub_item["items"]
             items_output_field = sub_item["items_output_field"]
             request_type_output_field = sub_item["request_type_output_field"]
-
             # merge top-level request type
             if old_request_type and item == old_request_type:
-                if new_request_type not in output.get(
-                    request_type_output_field, []
-                ):
-                    output[request_type_output_field].append(new_request_type)
+                if new_request_type:
+                    new_item_row = pd.DataFrame({"item": [new_request_type], DATE_SUBMITTED_FIELD: [date_submitted]})
+                    output[request_type_output_field] = pd.concat([output[request_type_output_field], new_item_row])
                 # remove the item from the top-level list
-                if item in all_items_copy:
-                    all_items_copy.remove(item)
-
+                keep_idx = all_items_df_copy.get("item",[]) != item
+                all_items_df_copy = all_items_df_copy[keep_idx]
             elif item in sub_items:
-                #
                 # add the top-level request type if not already present
-                if new_request_type and new_request_type not in output.get(
-                    request_type_output_field, []
-                ):
-                    output[request_type_output_field].append(new_request_type)
-
+                if new_request_type:
+                    new_item_row = pd.DataFrame({"item": [new_request_type], DATE_SUBMITTED_FIELD: [date_submitted]})
+                    output[request_type_output_field] = pd.concat([output[request_type_output_field], new_item_row])
                 # apply item mapping if present
                 if item in ITEM_MAPPING:
                     new_item = ITEM_MAPPING[item]
                     old_item = copy.deepcopy(item)
-
                     # add the new item to the output list
-                    output[items_output_field].append(new_item)
-
+                    new_item_row = pd.DataFrame({"item": [new_item], DATE_SUBMITTED_FIELD: [date_submitted]})
+                    output[items_output_field] = pd.concat([output[items_output_field], new_item_row])
                     # remove the old item from the top-level list
-                    if old_item in all_items_copy:
-                        all_items_copy.remove(old_item)
-
+                    keep_idx = all_items_df_copy.get("item",[]) != old_item
+                    all_items_df_copy = all_items_df_copy[keep_idx]
                 else:
                     # add the item to the output list
-                    output[items_output_field].append(item)
-
+                    new_item_row = pd.DataFrame({"item": [item], DATE_SUBMITTED_FIELD: [date_submitted]})
+                    output[items_output_field] = pd.concat([output[items_output_field], new_item_row])
                     # remove the item from the top-level list
-                    if item in all_items_copy:
-                        all_items_copy.remove(item)
+                    keep_idx = all_items_df_copy.get("item",[]) != item
+                    all_items_df_copy = all_items_df_copy[keep_idx]
 
     # add any remaining items to the top-level list
-    output[new_field_name].extend(all_items_copy)
+    output[new_field_name] = pd.concat([output[new_field_name], all_items_df_copy])
+
+    # pick oldest request of each type:
+    output = {name: select_oldest_request(item_df) for name, item_df in output.items()}
 
     return output
 
@@ -593,7 +593,7 @@ def create_form_submission_record(record: dict):
     ]
 
     form_submission = {
-        k: v
+        k: (v.get("item", pd.Series()).to_list() if isinstance(v, pd.DataFrame) else v)
         for k, v in record.items()
         if k not in FORM_SUBMISSION_EXCLUDE_FIELDS
     }
@@ -614,14 +614,18 @@ def create_requests_records(record: dict):
         "Cama / Bed / 床",
     ]
 
-    # flatten the list of requests
-    all_reqs = record.get("Request Types", [])
-    all_reqs.extend(record.get("Furniture Items", []))
-    all_reqs.extend(record.get("Kitchen Items", []))
-    all_reqs.extend(record.get("Bed Details", []))
-    # remove duplicates and remove excluded types
+    # combine the list of requests
+    all_reqs = pd.concat([
+        record.get("Request Types", pd.DataFrame()),
+        record.get("Furniture Items", pd.DataFrame()),
+        record.get("Kitchen Items", pd.DataFrame()),
+        record.get("Bed Details", pd.DataFrame()),
+    ], ignore_index=True)
+    
     request_records = [
-        {"Type": r} for r in list(set(all_reqs)) if r not in TYPES_TO_EXCLUDE
+        {"Type": req, "Legacy " + DATE_SUBMITTED_FIELD: date}
+            for req, date in zip(all_reqs.get("item",[]), all_reqs.get(DATE_SUBMITTED_FIELD,[]))
+                if req not in TYPES_TO_EXCLUDE
     ]
     requests_response = requests_table.batch_create(request_records)
     return [r["id"] for r in requests_response]
@@ -634,20 +638,16 @@ def create_ss_requests_records(record: dict):
     :param record: The legacy assistance request record
     :return: A list of social service request IDs
     """
-    ss_reqs = record.get("Social Service Requests", [])
+    ss_reqs = record.get("Social Service Requests", pd.DataFrame())
     ss_records = []
-    for req in ss_reqs:
+    for req,date in zip(ss_reqs.get("item",[]), ss_reqs.get(DATE_SUBMITTED_FIELD,[])):
         ss_record = {
             "Type": req,
+            "Legacy " + DATE_SUBMITTED_FIELD: date
         }
-        if (
-            req
-            == "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助"
-        ):
+        if (req == "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助"):
             ss_record["Internet Access"] = record.get("Internet Access", [])
-            ss_record["Roof Accessible?"] = record.get(
-                "Roof Accessible?", False
-            )
+            ss_record["Roof Accessible?"] = record.get("Roof Accessible?", False)
         ss_records.append(ss_record)
 
     ss_requests_response = ss_requests_table.batch_create(ss_records)
@@ -749,3 +749,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
