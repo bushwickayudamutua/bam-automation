@@ -32,7 +32,7 @@ class SendDialpadSMSV2(Function):
         Param(
             name="exclude_households_view_name",
             type="string",
-            default=True,
+            default=None,
             description="An Airtable view name to retrieve households to exclude from the text blast.",
             required=False,
         ),
@@ -55,10 +55,11 @@ class SendDialpadSMSV2(Function):
         dry_run = params.get("dry_run", True)
 
         requests = airtable_v2.Request.all(view=request_view_name)
-        excluded_households = {
-            household.ID
-            for household in airtable_v2.Household.all(view=exclude_households_view_name)
-        }
+        excluded_households = (
+            set() if exclude_households_view_name is None else {
+                household.ID
+                for household in airtable_v2.Household.all(view=exclude_households_view_name)
+            })
 
         msg_recipients = {}
         for request in requests:
