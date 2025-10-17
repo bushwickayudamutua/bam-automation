@@ -82,7 +82,7 @@ class SendDialpadSMSV2(Function):
             # update last auto-texted field in Airtable
             if not dry_run:
                 self.log.info(f"Setting Last Texted for household {household.ID}")
-                household.last_texted = now_est().date().isoformat()
+                household.last_texted = now_est().date()
                 household.save()
             if num_messages_sent >= max_messages:
                 self.log.info(f"Reached message limit of {max_messages}")
