@@ -51,10 +51,18 @@ class UpdateWebsiteRequestData(Function):
                 "unique": True,
             },
             {
-                "name": "Diapers",
-                "translations": {"span": "Pañales", "eng": "Diapers"},
+                "name": "Baby Diapers",
+                "translations": {"span": "Pañales para Bebé", "eng": "Baby Diapers"},
                 "table": "Assistance Requests: Main",
                 "view": "P2W - Open Baby Diaper Requests",
+                "fields": ["Phone Number"],
+                "unique": True,
+            },
+            {
+                "name": "Adult Diapers",
+                "translations": {"span": "Pañales para Adultos", "eng": "Adult Diapers"},
+                "table": "Assistance Requests: Main",
+                "view": "P2W - Open Adult Diaper Requests",
                 "fields": ["Phone Number"],
                 "unique": True,
             },
@@ -77,6 +85,22 @@ class UpdateWebsiteRequestData(Function):
                 "fields": ["Phone Number"],
                 "unique": True,
             },
+            {
+                "name": "Plates and Cups",
+                "translations": {"span": "Platos y Vasos", "eng": "Plates and Cups"},
+                "table": "Assistance Requests: Main",
+                "view": "P2W - Open Plates + Cups Requests",
+                "fields": ["Phone Number"],
+                "unique": True,
+            },
+            {
+                "name": "Soap",
+                "translations": {"span": "Jabón", "eng": "Soap"},
+                "table": "Assistance Requests: Main",
+                "view": "P2W - Open Soap & Shower Products Requests",
+                "fields": ["Phone Number"],
+                "unique": True,
+            }
         ],
     }
 
