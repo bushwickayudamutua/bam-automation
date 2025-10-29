@@ -16,13 +16,14 @@ from bam_core.constants import (
 )
 from bam_core.constants import (
     FURNITURE_REQUEST_BED,
+    KITCHEN_REQUEST_PLATES,
+    KITCHEN_REQUEST_CUPS,
     KITCHEN_REQUEST_POTS_AND_PANS,
     EG_REQUEST_PADS,
     EG_REQUEST_BABY_DIAPERS,
     EG_REQUEST_CLOTHING,
     EG_REQUEST_SCHOOL_SUPPLIES,
     EG_REQUEST_ADULT_DIAPERS,
-    EG_REQUEST_PLATES_AND_CUPS,
     EG_REQUEST_SOAP,
     FOOD_REQUEST_GROCERIES,
     PHONE_FIELD,
@@ -103,7 +104,7 @@ class AnalyzeFulfilledRequests(Function):
         {
             "name": "Plates and Cups",
             "translations": {"span": "Platos y Vasos", "eng": "Plates and Cups"},
-            "tags": [EG_REQUEST_PLATES_AND_CUPS],
+            "tags": [KITCHEN_REQUEST_PLATES, KITCHEN_REQUEST_CUPS],
         },
         {
             "name": "Soap",
