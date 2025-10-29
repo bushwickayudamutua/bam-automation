@@ -173,6 +173,8 @@ FURNITURE_REQUESTS_SCHEMA = {
 }
 
 # Common Tags for Kitchen Requests
+KITCHEN_REQUEST_PLATES = "Platos / Plates / 盤子"
+KITCHEN_REQUEST_CUPS = "Tazas / Cups / 杯子"
 KITCHEN_REQUEST_POTS_AND_PANS = "Ollas y Sartenes / Pots & Pans / 鍋碗瓢盆"
 
 # Mapping of kitchen requests to statuses
@@ -188,11 +190,11 @@ KITCHEN_REQUESTS_SCHEMA = {
             "delivered": "Pots & Pans Delivered",
             "timeout": "Pots & Pans Timeout",
         },
-        "Platos / Plates / 盤子": {
+        KITCHEN_REQUEST_PLATES: {
             "delivered": "Plates Delivered",
             "timeout": "Plates Timeout",
         },
-        "Tazas / Cups / 杯子": {
+        KITCHEN_REQUEST_CUPS: {
             "delivered": "Cups Delivered",
             "timeout": "Cups Timeout",
         },
@@ -220,10 +222,12 @@ EG_REQUEST_PADS = (
     "Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾"
 )
 EG_REQUEST_BABY_DIAPERS = "Pañales / Baby Diapers / 嬰兒紙尿褲"
+EG_REQUEST_ADULT_DIAPERS = "Pañales de adultos / Adult Diapers / 成人紙尿褲"
 EG_REQUEST_CLOTHING = "Ropa / Clothing / 服裝"
 EG_REQUEST_SCHOOL_SUPPLIES = "Cosas de Escuela / School Supplies / 學校用品"
 EG_REQUEST_FURNITURE = "Muebles / Furniture / 家具"
 EG_REQUEST_KITCHEN_SUPPLIES = "Cosas de Cocina / Kitchen Supplies / 廚房用品"
+EG_REQUEST_SOAP = "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品"
 
 # Mapping of EG requests to statuses
 # Note that kitchen requests and furniture requests are nested under EG requests.
@@ -231,7 +235,7 @@ EG_REQUESTS_SCHEMA = {
     "request_field": EG_REQUESTS_FIELD,
     "status_field": EG_STATUS_FIELD,
     "items": {
-        "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品": {
+        EG_REQUEST_SOAP: {
             "delivered": "Soap & Shower Products Delivered",
             "timeout": "Soap & Shower Products Timeout",
             "missed": EG_MISSED_APPT_STATUS,
@@ -246,7 +250,7 @@ EG_REQUESTS_SCHEMA = {
             "timeout": "Baby Diapers Timeout",
             "missed": EG_MISSED_APPT_STATUS,
         },
-        "Pañales de adultos / Adult Diapers / 成人紙尿褲": {
+        EG_REQUEST_ADULT_DIAPERS: {
             "delivered": "Adult Diapers Delivered",
             "timeout": "Adult Diapers Timeout",
             "missed": EG_MISSED_APPT_STATUS,
@@ -461,8 +465,8 @@ OLD_REQUEST_TAGS = {
     "Colchón matrimonio / Full Mattress / 全床垫": "Colchón matrimonio / Full Mattress / 雙人床墊",
     "Alimentos / Groceries / 杂货": FOOD_REQUEST_GROCERIES,
     "Pañales / Baby Diapers / 婴儿纸尿裤": EG_REQUEST_BABY_DIAPERS,
-    "Pañales de adultos / Adult Diapers / 成人纸尿裤": "Pañales de adultos / Adult Diapers / 成人紙尿褲",
-    "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品": "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品",
+    "Pañales de adultos / Adult Diapers / 成人纸尿裤": EG_REQUEST_ADULT_DIAPERS,
+    "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴产品": EG_REQUEST_SOAP,
     "Productos Femenino - Toallitas / Feminine Products - Pads / 卫生巾": EG_REQUEST_PADS,
     "Cosas de Escuela / School Supplies / 学校用品": EG_REQUEST_SCHOOL_SUPPLIES,
     "Ropa / Clothing / 服装协助": EG_REQUEST_CLOTHING,
@@ -476,8 +480,8 @@ OLD_REQUEST_TAGS = {
     "Otras / Other / 其他东西": "Otras / Other / 其他家具",
     "Microondas / Microwave / 微波": "Microondas / Microwave / 微波爐",
     "Ollas y Sartenes / Pots & Pans / 锅碗瓢盆": "Ollas y Sartenes / Pots & Pans / 鍋碗瓢盆",
-    "Platos / Plates / 板块": "Platos / Plates / 盤子",
-    "Tazas / Cups / 杯具": "Tazas / Cups / 杯子",
+    "Platos / Plates / 板块": KITCHEN_REQUEST_PLATES,
+    "Tazas / Cups / 杯具": KITCHEN_REQUEST_CUPS,
     "Cafetera / Coffee Maker / 咖啡机": "Cafetera / Coffee Maker / 咖啡機",
     "Otras / Other / 其他东西": "Otras / Other / 其他廚房用品",
     "Asistencia legal de inquilinos / Tenant legal assistance / 租户法律援助": "Asistencia legal de inquilinos / Tenant legal assistance / 租戶法律協助",
