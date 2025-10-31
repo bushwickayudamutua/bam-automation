@@ -2,13 +2,14 @@ import argparse
 from collections import defaultdict
 import copy
 
-from bam_core.settings import (
-    AIRTABLE_BASE_ID,
-    AIRTABLE_TOKEN,
-    AIRTABLE_V2_BASE_ID,
-    AIRTABLE_V2_TOKEN,
-)
+from bam_core.settings import AIRTABLE_BASE_ID, AIRTABLE_TOKEN
 from bam_core.lib.airtable import Airtable
+from bam_core.lib.airtable_v2 import (
+    FormSubmission,
+    Household,
+    Request,
+    SocialServiceRequest,
+)
 from bam_core.utils.phone import (
     format_phone_number,
     is_international_phone_number,
@@ -30,16 +31,11 @@ from bam_core.constants import (
     SOCIAL_SERVICES_REQUESTS_SCHEMA,
 )
 
-#######################################
-#  Setup References To Airtable Bases #
-#######################################
+########################################
+#  Setup Reference To OG Airtable Base #
+########################################
 
 at_og = Airtable(base_id=AIRTABLE_BASE_ID, token=AIRTABLE_TOKEN)
-at_v2 = Airtable(base_id=AIRTABLE_V2_BASE_ID, token=AIRTABLE_V2_TOKEN)
-form_submission_table = at_v2.get_table("Assistance Request Form Submissions")
-ss_requests_table = at_v2.get_table("Social Service Requests")
-requests_table = at_v2.get_table("Requests")
-households_table = at_v2.get_table("Households")
 
 
 #######################################
@@ -582,31 +578,74 @@ def create_form_submission_record(record: dict):
     """
     Create a form submission record from the transformed legacy assistance request record.
     :param record: The legacy assistance request record
-    :return: The form submission ID
+    :return: The form submission
     """
-    # Fields to exclude from the request table.
-    FORM_SUBMISSION_EXCLUDE_FIELDS = [
-        "Invalid Phone Number?",
-        "Email Error",
-        "Int'l Phone Number?",
-        "Geocode",
-    ]
+    submission = FormSubmission(
+        name=record['Name'],
+        phone_number=record[PHONE_FIELD],
+        email=record['Email'],
+        languages=record['Languages'],
+        notes=record['Notes'],
+        street_address=record['Street Address'],
+        city_and_state=record['City, State'],
+        zip_code=record['Zip Code'],
+        request_types=record['Request Types'],
+        furniture_acknowledgement=record['Furniture Acknowledgement'],
+        furniture_items=record['Furniture Items'],
+        bed_details=record['Bed Details'],
+        kitchen_items=record['Kitchen Items'],
+        ss_request_types=record['Social Service Requests'],
+        internet_access=record['Internet Access'],
+        roof_is_accessible=record['Roof Accessible?'],
+        legacy_first_date_submitted=record['Legacy First Date Submitted'],
+        legacy_last_date_submitted=record['Legacy Last Date Submitted'])
 
-    form_submission = {
-        k: v
-        for k, v in record.items()
-        if k not in FORM_SUBMISSION_EXCLUDE_FIELDS
-    }
-    form_submission_response = form_submission_table.create(form_submission)
-    return form_submission_response["id"]
+    submission.save()
+
+    return submission
 
 
 @retry(attempts=5, wait=1, backoff=2)
-def create_requests_records(record: dict):
+def create_household_record(
+    record: dict,
+    form_submission: FormSubmission,
+) -> Household:
+    """
+    Create a household record from the transformed legacy assistance request record.
+    :param record: The legacy assistance request record
+    :param form_submission_id: The form submission ID to link to the household
+    """
+
+    # Create it this way instead of passing kwargs to Household() because
+    # the type hints can't help you if you do that
+    household = Household(
+        name=record['Name'],
+        phone_number=record[PHONE_FIELD],
+        phone_is_invalid=record['Invalid Phone Number?'],
+        phone_is_intl=record["Int'l Phone Number?"],
+        email=record['Email'],
+        email_error=record['Email Error'],
+        languages=record['Languages'],
+        notes=record['Notes'],
+        legacy_first_date_submitted=record['Legacy First Date Submitted'],
+        legacy_last_date_submitted=record['Legacy Last Date Submitted'],
+        # NOTE: These need to be stored in the relevant request records
+        # street_address=record['Street Address'],
+        # city_and_state=record['City, State'],
+        # zip_code=record['Zip Code'],
+        # geocode=record['Geocode'],
+        form_submissions=[form_submission])
+    household.save()
+
+    return household
+
+
+@retry(attempts=5, wait=1, backoff=2)
+def create_requests_records(record: dict, household: Household):
     """
     Create a list of requests records from the transformed legacy assistance request record.
     :param record: The legacy assistance request record
-    :return: A list of request IDs
+    :return: A list of requests
     """
     TYPES_TO_EXCLUDE = [
         "Muebles / Furniture / 家具",
@@ -614,85 +653,52 @@ def create_requests_records(record: dict):
         "Cama / Bed / 床",
     ]
 
-    # flatten the list of requests
-    all_reqs = record.get("Request Types", [])
-    all_reqs.extend(record.get("Furniture Items", []))
-    all_reqs.extend(record.get("Kitchen Items", []))
-    all_reqs.extend(record.get("Bed Details", []))
-    # remove duplicates and remove excluded types
-    request_records = [
-        {"Type": r} for r in list(set(all_reqs)) if r not in TYPES_TO_EXCLUDE
-    ]
-    requests_response = requests_table.batch_create(request_records)
-    return [r["id"] for r in requests_response]
+    # flatten and dedupe the list of request types
+    req_types: set[str] = set()
+    req_types.update(record.get("Request Types", []))
+    req_types.update(record.get("Furniture Items", []))
+    req_types.update(record.get("Kitchen Items", []))
+    req_types.update(record.get("Bed Details", []))
+
+    # build requests
+    requests = []
+    for req_type in req_types:
+        if req_type in TYPES_TO_EXCLUDE:
+            continue
+        request = Request(type=req_type, household=household)
+        requests.append(request)
+
+    # write to Airtable
+    Request.batch_save(requests)
+
+    return requests
 
 
 @retry(attempts=5, wait=1, backoff=2)
-def create_ss_requests_records(record: dict):
+def create_ss_requests_records(record: dict, household: Household):
     """
     Create a list of social service requests records from the transformed legacy assistance request record.
     :param record: The legacy assistance request record
-    :return: A list of social service request IDs
+    :return: A list of social service requests
     """
-    ss_reqs = record.get("Social Service Requests", [])
-    ss_records = []
-    for req in ss_reqs:
-        ss_record = {
-            "Type": req,
-        }
-        if (
-            req
-            == "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助"
-        ):
-            ss_record["Internet Access"] = record.get("Internet Access", [])
-            ss_record["Roof Accessible?"] = record.get(
-                "Roof Accessible?", False
-            )
-        ss_records.append(ss_record)
+    INTERNET_REQUEST_TYPE = "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助"
 
-    ss_requests_response = ss_requests_table.batch_create(ss_records)
-    return [r["id"] for r in ss_requests_response]
+    # dedupe the list of request types
+    req_types = set(record.get("Social Service Requests", []))
 
+    # build requests
+    requests = []
+    for req_type in req_types:
+        request = SocialServiceRequest(type=req_type, household=household)
+        if req_type == INTERNET_REQUEST_TYPE:
+            request.internet_access = record.get('Internet Access', [])
+            request.roof_is_accessible = record.get('Roof Accessible?', False)
+        requests.append(request)
 
-@retry(attempts=5, wait=1, backoff=2)
-def create_household_record(
-    record: dict,
-    request_ids: list[str],
-    ss_request_ids: list[str],
-    form_submission_id: str,
-):
-    """
-    Create a household record from the transformed legacy assistance request record.
-    :param record: The legacy assistance request record
-    :param request_ids: The list of request IDs to link to the household
-    :param ss_request_ids: The list of social service request IDs to link to the household
-    :param form_submission_id: The form submission ID to link to the household
-    """
+    # write to Airtable
+    SocialServiceRequest.batch_save(requests)
 
-    HOUSEHOLD_INCLUDE_FIELDS = [
-        "Name",
-        PHONE_FIELD,
-        "Invalid Phone Number?",
-        "Int'l Phone Number?",
-        "Email",
-        "Email Error",
-        "Languages",
-        "Notes",
-        "Legacy First Date Submitted",
-        "Legacy Last Date Submitted",
-        "Street Address",
-        "City, State",
-        "Zip Code",
-        "Geocode",
-    ]
-
-    household = {
-        k: v for k, v in record.items() if k in HOUSEHOLD_INCLUDE_FIELDS
-    }
-    household["Requests"] = request_ids
-    household["Social Service Requests"] = ss_request_ids
-    household["Form Submissions"] = [form_submission_id]
-    households_table.create(household)
+    return requests
 
 
 def load_household(record: dict):
@@ -703,12 +709,10 @@ def load_household(record: dict):
     :return: None
     """
     form_submission_id = create_form_submission_record(record)
-    ss_request_ids = create_ss_requests_records(record)
-    request_ids = create_requests_records(record)
     # create the household record
-    create_household_record(
-        record, request_ids, ss_request_ids, form_submission_id
-    )
+    household = create_household_record(record, form_submission_id)
+    create_requests_records(record, household)
+    create_ss_requests_records(record, household)
 
 
 #######################################
@@ -731,7 +735,7 @@ def main():
     args = parser.parse_args()
     legacy_requests = extract_open_requests_per_household()
     transformed_requests = transform_households(legacy_requests)
-    transformed_requests_subset = transformed_requests[args.start_at - 1 :]
+    transformed_requests_subset = transformed_requests[args.start_at - 1:]
     print(f"Total records to migrate: {len(transformed_requests_subset)}")
     for i, household_request in enumerate(
         transformed_requests_subset, start=args.start_at

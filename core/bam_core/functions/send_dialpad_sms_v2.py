@@ -57,7 +57,7 @@ class SendDialpadSMSV2(Function):
         requests = airtable_v2.Request.all(view=request_view_name)
         excluded_households = (
             set() if exclude_households_view_name is None else {
-                household.ID
+                household.bam_id
                 for household in airtable_v2.Household.all(view=exclude_households_view_name)
             })
 
