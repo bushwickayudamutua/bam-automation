@@ -16,12 +16,15 @@ from bam_core.constants import (
 )
 from bam_core.constants import (
     FURNITURE_REQUEST_BED,
+    KITCHEN_REQUEST_PLATES,
+    KITCHEN_REQUEST_CUPS,
     KITCHEN_REQUEST_POTS_AND_PANS,
     EG_REQUEST_PADS,
     EG_REQUEST_BABY_DIAPERS,
     EG_REQUEST_CLOTHING,
     EG_REQUEST_SCHOOL_SUPPLIES,
-    FOOD_REQUEST_GROCERIES,
+    EG_REQUEST_ADULT_DIAPERS,
+    EG_REQUEST_SOAP,
     PHONE_FIELD,
 )
 from bam_core.utils.serde import json_to_obj, obj_to_json
@@ -51,11 +54,6 @@ class AnalyzeFulfilledRequests(Function):
     ).isoformat()
     ANALYSIS_CONFIG = [
         {
-            "name": "Groceries",
-            "translations": {"span": "Comida", "eng": "Groceries"},
-            "tags": [FOOD_REQUEST_GROCERIES],
-        },
-        {
             "name": "Pots and Pans",
             "translations": {
                 "span": "Ollas y sartenes",
@@ -75,9 +73,14 @@ class AnalyzeFulfilledRequests(Function):
             "tags": [EG_REQUEST_PADS],
         },
         {
-            "name": "Diapers",
-            "translations": {"span": "Pañales", "eng": "Diapers"},
+            "name": "Baby Diapers",
+            "translations": {"span": "Pañales para Bebé", "eng": "Baby Diapers"},
             "tags": [EG_REQUEST_BABY_DIAPERS],
+        },
+        {
+            "name": "Adult Diapers",
+            "translations": {"span": "Pañales para Adultos", "eng": "Adult Diapers"},
+            "tags": [EG_REQUEST_ADULT_DIAPERS],
         },
         {
             "name": "Clothing Assistance",
@@ -91,6 +94,21 @@ class AnalyzeFulfilledRequests(Function):
                 "eng": "School Supplies",
             },
             "tags": [EG_REQUEST_SCHOOL_SUPPLIES],
+        },
+        {
+            "name": "Plates",
+            "translations": {"span": "Platos", "eng": "Plates"},
+            "tags": [KITCHEN_REQUEST_PLATES],
+        },
+        {
+            "name": "Cups",
+            "translations": {"span": "Tazas", "eng": "Cups"},
+            "tags": [KITCHEN_REQUEST_CUPS],
+        },
+        {
+            "name": "Soap",
+            "translations": {"span": "Jabón", "eng": "Soap"},
+            "tags": [EG_REQUEST_SOAP],
         },
     ]
 
