@@ -25,7 +25,6 @@ from bam_core.constants import (
     EG_REQUEST_SCHOOL_SUPPLIES,
     EG_REQUEST_ADULT_DIAPERS,
     EG_REQUEST_SOAP,
-    FOOD_REQUEST_GROCERIES,
     PHONE_FIELD,
 )
 from bam_core.utils.serde import json_to_obj, obj_to_json
@@ -54,11 +53,6 @@ class AnalyzeFulfilledRequests(Function):
         datetime.now().date() - timedelta(days=31)
     ).isoformat()
     ANALYSIS_CONFIG = [
-        {
-            "name": "Groceries",
-            "translations": {"span": "Comida", "eng": "Groceries"},
-            "tags": [FOOD_REQUEST_GROCERIES],
-        },
         {
             "name": "Pots and Pans",
             "translations": {
@@ -102,9 +96,14 @@ class AnalyzeFulfilledRequests(Function):
             "tags": [EG_REQUEST_SCHOOL_SUPPLIES],
         },
         {
-            "name": "Plates and Cups",
-            "translations": {"span": "Platos y Vasos", "eng": "Plates and Cups"},
-            "tags": [KITCHEN_REQUEST_PLATES, KITCHEN_REQUEST_CUPS],
+            "name": "Plates",
+            "translations": {"span": "Platos", "eng": "Plates"},
+            "tags": [KITCHEN_REQUEST_PLATES],
+        },
+        {
+            "name": "Cups",
+            "translations": {"span": "Tazas", "eng": "Cups"},
+            "tags": [KITCHEN_REQUEST_CUPS],
         },
         {
             "name": "Soap",
