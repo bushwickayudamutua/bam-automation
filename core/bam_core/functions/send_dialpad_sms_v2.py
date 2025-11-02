@@ -57,14 +57,14 @@ class SendDialpadSMSV2(Function):
         requests = airtable_v2.Request.all(view=request_view_name)
         excluded_households = (
             set() if exclude_households_view_name is None else {
-                household.ID
+                household.bam_id
                 for household in airtable_v2.Household.all(view=exclude_households_view_name)
             })
 
         msg_recipients = {}
         for request in requests:
             household = request.household
-            household_id = household.ID
+            household_id = household.bam_id
             if household_id in msg_recipients or household_id in excluded_households:
                 continue
 
@@ -81,7 +81,7 @@ class SendDialpadSMSV2(Function):
             num_messages_sent += 1
             # update last auto-texted field in Airtable
             if not dry_run:
-                self.log.info(f"Setting Last Texted for household {household.ID}")
+                self.log.info(f"Setting Last Texted for household {household.bam_id}")
                 household.last_texted = now_est().date()
                 household.save()
             if num_messages_sent >= max_messages:
