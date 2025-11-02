@@ -2,6 +2,9 @@ environment:
   BAM_AIRTABLE_TOKEN: "${BAM_AIRTABLE_TOKEN}"
   BAM_AIRTABLE_BASE_ID: "${BAM_AIRTABLE_BASE_ID}"
   BAM_AIRTABLE_ASSISTANCE_REQUESTS_TABLE_ID: "${BAM_AIRTABLE_ASSISTANCE_REQUESTS_TABLE_ID}"
+  BAM_AIRTABLE_V2_TOKEN: "${BAM_AIRTABLE_V2_TOKEN}"
+  BAM_AIRTABLE_V2_BASE_ID: "${BAM_AIRTABLE_V2_BASE_ID}"
+  BAM_AIRTABLE_V2_ASSISTANCE_REQUESTS_TABLE_ID: "${BAM_AIRTABLE_V2_ASSISTANCE_REQUESTS_TABLE_ID}"
   BAM_ESSENTIAL_GOODS_DONATIONS_TABLE_ID: "${BAM_ESSENTIAL_GOODS_DONATIONS_TABLE_ID}"
   BAM_VOLUNTEERS_TABLE_ID: "${BAM_VOLUNTEERS_TABLE_ID}"
   BAM_MAILJET_API_KEY: "${BAM_MAILJET_API_KEY}"
@@ -115,6 +118,22 @@ packages:
           memory: 1024
 
       - name: update_field_value
+        binary: false
+        main: ""
+        runtime: "python:3.9"
+        web: true
+        parameters: {}
+        annotations: {}
+        limits:
+          timeout: 900000
+          logs: 256
+          memory: 1024
+
+  - name: airtable_v2
+    parameters: {}
+    annotations: {}
+    functions:
+      - name: send_dialpad_sms
         binary: false
         main: ""
         runtime: "python:3.9"
