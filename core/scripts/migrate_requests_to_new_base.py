@@ -103,6 +103,15 @@ def select_first_non_null(
     return {}
 
 
+def select_last_non_null(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
+    for record in reversed(records):
+        if record.get(old_field_name):
+            return {new_field_name: record.get(old_field_name)}
+    return {}
+
+
 def set_true(old_field_name: str, new_field_name: str, records: list[dict]):
     return {new_field_name: True}
 
@@ -131,7 +140,7 @@ def transform_zip_code(
     If it fails, set it to None.
     """
     # we only migrate valid zip codes
-    output = select_first_non_null(old_field_name, new_field_name, records)
+    output = select_last_non_null(old_field_name, new_field_name, records)
     zip_code = output.get(new_field_name)
 
     # attempt to format the zip code #
@@ -201,7 +210,7 @@ def transform_email(
     email = ""
     # only merge valid emails
     email_error = str(NO_EMAIL_ERROR)
-    for r in records:
+    for r in reversed(records):
         if r.get(old_field_name):
             email_output = format_email(r.get(old_field_name))
             email = email_output.get("email")
@@ -390,10 +399,6 @@ def transform_open_requests(
         pd.DataFrame({
             "item": [item],
             DATE_SUBMITTED_FIELD: [r.get(DATE_SUBMITTED_FIELD, "").split("T")[0]],
-            "Geocode": r.get("Geocode", ""),
-            "Street Address": r.get("Current Address", ""),
-            "City, State": r.get("Current Address - City, State", ""),
-            "Zip Code": r.get("Current Address - Zip Code", None),
         })
         for r in records for item in r.get(old_field_name, [])
     ]
@@ -405,60 +410,58 @@ def transform_open_requests(
     keep_idx = not_historical & not_excluded_item
     all_items_df = all_items_df[keep_idx]
 
-    # make a copy of the list to remove items from
-    all_items_df_copy = all_items_df.copy()
-
     output = defaultdict(pd.DataFrame)
-    for item_row, item in zip(all_items_df, all_items_df.get("item",[])):
-        # first check for sub-items and remove them from the top-level list
-        for sub_item in REQUEST_SUB_ITEMS:
-            # unpack sub_item
-            new_request_type = sub_item["new_request_type"]
-            old_request_type = sub_item["old_request_type"]
-            sub_items = sub_item["items"]
-            items_output_field = sub_item["items_output_field"]
-            request_type_output_field = sub_item["request_type_output_field"]
-            # merge top-level request type
-            if old_request_type and item == old_request_type:
+    # first check for sub-items and remove them from the top-level list
+    for sub_item in REQUEST_SUB_ITEMS:
+        # unpack sub_item
+        new_request_type = sub_item["new_request_type"]
+        old_request_type = sub_item["old_request_type"]
+        sub_items = sub_item["items"]
+        items_output_field = sub_item["items_output_field"]
+        request_type_output_field = sub_item["request_type_output_field"]
+        
+        # merge top-level request type
+        if old_request_type:
+            old_type_idx = all_items_df["item"] == old_request_type
+            if old_type_idx.any():
                 if new_request_type:
-                    new_item_row = item_row.copy()
-                    new_item_row["item"] = [new_request_type]
-                    output[request_type_output_field] = pd.concat([output[request_type_output_field], new_item_row])
+                    new_item_df = all_items_df[old_type_idx].copy()
+                    new_item_df["item"] = new_request_type
+                    output[request_type_output_field] = pd.concat([output[request_type_output_field], new_item_df])
                 # remove the item from the top-level list
-                keep_idx = all_items_df_copy.get("item",[]) != item
-                all_items_df_copy = all_items_df_copy[keep_idx]
-            elif item in sub_items:
-                # add the top-level request type if not already present
-                if new_request_type:
-                    new_item_row = item_row.copy()
-                    new_item_row["item"] = [new_request_type]
-                    output[request_type_output_field] = pd.concat([output[request_type_output_field], new_item_row])
-                # apply item mapping if present
-                if item in ITEM_MAPPING:
-                    new_item = ITEM_MAPPING[item]
-                    old_item = copy.deepcopy(item)
-                    # add the new item to the output list
-                    new_item_row = item_row.copy()
-                    new_item_row["item"] = [new_item]
-                    output[items_output_field] = pd.concat([output[items_output_field], new_item_row])
-                    # remove the old item from the top-level list
-                    keep_idx = all_items_df_copy.get("item",[]) != old_item
-                    all_items_df_copy = all_items_df_copy[keep_idx]
-                else:
-                    # add the item to the output list
-                    new_item_row = item_row.copy()
-                    new_item_row["item"] = [item]
-                    output[items_output_field] = pd.concat([output[items_output_field], new_item_row])
-                    # remove the item from the top-level list
-                    keep_idx = all_items_df_copy.get("item",[]) != item
-                    all_items_df_copy = all_items_df_copy[keep_idx]
-
+                all_items_df = all_items_df[~old_type_idx]
+        
+        sub_item_idx = all_items_df["item"].isin(sub_items)
+        if sub_item_idx.any():
+            # add the top-level request type if not already present
+            if new_request_type:
+                new_item_df = all_items_df[sub_item_idx].copy()
+                new_item_df["item"] = new_request_type
+                output[request_type_output_field] = pd.concat([output[request_type_output_field], new_item_df])
+            
+            # apply item mapping if present
+            item_map_idx = all_items_df["item"].isin(ITEM_MAPPING) & sub_item_idx
+            if item_map_idx.any():
+                # add the new item to the output list
+                new_item_df = all_items_df[item_map_idx].copy()
+                new_item_df["item"] = [ITEM_MAPPING[i] for i in new_item_df["item"]]
+                output[items_output_field] = pd.concat([output[items_output_field], new_item_df])
+                # remove the old item from the top-level list
+                all_items_df = all_items_df[~item_map_idx]
+                sub_item_idx = all_items_df["item"].isin(sub_items)
+            
+            # add the item to the output list
+            new_item_df = all_items_df[sub_item_idx].copy()
+            output[items_output_field] = pd.concat([output[items_output_field], new_item_df])
+            # remove the item from the top-level list
+            all_items_df = all_items_df[~sub_item_idx]
+    
     # add any remaining items to the top-level list
-    output[new_field_name] = pd.concat([output[new_field_name], all_items_df_copy])
+    output[new_field_name] = pd.concat([output[new_field_name], all_items_df])
 
     # pick oldest request of each type:
     output = {name: select_oldest_request(item_df) for name, item_df in output.items()}
-
+    
     return output
 
 
@@ -478,7 +481,7 @@ def transform_household_records(household_records: list[dict]) -> dict:
     FIELD_MAPPING = {
         "First Name": {
             "new_field": "Name",
-            "transform_fx": select_first_non_null,
+            "transform_fx": select_last_non_null,
         },
         PHONE_FIELD: {"new_field": PHONE_FIELD, "transform_fx": select_first},
         "Invalid Phone Number?": {
@@ -514,6 +517,22 @@ def transform_household_records(household_records: list[dict]) -> dict:
         "Case Notes": {
             "new_field": "Notes",
             "transform_fx": transform_case_notes,
+        },
+        "Current Address": {
+            "new_field": "Street Address",
+            "transform_fx": select_last_non_null,
+        },
+        "Current Address - City, State": {
+            "new_field": "City, State",
+            "transform_fx": select_last_non_null,
+        },
+        "Current Address - Zip Code": {
+            "new_field": "Zip Code",
+            "transform_fx": transform_zip_code,
+        },
+        "Geocode": {
+            "new_field": "Geocode",
+            "transform_fx": select_last_non_null,
         },
         # Creates First Date Submitted and Last Date Submitted fields
         DATE_SUBMITTED_FIELD: {
@@ -622,9 +641,8 @@ def create_requests_records(record: dict, household: Household):
         record.get("Bed Details", pd.DataFrame()),
     ], ignore_index=True)
     request_records2 = [
-            Request(type=req, legacy_date_submitted=date, household=household,
-                    geocode=geo)
-            for req, date, geo in zip(all_reqs2.get("item",[]), all_reqs2.get(DATE_SUBMITTED_FIELD,[]), all_reqs2.get("Geocode",[]))
+            Request(type=req, legacy_date_submitted=date, household=household, geocode=record.get("Geocode", ""))
+            for req, date in zip(all_reqs2.get("item",[]), all_reqs2.get(DATE_SUBMITTED_FIELD,[]))
                 if req not in TYPES_TO_EXCLUDE
     ]
 
@@ -703,37 +721,37 @@ def load_household(record: dict):
 #######################################
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="""
-            Migrate requests from old base to new base. MAKE SURE YOU HAVE YOUR .env FILE SET UP CORRECTLY.
-        """
-    )
-    parser.add_argument(
-        "--start-at",
-        type=int,
-        default=1,
-        help="Start at this record number (for debugging)",
-    )
-    args = parser.parse_args()
-    legacy_requests = extract_open_requests_per_household()
-    transformed_requests = transform_households(legacy_requests)
-    transformed_requests_subset = transformed_requests[args.start_at - 1 :]
-    print(f"Total records to migrate: {len(transformed_requests_subset)}")
-    for i, household_request in enumerate(
-        transformed_requests_subset, start=args.start_at
-    ):
-        if i % 100 == 0:
-            print(
-                f"Migrated {i} records. {len(transformed_requests_subset) - i} records left."
-            )
-        try:
-            load_household(household_request)
-        except Exception as e:
-            print("Restart at:", i)
-            raise e
+# def main():
+#     parser = argparse.ArgumentParser(
+#         description="""
+#             Migrate requests from old base to new base. MAKE SURE YOU HAVE YOUR .env FILE SET UP CORRECTLY.
+#         """
+#     )
+#     parser.add_argument(
+#         "--start-at",
+#         type=int,
+#         default=1,
+#         help="Start at this record number (for debugging)",
+#     )
+#     args = parser.parse_args()
+#     legacy_requests = extract_open_requests_per_household()
+#     transformed_requests = transform_households(legacy_requests)
+#     transformed_requests_subset = transformed_requests[args.start_at - 1 :]
+#     print(f"Total records to migrate: {len(transformed_requests_subset)}")
+#     for i, household_request in enumerate(
+#         transformed_requests_subset, start=args.start_at
+#     ):
+#         if i % 100 == 0:
+#             print(
+#                 f"Migrated {i} records. {len(transformed_requests_subset) - i} records left."
+#             )
+#         try:
+#             load_household(household_request)
+#         except Exception as e:
+#             print("Restart at:", i)
+#             raise e
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
 
