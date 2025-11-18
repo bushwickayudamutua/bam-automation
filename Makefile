@@ -15,6 +15,7 @@ copy-core-to-functions:
 	cp -R core functions/packages/airtable/consolidate_eg_requests/
 	cp -R core functions/packages/airtable/timeout_eg_requests/
 	cp -R core functions/packages/airtable/update_field_value/
+	cp -R core functions/packages/airtable_v2/send_dialpad_sms/
 	cp -R core functions/packages/mailjet/update_lists/
 	cp -R core functions/packages/website/update_request_data/
 
