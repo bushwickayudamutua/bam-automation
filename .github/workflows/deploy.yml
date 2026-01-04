@@ -1,5 +1,6 @@
 name: Run tests and deploy automation functions
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
