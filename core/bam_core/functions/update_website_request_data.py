@@ -16,14 +16,6 @@ class UpdateWebsiteRequestData(Function):
         "filepath": "website-data/open-requests.json",
         "metrics": [
             {
-                "name": "Groceries",
-                "translations": {"span": "Comida", "eng": "Groceries"},
-                "table": "Assistance Requests: Main",
-                "view": "P2W - Open Grocery Requests",
-                "fields": ["Phone Number"],
-                "unique": True,
-            },
-            {
                 "name": "Pots and Pans",
                 "translations": {
                     "span": "Ollas y sartenes",
@@ -86,10 +78,18 @@ class UpdateWebsiteRequestData(Function):
                 "unique": True,
             },
             {
-                "name": "Plates and Cups",
-                "translations": {"span": "Platos y Vasos", "eng": "Plates and Cups"},
+                "name": "Plates",
+                "translations": {"span": "Platos", "eng": "Plates"},
                 "table": "Assistance Requests: Main",
-                "view": "P2W - Open Plates + Cups Requests",
+                "view": "P2W - Open Plates Requests",
+                "fields": ["Phone Number"],
+                "unique": True,
+            },
+            {
+                "name": "Cups",
+                "translations": {"span": "Tazas", "eng": "Cups"},
+                "table": "Assistance Requests: Main",
+                "view": "P2W - Open Cups Requests",
                 "fields": ["Phone Number"],
                 "unique": True,
             },
