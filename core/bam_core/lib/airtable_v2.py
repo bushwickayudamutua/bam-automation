@@ -79,8 +79,6 @@ class Household(Model):
     legacy_first_date_submitted = F.DateField('Legacy First Date Submitted')
     legacy_last_date_submitted = F.DateField('Legacy Last Date Submitted')
 
-    form_submissions = F.LinkField('Form Submissions', FormSubmission)
-
     last_texted = F.DateField('Last Texted')
 
     Meta = build_meta('Households')
@@ -90,8 +88,7 @@ class Household(Model):
                      phone_is_invalid: bool, phone_is_intl: bool, email: str,
                      email_error: str, languages: List[str], notes: str,
                      legacy_first_date_submitted: date,
-                     legacy_last_date_submitted: date,
-                     form_submissions: List[FormSubmission]): ...
+                     legacy_last_date_submitted: date): ...
 
 
 class Request(Model):
