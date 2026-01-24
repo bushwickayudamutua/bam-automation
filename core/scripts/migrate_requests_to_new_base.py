@@ -225,7 +225,7 @@ def transform_email(
 
 
 def transform_lists(
-    old_field_name: str, new_field_name: str, records: list[dict]
+    old_field_name: str, new_field_name: str, records: list[dict], return_set: bool=False
 ):
     """
     Given a list of records, merge all the values of the old field into a single list
@@ -234,7 +234,11 @@ def transform_lists(
     all_items = set()
     for r in records:
         all_items.update(r.get(old_field_name, []))
-    return {new_field_name: list(all_items)}
+    
+    if return_set:
+        return {new_field_name: all_items}
+    else:
+        return {new_field_name: list(all_items)}
 
 
 def transform_languages(
@@ -334,6 +338,18 @@ def transform_case_notes(
     return {
         new_field_name: case_notes,
     }
+
+
+def transform_cita_availability(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
+    """
+    Create new boolean fields "Needs Delivery" and "Needs Email Outreach" based on the old field "Cita Availability"
+    """
+    cita_availability = transform_lists(old_field_name, old_field_name, records, return_set=True)
+    field1 = {"Needs Delivery": True} if "Needs Delivery" in cita_availability else {}
+    field2 = {"Needs Email Outreach": True} if "Needs Email Outreach" in cita_availability else {}
+    return field1 | field2
 
 
 #######################################
@@ -483,7 +499,10 @@ def transform_household_records(household_records: list[dict]) -> dict:
             "new_field": "Name",
             "transform_fx": select_last_non_null,
         },
-        PHONE_FIELD: {"new_field": PHONE_FIELD, "transform_fx": select_first},
+        PHONE_FIELD: {
+            "new_field": PHONE_FIELD,
+            "transform_fx": select_first
+        },
         "Invalid Phone Number?": {
             "new_field": "Invalid Phone Number?",
             "transform_fx": transform_invalid_phone_number,
@@ -492,8 +511,11 @@ def transform_household_records(household_records: list[dict]) -> dict:
             "new_field": "Int'l Phone Number?",
             "transform_fx": transform_intl_phone_number,
         },
-        # includes both Email and Email Error
-        "Email": {"new_field": "Email", "transform_fx": transform_email},
+        # Includes both Email and Email Error
+        "Email": {
+            "new_field": "Email",
+            "transform_fx": transform_email
+        },
         "Language": {
             "new_field": "Languages",
             "transform_fx": transform_languages,
@@ -539,6 +561,11 @@ def transform_household_records(household_records: list[dict]) -> dict:
             "new_field": DATE_SUBMITTED_FIELD,
             "transform_fx": transform_date_submitted,
         },
+        # Includes boolean fields "Needs Delivery" and "Needs Email Outreach"
+        "Cita Availability": {
+            "new_field": "",
+            "transform_fx": transform_cita_availability,
+        }
     }
 
     # sort records by Date Submitted
