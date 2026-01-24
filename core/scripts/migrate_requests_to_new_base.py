@@ -345,10 +345,11 @@ def transform_cita_availability(
     """
     Create new boolean fields "Needs Delivery" and "Needs Email Outreach" based on the old field "Cita Availability"
     """
-    cita_availability = transform_lists(old_field_name, old_field_name, records, return_set=True)
-    field1 = {"Needs Delivery": True} if "Needs Delivery" in cita_availability else {}
-    field2 = {"Needs Email Outreach": True} if "Needs Email Outreach" in cita_availability else {}
-    return field1 | field2
+    output = transform_lists(old_field_name, old_field_name, records, return_set=True)
+    return {
+        "Needs Delivery": True if "Needs Delivery" in output[old_field_name] else None,
+        "Needs Email Outreach": True if "Needs Email Outreach" in output[old_field_name] else None,
+    }
 
 
 #######################################
