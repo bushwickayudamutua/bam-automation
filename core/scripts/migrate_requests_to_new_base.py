@@ -6,7 +6,6 @@ import pandas as pd
 from bam_core.settings import AIRTABLE_BASE_ID, AIRTABLE_TOKEN
 from bam_core.lib.airtable import Airtable
 from bam_core.lib.airtable_v2 import (
-    FormSubmission,
     Household,
     Request,
     SocialServiceRequest,
@@ -612,33 +611,6 @@ def transform_households(households: dict[str, list[dict]]) -> list[dict]:
 
 
 @retry(attempts=5, wait=1, backoff=2)
-def create_form_submission_record(record: dict):
-    """
-    Create a form submission record from the transformed legacy assistance request record.
-    :param record: The legacy assistance request record
-    :return: The form submission
-    """
-    # Fields to exclude from the form submission table.
-    FORM_SUBMISSION_EXCLUDE_FIELDS = [
-        "Invalid Phone Number?",
-        "Email Error",
-        "Int'l Phone Number?",
-        "Street Address",
-        "City, State",
-        "Zip Code",
-        "Geocode",
-    ]
-
-    form_submission = FormSubmission(**{
-        k: (v.get("item", pd.Series()).to_list() if isinstance(v, pd.DataFrame) else v)
-        for k, v in record.items()
-        if k not in FORM_SUBMISSION_EXCLUDE_FIELDS
-    })
-    form_submission.save()
-    return form_submission
-
-
-@retry(attempts=5, wait=1, backoff=2)
 def create_requests_records(record: dict, household: Household):
     """
     Create a list of requests records from the transformed legacy assistance request record.
@@ -707,11 +679,10 @@ def create_ss_requests_records(record: dict, household: Household):
 
 
 @retry(attempts=5, wait=1, backoff=2)
-def create_household_record(record: dict, form_submission: FormSubmission):
+def create_household_record(record: dict):
     """
     Create a household record from the transformed legacy assistance request record.
     :param record: The legacy assistance request record
-    :param form_submission: The form submission to link to the household
     """
     household = Household(
         name=record['Name'],
@@ -724,7 +695,6 @@ def create_household_record(record: dict, form_submission: FormSubmission):
         notes=record['Notes'],
         legacy_first_date_submitted=record['Legacy First Date Submitted'],
         legacy_last_date_submitted=record['Legacy Last Date Submitted'],
-        form_submissions=[form_submission],
     )
     household.save()
     return household
@@ -737,8 +707,7 @@ def load_household(record: dict):
     :param record: The legacy assistance request record
     :return: None
     """
-    form_submission = create_form_submission_record(record)
-    household = create_household_record(record, form_submission)
+    household = create_household_record(record)
     create_requests_records(record, household)
     create_ss_requests_records(record, household)
 
