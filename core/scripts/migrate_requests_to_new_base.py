@@ -2,6 +2,7 @@ import argparse
 from collections import defaultdict
 import copy
 import pandas as pd
+from datetime import datetime
 
 from bam_core.settings import AIRTABLE_BASE_ID, AIRTABLE_TOKEN
 from bam_core.lib.airtable import Airtable
@@ -166,13 +167,17 @@ def transform_date_submitted(
     Create two new fields: "Legacy First Date Submitted" and "Legacy Last Date Submitted"
     representing the first and last date a request was submitted for the household.
     """
+    
+    first_date = min(
+        [r[old_field_name] for r in records]
+    ).split("T")[0]
+    last_date = max(
+        [r[old_field_name] for r in records]
+    ).split("T")[0]
+
     return {
-        f"Legacy First {new_field_name}": min(
-            [r[old_field_name] for r in records]
-        ).split("T")[0],
-        f"Legacy Last {new_field_name}": max(
-            [r[old_field_name] for r in records]
-        ).split("T")[0],
+        f"Legacy First {new_field_name}": datetime.strptime(first_date, "%Y-%m-%d").date(),
+        f"Legacy Last {new_field_name}": datetime.strptime(last_date, "%Y-%m-%d").date(),
     }
 
 
@@ -278,9 +283,11 @@ def transform_other_languages(
     Concatenate all "other" languages into a single line text.
     """
 
-    output = transform_lists(old_field_name, new_field_name, records)
-    output[new_field_name] = "\n".join(output[new_field_name])
-    return output
+    other_languages = [r.get(old_field_name, "").strip() for r in records]
+    other_languages = [l for l in set(other_languages) if l != ""]
+    return {
+        new_field_name: "\n".join(other_languages)
+    }
 
 
 def transform_internet_access(
@@ -532,6 +539,10 @@ def transform_household_records(household_records: list[dict]) -> dict:
             "new_field": "Languages",
             "transform_fx": transform_languages,
         },
+        "What Languages?": {
+            "new_field": "Other Languages",
+            "transform_fx": transform_other_languages,
+        },
         "Furniture Acknowledgement": {
             "new_field": "Furniture Acknowledgement",
             "transform_fx": set_true,
@@ -642,7 +653,7 @@ def create_requests_records(record: dict, household: Household):
         record.get("Kitchen Items", pd.DataFrame()),
     ], ignore_index=True)
     request_records1 = [
-            Request(type=req, legacy_date_submitted=date, household=household)
+            Request(type=req, legacy_date_submitted=datetime.strptime(date, "%Y-%m-%d").date(), household=household)
             for req, date in zip(all_reqs1.get("item",[]), all_reqs1.get(DATE_SUBMITTED_FIELD,[]))
                 if req not in TYPES_TO_EXCLUDE
     ]
@@ -653,7 +664,7 @@ def create_requests_records(record: dict, household: Household):
         record.get("Bed Details", pd.DataFrame()),
     ], ignore_index=True)
     request_records2 = [
-            Request(type=req, legacy_date_submitted=date, household=household, geocode=record.get("Geocode", ""))
+            Request(type=req, legacy_date_submitted=datetime.strptime(date, "%Y-%m-%d").date(), household=household, geocode=record.get("Geocode", ""))
             for req, date in zip(all_reqs2.get("item",[]), all_reqs2.get(DATE_SUBMITTED_FIELD,[]))
                 if req not in TYPES_TO_EXCLUDE
     ]
@@ -675,7 +686,7 @@ def create_ss_requests_records(record: dict, household: Household):
     for req,date in zip(ss_reqs.get("item",[]), ss_reqs.get(DATE_SUBMITTED_FIELD,[])):
         ss_record = SocialServiceRequest(
             type=req,
-            legacy_date_submitted=date,
+            legacy_date_submitted=datetime.strptime(date, "%Y-%m-%d").date(),
             household=household,
         )
         if (req == "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助"):
