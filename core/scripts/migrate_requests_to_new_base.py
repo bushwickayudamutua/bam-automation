@@ -271,6 +271,18 @@ def transform_languages(
     return output
 
 
+def transform_other_languages(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
+    """
+    Concatenate all "other" languages into a single line text.
+    """
+
+    output = transform_lists(old_field_name, new_field_name, records)
+    output[new_field_name] = "\n".join(output[new_field_name])
+    return output
+
+
 def transform_internet_access(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
