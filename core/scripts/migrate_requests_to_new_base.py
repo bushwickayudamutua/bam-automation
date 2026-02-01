@@ -1,14 +1,16 @@
 import argparse
 from collections import defaultdict
 import copy
+import pandas as pd
+from datetime import datetime
 
-from bam_core.settings import (
-    AIRTABLE_BASE_ID,
-    AIRTABLE_TOKEN,
-    AIRTABLE_V2_BASE_ID,
-    AIRTABLE_V2_TOKEN,
-)
+from bam_core.settings import AIRTABLE_BASE_ID, AIRTABLE_TOKEN
 from bam_core.lib.airtable import Airtable
+from bam_core.lib.airtable_v2 import (
+    Household,
+    Request,
+    SocialServiceRequest,
+)
 from bam_core.utils.phone import (
     format_phone_number,
     is_international_phone_number,
@@ -30,16 +32,11 @@ from bam_core.constants import (
     SOCIAL_SERVICES_REQUESTS_SCHEMA,
 )
 
-#######################################
-#  Setup References To Airtable Bases #
-#######################################
+########################################
+#  Setup Reference To OG Airtable Base #
+########################################
 
 at_og = Airtable(base_id=AIRTABLE_BASE_ID, token=AIRTABLE_TOKEN)
-at_v2 = Airtable(base_id=AIRTABLE_V2_BASE_ID, token=AIRTABLE_V2_TOKEN)
-form_submission_table = at_v2.get_table("Assistance Request Form Submissions")
-ss_requests_table = at_v2.get_table("Social Service Requests")
-requests_table = at_v2.get_table("Requests")
-households_table = at_v2.get_table("Households")
 
 
 #######################################
@@ -106,12 +103,28 @@ def select_first_non_null(
     return {}
 
 
+def select_last_non_null(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
+    for record in reversed(records):
+        if record.get(old_field_name):
+            return {new_field_name: record.get(old_field_name)}
+    return {}
+
+
 def set_true(old_field_name: str, new_field_name: str, records: list[dict]):
     return {new_field_name: True}
 
 
 def set_empty(old_field_name: str, new_field_name: str, records: list[dict]):
     return {new_field_name: ""}
+
+
+def select_oldest_request(item_df):
+    item_df.sort_values(by=DATE_SUBMITTED_FIELD, ascending=True, inplace=True)
+    item_df.drop_duplicates(subset="item", keep='first', inplace=True)
+    item_df.reset_index(drop=True, inplace=True)
+    return item_df
 
 
 ############################################
@@ -127,7 +140,7 @@ def transform_zip_code(
     If it fails, set it to None.
     """
     # we only migrate valid zip codes
-    output = select_first_non_null(old_field_name, new_field_name, records)
+    output = select_last_non_null(old_field_name, new_field_name, records)
     zip_code = output.get(new_field_name)
 
     # attempt to format the zip code #
@@ -154,13 +167,17 @@ def transform_date_submitted(
     Create two new fields: "Legacy First Date Submitted" and "Legacy Last Date Submitted"
     representing the first and last date a request was submitted for the household.
     """
+    
+    first_date = min(
+        [r[old_field_name] for r in records]
+    ).split("T")[0]
+    last_date = max(
+        [r[old_field_name] for r in records]
+    ).split("T")[0]
+
     return {
-        f"Legacy First {new_field_name}": min(
-            [r[old_field_name] for r in records]
-        ).split("T")[0],
-        f"Legacy Last {new_field_name}": max(
-            [r[old_field_name] for r in records]
-        ).split("T")[0],
+        f"Legacy First {new_field_name}": datetime.strptime(first_date, "%Y-%m-%d").date(),
+        f"Legacy Last {new_field_name}": datetime.strptime(last_date, "%Y-%m-%d").date(),
     }
 
 
@@ -197,7 +214,7 @@ def transform_email(
     email = ""
     # only merge valid emails
     email_error = str(NO_EMAIL_ERROR)
-    for r in records:
+    for r in reversed(records):
         if r.get(old_field_name):
             email_output = format_email(r.get(old_field_name))
             email = email_output.get("email")
@@ -212,7 +229,7 @@ def transform_email(
 
 
 def transform_lists(
-    old_field_name: str, new_field_name: str, records: list[dict]
+    old_field_name: str, new_field_name: str, records: list[dict], return_set: bool=False
 ):
     """
     Given a list of records, merge all the values of the old field into a single list
@@ -221,7 +238,11 @@ def transform_lists(
     all_items = set()
     for r in records:
         all_items.update(r.get(old_field_name, []))
-    return {new_field_name: list(all_items)}
+    
+    if return_set:
+        return {new_field_name: all_items}
+    else:
+        return {new_field_name: list(all_items)}
 
 
 def transform_languages(
@@ -253,6 +274,20 @@ def transform_languages(
         )
     )
     return output
+
+
+def transform_other_languages(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
+    """
+    Concatenate all "other" languages into a single line text.
+    """
+
+    other_languages = [r.get(old_field_name, "").strip() for r in records]
+    other_languages = [l for l in set(other_languages) if l != ""]
+    return {
+        new_field_name: "\n".join(other_languages)
+    }
 
 
 def transform_internet_access(
@@ -323,6 +358,19 @@ def transform_case_notes(
     }
 
 
+def transform_cita_availability(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
+    """
+    Create new boolean fields "Needs Delivery" and "Needs Email Outreach" based on the old field "Cita Availability"
+    """
+    output = transform_lists(old_field_name, old_field_name, records, return_set=True)
+    return {
+        "Needs Delivery": True if "Needs Delivery" in output[old_field_name] else None,
+        "Needs Email Outreach": True if "Needs Email Outreach" in output[old_field_name] else None,
+    }
+
+
 #######################################
 #   Open Requests Transformation      #
 #######################################
@@ -382,79 +430,73 @@ def transform_open_requests(
         "Otras / Other / 其他廚房用品": "Otras Cosas de Cocina / Other Kitchen Items / 其他廚房用品",
     }
 
-    # get the unique set of all items
-    all_items = list(
-        set(
-            [
-                item.strip()
-                for r in records
-                for item in r.get(old_field_name, [])
-            ]
-        )
-    )
+    all_items_df = [
+        pd.DataFrame({
+            "item": [item],
+            DATE_SUBMITTED_FIELD: [r.get(DATE_SUBMITTED_FIELD, "").split("T")[0]],
+        })
+        for r in records for item in r.get(old_field_name, [])
+    ]
+    all_items_df = pd.concat(all_items_df or [pd.DataFrame()], ignore_index=True)
 
     # filter out items we aren't migrating and "Historical" items
-    all_items = [
-        item
-        for item in all_items
-        if "historical" not in item.lower() and item not in EXCLUDE_ITEMS
-    ]
+    not_historical = pd.Series(["historical" not in item.lower() for item in all_items_df.get("item",[])])
+    not_excluded_item = ~all_items_df.get("item",[]).isin(EXCLUDE_ITEMS)
+    keep_idx = not_historical & not_excluded_item
+    all_items_df = all_items_df[keep_idx]
 
-    # make a copy of the list to remove items from
-    all_items_copy = all_items.copy()
-
-    output = defaultdict(list)
-    for item in all_items:
-        # first check for sub-items and remove them from the top-level list
-        for sub_item in REQUEST_SUB_ITEMS:
-            # unpack sub_item
-            new_request_type = sub_item["new_request_type"]
-            old_request_type = sub_item["old_request_type"]
-            sub_items = sub_item["items"]
-            items_output_field = sub_item["items_output_field"]
-            request_type_output_field = sub_item["request_type_output_field"]
-
-            # merge top-level request type
-            if old_request_type and item == old_request_type:
-                if new_request_type not in output.get(
-                    request_type_output_field, []
-                ):
-                    output[request_type_output_field].append(new_request_type)
+    output = defaultdict(pd.DataFrame)
+    # first check for sub-items and remove them from the top-level list
+    for sub_item in REQUEST_SUB_ITEMS:
+        # unpack sub_item
+        new_request_type = sub_item["new_request_type"]
+        old_request_type = sub_item["old_request_type"]
+        sub_items = sub_item["items"]
+        items_output_field = sub_item["items_output_field"]
+        request_type_output_field = sub_item["request_type_output_field"]
+        
+        # merge top-level request type
+        if old_request_type:
+            old_type_idx = all_items_df["item"] == old_request_type
+            if old_type_idx.any():
+                if new_request_type:
+                    new_item_df = all_items_df[old_type_idx].copy()
+                    new_item_df["item"] = new_request_type
+                    output[request_type_output_field] = pd.concat([output[request_type_output_field], new_item_df])
                 # remove the item from the top-level list
-                if item in all_items_copy:
-                    all_items_copy.remove(item)
-
-            elif item in sub_items:
-                #
-                # add the top-level request type if not already present
-                if new_request_type and new_request_type not in output.get(
-                    request_type_output_field, []
-                ):
-                    output[request_type_output_field].append(new_request_type)
-
-                # apply item mapping if present
-                if item in ITEM_MAPPING:
-                    new_item = ITEM_MAPPING[item]
-                    old_item = copy.deepcopy(item)
-
-                    # add the new item to the output list
-                    output[items_output_field].append(new_item)
-
-                    # remove the old item from the top-level list
-                    if old_item in all_items_copy:
-                        all_items_copy.remove(old_item)
-
-                else:
-                    # add the item to the output list
-                    output[items_output_field].append(item)
-
-                    # remove the item from the top-level list
-                    if item in all_items_copy:
-                        all_items_copy.remove(item)
-
+                all_items_df = all_items_df[~old_type_idx]
+        
+        sub_item_idx = all_items_df["item"].isin(sub_items)
+        if sub_item_idx.any():
+            # add the top-level request type if not already present
+            if new_request_type:
+                new_item_df = all_items_df[sub_item_idx].copy()
+                new_item_df["item"] = new_request_type
+                output[request_type_output_field] = pd.concat([output[request_type_output_field], new_item_df])
+            
+            # apply item mapping if present
+            item_map_idx = all_items_df["item"].isin(ITEM_MAPPING) & sub_item_idx
+            if item_map_idx.any():
+                # add the new item to the output list
+                new_item_df = all_items_df[item_map_idx].copy()
+                new_item_df["item"] = [ITEM_MAPPING[i] for i in new_item_df["item"]]
+                output[items_output_field] = pd.concat([output[items_output_field], new_item_df])
+                # remove the old item from the top-level list
+                all_items_df = all_items_df[~item_map_idx]
+                sub_item_idx = all_items_df["item"].isin(sub_items)
+            
+            # add the item to the output list
+            new_item_df = all_items_df[sub_item_idx].copy()
+            output[items_output_field] = pd.concat([output[items_output_field], new_item_df])
+            # remove the item from the top-level list
+            all_items_df = all_items_df[~sub_item_idx]
+    
     # add any remaining items to the top-level list
-    output[new_field_name].extend(all_items_copy)
+    output[new_field_name] = pd.concat([output[new_field_name], all_items_df])
 
+    # pick oldest request of each type:
+    output = {name: select_oldest_request(item_df) for name, item_df in output.items()}
+    
     return output
 
 
@@ -474,9 +516,12 @@ def transform_household_records(household_records: list[dict]) -> dict:
     FIELD_MAPPING = {
         "First Name": {
             "new_field": "Name",
-            "transform_fx": select_first_non_null,
+            "transform_fx": select_last_non_null,
         },
-        PHONE_FIELD: {"new_field": PHONE_FIELD, "transform_fx": select_first},
+        PHONE_FIELD: {
+            "new_field": PHONE_FIELD,
+            "transform_fx": select_first
+        },
         "Invalid Phone Number?": {
             "new_field": "Invalid Phone Number?",
             "transform_fx": transform_invalid_phone_number,
@@ -485,31 +530,22 @@ def transform_household_records(household_records: list[dict]) -> dict:
             "new_field": "Int'l Phone Number?",
             "transform_fx": transform_intl_phone_number,
         },
-        # includes both Email and Email Error
-        "Email": {"new_field": "Email", "transform_fx": transform_email},
+        # Includes both Email and Email Error
+        "Email": {
+            "new_field": "Email",
+            "transform_fx": transform_email
+        },
         "Language": {
             "new_field": "Languages",
             "transform_fx": transform_languages,
         },
-        "Current Address": {
-            "new_field": "Street Address",
-            "transform_fx": select_first_non_null,
-        },
-        "Current Address - City, State": {
-            "new_field": "City, State",
-            "transform_fx": select_first_non_null,
-        },
-        "Current Address - Zip Code": {
-            "new_field": "Zip Code",
-            "transform_fx": transform_zip_code,
+        "What Languages?": {
+            "new_field": "Other Languages",
+            "transform_fx": transform_other_languages,
         },
         "Furniture Acknowledgement": {
             "new_field": "Furniture Acknowledgement",
             "transform_fx": set_true,
-        },
-        "Geocode": {
-            "new_field": "Geocode",
-            "transform_fx": select_first_non_null,
         },
         "Open Requests": {
             "new_field": "Request Types",
@@ -527,11 +563,32 @@ def transform_household_records(household_records: list[dict]) -> dict:
             "new_field": "Notes",
             "transform_fx": transform_case_notes,
         },
+        "Current Address": {
+            "new_field": "Street Address",
+            "transform_fx": select_last_non_null,
+        },
+        "Current Address - City, State": {
+            "new_field": "City, State",
+            "transform_fx": select_last_non_null,
+        },
+        "Current Address - Zip Code": {
+            "new_field": "Zip Code",
+            "transform_fx": transform_zip_code,
+        },
+        "Geocode": {
+            "new_field": "Geocode",
+            "transform_fx": select_last_non_null,
+        },
         # Creates First Date Submitted and Last Date Submitted fields
         DATE_SUBMITTED_FIELD: {
             "new_field": DATE_SUBMITTED_FIELD,
             "transform_fx": transform_date_submitted,
         },
+        # Includes boolean fields "Needs Delivery" and "Needs Email Outreach"
+        "Cita Availability": {
+            "new_field": "",
+            "transform_fx": transform_cita_availability,
+        }
     }
 
     # sort records by Date Submitted
@@ -578,31 +635,7 @@ def transform_households(households: dict[str, list[dict]]) -> list[dict]:
 
 
 @retry(attempts=5, wait=1, backoff=2)
-def create_form_submission_record(record: dict):
-    """
-    Create a form submission record from the transformed legacy assistance request record.
-    :param record: The legacy assistance request record
-    :return: The form submission ID
-    """
-    # Fields to exclude from the request table.
-    FORM_SUBMISSION_EXCLUDE_FIELDS = [
-        "Invalid Phone Number?",
-        "Email Error",
-        "Int'l Phone Number?",
-        "Geocode",
-    ]
-
-    form_submission = {
-        k: v
-        for k, v in record.items()
-        if k not in FORM_SUBMISSION_EXCLUDE_FIELDS
-    }
-    form_submission_response = form_submission_table.create(form_submission)
-    return form_submission_response["id"]
-
-
-@retry(attempts=5, wait=1, backoff=2)
-def create_requests_records(record: dict):
+def create_requests_records(record: dict, household: Household):
     """
     Create a list of requests records from the transformed legacy assistance request record.
     :param record: The legacy assistance request record
@@ -614,85 +647,82 @@ def create_requests_records(record: dict):
         "Cama / Bed / 床",
     ]
 
-    # flatten the list of requests
-    all_reqs = record.get("Request Types", [])
-    all_reqs.extend(record.get("Furniture Items", []))
-    all_reqs.extend(record.get("Kitchen Items", []))
-    all_reqs.extend(record.get("Bed Details", []))
-    # remove duplicates and remove excluded types
-    request_records = [
-        {"Type": r} for r in list(set(all_reqs)) if r not in TYPES_TO_EXCLUDE
+    # combine the list of requests (no address information)
+    all_reqs1 = pd.concat([
+        record.get("Request Types", pd.DataFrame()),
+        record.get("Kitchen Items", pd.DataFrame()),
+    ], ignore_index=True)
+    request_records1 = [
+            Request(type=req, legacy_date_submitted=datetime.strptime(date, "%Y-%m-%d").date(), household=household)
+            for req, date in zip(all_reqs1.get("item",[]), all_reqs1.get(DATE_SUBMITTED_FIELD,[]))
+                if req not in TYPES_TO_EXCLUDE
     ]
-    requests_response = requests_table.batch_create(request_records)
-    return [r["id"] for r in requests_response]
+
+    # combine the list of requests (with geocode, and no other address information)
+    all_reqs2 = pd.concat([
+        record.get("Furniture Items", pd.DataFrame()),
+        record.get("Bed Details", pd.DataFrame()),
+    ], ignore_index=True)
+    request_records2 = [
+            Request(type=req, legacy_date_submitted=datetime.strptime(date, "%Y-%m-%d").date(), household=household, geocode=record.get("Geocode", ""))
+            for req, date in zip(all_reqs2.get("item",[]), all_reqs2.get(DATE_SUBMITTED_FIELD,[]))
+                if req not in TYPES_TO_EXCLUDE
+    ]
+
+    request_records = request_records1 + request_records2
+    Request.batch_save(request_records)
+    return request_records
 
 
 @retry(attempts=5, wait=1, backoff=2)
-def create_ss_requests_records(record: dict):
+def create_ss_requests_records(record: dict, household: Household):
     """
     Create a list of social service requests records from the transformed legacy assistance request record.
     :param record: The legacy assistance request record
     :return: A list of social service request IDs
     """
-    ss_reqs = record.get("Social Service Requests", [])
+    ss_reqs = record.get("Social Service Requests", pd.DataFrame())
     ss_records = []
-    for req in ss_reqs:
-        ss_record = {
-            "Type": req,
-        }
-        if (
-            req
-            == "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助"
-        ):
-            ss_record["Internet Access"] = record.get("Internet Access", [])
-            ss_record["Roof Accessible?"] = record.get(
-                "Roof Accessible?", False
-            )
+    for req,date in zip(ss_reqs.get("item",[]), ss_reqs.get(DATE_SUBMITTED_FIELD,[])):
+        ss_record = SocialServiceRequest(
+            type=req,
+            legacy_date_submitted=datetime.strptime(date, "%Y-%m-%d").date(),
+            household=household,
+        )
+        if (req == "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助"):
+            ss_record.internet_access = record.get("Internet Access", [])
+            ss_record.roof_is_accessible = record.get("Roof Accessible?", False)
+            ss_record.street_address = record.get("Street Address", "")
+            ss_record.city_and_state = record.get("City, State", "")
+            ss_record.zip_code = record.get("Zip Code", None)
+            ss_record.geocode = record.get("Geocode", "")
         ss_records.append(ss_record)
 
-    ss_requests_response = ss_requests_table.batch_create(ss_records)
-    return [r["id"] for r in ss_requests_response]
+    SocialServiceRequest.batch_save(ss_records)
+    return ss_records
 
 
 @retry(attempts=5, wait=1, backoff=2)
-def create_household_record(
-    record: dict,
-    request_ids: list[str],
-    ss_request_ids: list[str],
-    form_submission_id: str,
-):
+def create_household_record(record: dict):
     """
     Create a household record from the transformed legacy assistance request record.
     :param record: The legacy assistance request record
-    :param request_ids: The list of request IDs to link to the household
-    :param ss_request_ids: The list of social service request IDs to link to the household
-    :param form_submission_id: The form submission ID to link to the household
     """
-
-    HOUSEHOLD_INCLUDE_FIELDS = [
-        "Name",
-        PHONE_FIELD,
-        "Invalid Phone Number?",
-        "Int'l Phone Number?",
-        "Email",
-        "Email Error",
-        "Languages",
-        "Notes",
-        "Legacy First Date Submitted",
-        "Legacy Last Date Submitted",
-        "Street Address",
-        "City, State",
-        "Zip Code",
-        "Geocode",
-    ]
-
-    household = {
-        k: v for k, v in record.items() if k in HOUSEHOLD_INCLUDE_FIELDS
-    }
-    household["Requests"] = request_ids
-    household["Social Service Requests"] = ss_request_ids
-    household["Form Submissions"] = [form_submission_id]
-    households_table.create(household)
+    household = Household(
+        name=record['Name'],
+        phone_number=record[PHONE_FIELD],
+        phone_is_invalid=record['Invalid Phone Number?'],
+        phone_is_intl=record["Int'l Phone Number?"],
+        email=record['Email'],
+        email_error=record['Email Error'],
+        languages=record['Languages'],
+        other_languages=record['Other Languages'],
+        notes=record['Notes'],
+        legacy_first_date_submitted=record['Legacy First Date Submitted'],
+        legacy_last_date_submitted=record['Legacy Last Date Submitted'],
+    )
+    household.save()
+    return household
 
 
 def load_household(record: dict):
@@ -702,13 +732,9 @@ def load_household(record: dict):
     :param record: The legacy assistance request record
     :return: None
     """
-    form_submission_id = create_form_submission_record(record)
-    ss_request_ids = create_ss_requests_records(record)
-    request_ids = create_requests_records(record)
-    # create the household record
-    create_household_record(
-        record, request_ids, ss_request_ids, form_submission_id
-    )
+    household = create_household_record(record)
+    create_requests_records(record, household)
+    create_ss_requests_records(record, household)
 
 
 #######################################
@@ -749,3 +775,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
