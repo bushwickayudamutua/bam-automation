@@ -22,6 +22,7 @@ class FormSubmission(Model):
     phone_number = F.PhoneNumberField('Phone Number')
     email = F.EmailField('Email')
     languages = F.MultipleSelectField('Languages')
+    other_languages = F.TextField('Other Languages')
     notes = F.TextField('Notes')
 
     # address details
@@ -52,7 +53,8 @@ class FormSubmission(Model):
 
     if TYPE_CHECKING:
         def __init__(self, *, name: str, phone_number: str, email: str,
-                     languages: List[str], notes: str, street_address: str,
+                     languages: List[str], other_languages: str,
+                     notes: str, street_address: str,
                      city_and_state: str, zip_code: int,
                      request_types: List[str], furniture_acknowledgement: bool,
                      furniture_items: List[str], bed_details: List[str],
@@ -74,6 +76,7 @@ class Household(Model):
     email_error = F.TextField('Email Error')
 
     languages = F.MultipleSelectField('Languages')
+    other_languages = F.TextField('Other Languages')
     notes = F.TextField('Notes')
 
     legacy_first_date_submitted = F.DateField('Legacy First Date Submitted')
@@ -86,7 +89,7 @@ class Household(Model):
     if TYPE_CHECKING:
         def __init__(self, *, name: str, phone_number: str,
                      phone_is_invalid: bool, phone_is_intl: bool, email: str,
-                     email_error: str, languages: List[str], notes: str,
+                     email_error: str, languages: List[str], other_languages: str, notes: str,
                      legacy_first_date_submitted: date,
                      legacy_last_date_submitted: date): ...
 

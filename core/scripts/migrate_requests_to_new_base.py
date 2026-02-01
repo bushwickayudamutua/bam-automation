@@ -716,6 +716,7 @@ def create_household_record(record: dict):
         email=record['Email'],
         email_error=record['Email Error'],
         languages=record['Languages'],
+        other_languages=record['Other Languages'],
         notes=record['Notes'],
         legacy_first_date_submitted=record['Legacy First Date Submitted'],
         legacy_last_date_submitted=record['Legacy Last Date Submitted'],
