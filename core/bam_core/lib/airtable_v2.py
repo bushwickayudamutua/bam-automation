@@ -8,8 +8,8 @@ from bam_core import settings
 
 def build_meta(table_name: str):
     return {
-        'base_id': settings.AIRTABLE_V2_BASE_ID,
-        'api_key': settings.AIRTABLE_V2_TOKEN,
+        'base_id': settings.AIRTABLE_V2_BASE_ID or 'base_id',
+        'api_key': settings.AIRTABLE_V2_TOKEN or 'api_key',
         'table_name': table_name,
     }
 

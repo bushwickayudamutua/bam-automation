@@ -32,7 +32,7 @@ packages:
       - name: hourly
         binary: false
         main: ""
-        runtime: "python:3.9"
+        runtime: "python:3.11"
         web: true
         parameters:
           dry_run: false
@@ -50,7 +50,7 @@ packages:
       - name: daily
         binary: false
         main: ""
-        runtime: "python:3.9"
+        runtime: "python:3.11"
         web: true
         parameters:
           dry_run: false
@@ -72,7 +72,7 @@ packages:
       - name: dedupe_views
         binary: false
         main: ""
-        runtime: "python:3.9"
+        runtime: "python:3.11"
         web: true
         parameters: {}
         annotations: {}
@@ -84,7 +84,7 @@ packages:
       - name: send_dialpad_sms
         binary: false
         main: ""
-        runtime: "python:3.9"
+        runtime: "python:3.11"
         web: true
         parameters: {}
         annotations: {}
@@ -96,7 +96,7 @@ packages:
       - name: consolidate_eg_requests
         binary: false
         main: ""
-        runtime: "python:3.9"
+        runtime: "python:3.11"
         web: true
         parameters: {}
         annotations: {}
@@ -108,7 +108,7 @@ packages:
       - name: timeout_eg_requests
         binary: false
         main: ""
-        runtime: "python:3.9"
+        runtime: "python:3.11"
         web: true
         parameters: {}
         annotations: {}
@@ -120,7 +120,7 @@ packages:
       - name: update_field_value
         binary: false
         main: ""
-        runtime: "python:3.9"
+        runtime: "python:3.11"
         web: true
         parameters: {}
         annotations: {}
@@ -136,7 +136,7 @@ packages:
       - name: send_dialpad_sms
         binary: false
         main: ""
-        runtime: "python:3.9"
+        runtime: "python:3.11"
         web: true
         parameters: {}
         annotations: {}
@@ -152,7 +152,7 @@ packages:
       - name: update_request_data
         binary: false
         main: ""
-        runtime: "python:3.9"
+        runtime: "python:3.11"
         web: true
         parameters: {}
         annotations: {}
@@ -169,7 +169,7 @@ packages:
       - name: update_lists
         binary: false
         main: ""
-        runtime: "python:3.9"
+        runtime: "python:3.11"
         web: true
         parameters: {}
         annotations: {}

@@ -116,7 +116,7 @@ If your function only makes use of tools in `bam-core`, then you should be all s
 If your function has any required packages that aren't included in `bam-core`, you'll want to add them to a `requirements.txt` file and then modify the `build.sh` script to include this line:
 
 ```bash
-pip install -r requirements.txt --target virtualenv/lib/python3.9/site-packages
+pip install -r requirements.txt --target virtualenv/lib/python3.11/site-packages
 ```
 
 This will install your requirements into the virtual environment that is packaged up as a part of your function.
@@ -125,7 +125,7 @@ Next, update [project.yml](./project.yml) to include your new function, followin
 
 Once you're done, you should be able to create a pull request for your changes. Once merged, they'll be deployed to Digital Ocean via Github Actions. Alternatively, you can follow the above directions on deploying functions locally.
 
-## How do I schedule a function? 
+## How do I schedule a function?
 
 Rather than adding a [scheduled trigger](https://docs.digitalocean.com/products/functions/how-to/schedule-functions/) for each function, we have two functions - [cron/daily](packages/cron/daily) and [cron/hourly](packages/cron/hourly/) which run multiple functions on a daily and hourly basis, respectively. This helps us get around Digital Ocean's quota of three scheduled triggers per account.  Add your function and call the `main` method to add it the schedule.
 
