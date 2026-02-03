@@ -18,6 +18,8 @@ node_modules
 .pytest_cache
 virtualenv/
 functions/packages/*/*/core
+functions/packages/*/*/.ignore
+functions/packages/*/*/build.sh
 service-account.json
 *.db
 *.csv

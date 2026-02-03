@@ -54,8 +54,6 @@ To develop a new function, you can start by copying from an existing example, fo
 git checkout -b feature/my-new-function
 mkdir -p packages/airtable/my_new_function
 cp -R packages/website/update_request_data  packages/airtable/my_new_function
-chmod +X packages/airtable/my_new_function/build.sh # make the build script executable
-chmod 777 packages/airtable/my_new_function/build.sh # open the permissions for the build script
 ```
 
 When naming a new function, try to group functions that work with particular data sources in in the same directory, and add new directories when new data sources are added. When a function accesses multiple data sources, put it in the directory of the data source it updates (for instance, `update_request_data` pulls from Airtable, but writes data to be access on our website).
@@ -111,19 +109,24 @@ if __name__ == "__main__:
 
 ### How do I prepare a new function for deployment?
 
-If your function only makes use of tools in `bam-core`, then you should be all set to go.
-
-If your function has any required packages that aren't included in `bam-core`, you'll want to add them to a `requirements.txt` file and then modify the `build.sh` script to include this line:
-
-```bash
-pip install -r requirements.txt --target virtualenv/lib/python3.11/site-packages
-```
-
-This will install your requirements into the virtual environment that is packaged up as a part of your function.
-
-Next, update [project.yml](./project.yml) to include your new function, following the existing format. If your function requires any sensitive data, you should access it via environment variables which can be set locally in your `.env` file and [the secrets settings for this repository](https://github.com/bushwickayudamutua/bam-automation/settings/secrets/actions). You'll also need to add this secret to github in order for it to be accessible during the build process.
+First, update [project.yml](./project.yml) to include your new function, following the existing format. If your function requires any sensitive data, you should access it via environment variables which can be set locally in your `.env` file and [the secrets settings for this repository](https://github.com/bushwickayudamutua/bam-automation/settings/secrets/actions). You'll also need to add this secret to github in order for it to be accessible during the build process.
 
 Once you're done, you should be able to create a pull request for your changes. Once merged, they'll be deployed to Digital Ocean via Github Actions. Alternatively, you can follow the above directions on deploying functions locally.
+
+### How do I update `.ignore` or `build.sh` across all functions?
+
+If you need to update the shared `.ignore` or `build.sh` files, edit the centralized versions in the `functions` directory, then run the prepare script to copy them to all functions:
+
+```bash
+# From the root of the repository
+make prepare-functions
+```
+
+Or use the script directly:
+
+```bash
+./functions/prepare-functions.sh
+```
 
 ## How do I schedule a function?
 
