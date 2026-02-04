@@ -4,16 +4,16 @@ Hi! Welcome to `bam-automation`. This repository contains code for syncing data 
 
 ## Local Development Setup
 
-You'll first need `python3.9` installed. If you're on a Mac, you can do this with [Homebrew](https://brew.sh/).
+You'll first need `python3.11` installed. If you're on a Mac, you can do this with [Homebrew](https://brew.sh/).
 
 ```
-brew install python@3.9
+brew install python@3.11
 ```
 
 Next you'll need to setup a virtual environment and install the dependencies for each subproject:
 
 ```
-python3.9 -m venv .venv # create a virtualenv
+python3.11 -m venv .venv # create a virtualenv
 source .venv/bin/activate # activate it
 pip install -r requirements-dev.txt # install the development requirements
 pip install -e ./core # install the bam-core library
