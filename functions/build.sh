@@ -7,11 +7,11 @@ find core -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 find core -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
 
 # Create fresh virtualenv
-virtualenv --without-pip virtualenv
+virtualenv virtualenv
 source virtualenv/bin/activate
 
-# Upgrade pip
-pip install --upgrade pip
+# Upgrade pip using python -m pip for reliability
+python -m pip install --upgrade pip
 
 # Install bam-core with dependencies to target directory
 pip install --target ./virtualenv/lib/python3.11/site-packages ./core
