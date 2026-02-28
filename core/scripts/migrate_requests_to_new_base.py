@@ -103,15 +103,6 @@ def select_first_non_null(
     return {}
 
 
-def select_last_non_null(
-    old_field_name: str, new_field_name: str, records: list[dict]
-):
-    for record in reversed(records):
-        if record.get(old_field_name):
-            return {new_field_name: record.get(old_field_name)}
-    return {}
-
-
 def set_true(old_field_name: str, new_field_name: str, records: list[dict]):
     return {new_field_name: True}
 
@@ -140,7 +131,7 @@ def transform_zip_code(
     If it fails, set it to None.
     """
     # we only migrate valid zip codes
-    output = select_last_non_null(old_field_name, new_field_name, records)
+    output = select_first_non_null(old_field_name, new_field_name, records)
     zip_code = output.get(new_field_name)
 
     # attempt to format the zip code #
@@ -210,11 +201,10 @@ def transform_email(
     If there are valid emails, set the new field to the first valid email
     otherwise set it to an empty string.
     """
-    #
     email = ""
     # only merge valid emails
     email_error = str(NO_EMAIL_ERROR)
-    for r in reversed(records):
+    for r in records:
         if r.get(old_field_name):
             email_output = format_email(r.get(old_field_name))
             email = email_output.get("email")
@@ -516,7 +506,7 @@ def transform_household_records(household_records: list[dict]) -> dict:
     FIELD_MAPPING = {
         "First Name": {
             "new_field": "Name",
-            "transform_fx": select_last_non_null,
+            "transform_fx": select_first_non_null,
         },
         PHONE_FIELD: {
             "new_field": PHONE_FIELD,
@@ -565,11 +555,11 @@ def transform_household_records(household_records: list[dict]) -> dict:
         },
         "Current Address": {
             "new_field": "Street Address",
-            "transform_fx": select_last_non_null,
+            "transform_fx": select_first_non_null,
         },
         "Current Address - City, State": {
             "new_field": "City, State",
-            "transform_fx": select_last_non_null,
+            "transform_fx": select_first_non_null,
         },
         "Current Address - Zip Code": {
             "new_field": "Zip Code",
@@ -577,7 +567,7 @@ def transform_household_records(household_records: list[dict]) -> dict:
         },
         "Geocode": {
             "new_field": "Geocode",
-            "transform_fx": select_last_non_null,
+            "transform_fx": select_first_non_null,
         },
         # Creates First Date Submitted and Last Date Submitted fields
         DATE_SUBMITTED_FIELD: {
@@ -591,7 +581,7 @@ def transform_household_records(household_records: list[dict]) -> dict:
         }
     }
 
-    # sort records by Date Submitted
+    # sort records by Date Submitted (order from most recent to oldest)
     records = list(
         sorted(
             household_records,
@@ -773,6 +763,6 @@ def main():
             raise e
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
 
