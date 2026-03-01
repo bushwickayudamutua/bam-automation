@@ -642,7 +642,12 @@ def create_requests_records(record: dict, household: Household):
         record.get("Kitchen Items", pd.DataFrame()),
     ], ignore_index=True)
     request_records1 = [
-            Request(type=req, legacy_date_submitted=datetime.strptime(date, "%Y-%m-%d").date(), household=household)
+            Request(
+                household=household,
+                type=req,
+                status="Open",
+                legacy_date_submitted=datetime.strptime(date, "%Y-%m-%d").date()
+            )
             for req, date in zip(all_reqs1.get("item",[]), all_reqs1.get(DATE_SUBMITTED_FIELD,[]))
                 if req not in TYPES_TO_EXCLUDE
     ]
@@ -653,7 +658,13 @@ def create_requests_records(record: dict, household: Household):
         record.get("Bed Details", pd.DataFrame()),
     ], ignore_index=True)
     request_records2 = [
-            Request(type=req, legacy_date_submitted=datetime.strptime(date, "%Y-%m-%d").date(), household=household, geocode=record.get("Geocode", ""))
+            Request(
+                household=household,
+                type=req,
+                status="Open",
+                legacy_date_submitted=datetime.strptime(date, "%Y-%m-%d").date(),
+                geocode=record.get("Geocode", None)
+            )
             for req, date in zip(all_reqs2.get("item",[]), all_reqs2.get(DATE_SUBMITTED_FIELD,[]))
                 if req not in TYPES_TO_EXCLUDE
     ]
@@ -674,17 +685,21 @@ def create_ss_requests_records(record: dict, household: Household):
     ss_records = []
     for req,date in zip(ss_reqs.get("item",[]), ss_reqs.get(DATE_SUBMITTED_FIELD,[])):
         ss_record = SocialServiceRequest(
-            type=req,
-            legacy_date_submitted=datetime.strptime(date, "%Y-%m-%d").date(),
             household=household,
+            type=req,
+            status="Open",
+            legacy_date_submitted=datetime.strptime(date, "%Y-%m-%d").date(),
         )
         if (req == "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助"):
+            ss_record.bin = record.get("Building Identification Number", None)
+            ss_record.geocode = record.get("Geocode", None)
+            ss_record.cleaned_address = record.get("Address", None)
+            ss_record.address_accuracy = record.get("Address Accuracy", None)
+            ss_record.street_address = record.get("Street Address", None)
+            ss_record.city_and_state = record.get("City, State", None)
+            ss_record.zip_code = record.get("Zip Code", None)
             ss_record.internet_access = record.get("Internet Access", [])
             ss_record.roof_is_accessible = record.get("Roof Accessible?", False)
-            ss_record.street_address = record.get("Street Address", "")
-            ss_record.city_and_state = record.get("City, State", "")
-            ss_record.zip_code = record.get("Zip Code", None)
-            ss_record.geocode = record.get("Geocode", "")
         ss_records.append(ss_record)
 
     SocialServiceRequest.batch_save(ss_records)
@@ -709,6 +724,10 @@ def create_household_record(record: dict):
         notes=record['Notes'],
         legacy_first_date_submitted=record['Legacy First Date Submitted'],
         legacy_last_date_submitted=record['Legacy Last Date Submitted'],
+        last_texted=record["Last Texted"],
+        last_called=record["Last Called"],
+        needs_delivery=record["Needs Delivery"],
+        needs_email_outreach=record["Needs Email Outreach"],
     )
     household.save()
     return household
