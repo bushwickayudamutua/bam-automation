@@ -45,23 +45,29 @@ class FormSubmission(Model):
     internet_access = F.MultipleSelectField('Internet Access')
     roof_is_accessible = F.CheckboxField('Roof Accessible?')
 
-    # timeline metadata
-    legacy_first_date_submitted = F.DateField('Legacy First Date Submitted')
-    legacy_last_date_submitted = F.DateField('Legacy Last Date Submitted')
-
     Meta = build_meta('Assistance Request Form Submissions')
 
     if TYPE_CHECKING:
-        def __init__(self, *, name: str, phone_number: str, email: str,
-                     languages: List[str], other_languages: str,
-                     notes: str, street_address: str,
-                     city_and_state: str, zip_code: int,
-                     request_types: List[str], furniture_acknowledgement: bool,
-                     furniture_items: List[str], bed_details: List[str],
-                     kitchen_items: List[str], ss_request_types: List[str],
-                     internet_access: List[str], roof_is_accessible: bool,
-                     legacy_first_date_submitted: date,
-                     legacy_last_date_submitted: date,): ...
+        def __init__(
+            self, *,
+            name: str,
+            phone_number: str,
+            email: str,
+            languages: List[str],
+            other_languages: str,
+            notes: str,
+            street_address: str,
+            city_and_state: str,
+            zip_code: int,
+            request_types: List[str],
+            furniture_acknowledgement: bool,
+            furniture_items: List[str],
+            bed_details: List[str],
+            kitchen_items: List[str],
+            ss_request_types: List[str],
+            internet_access: List[str],
+            roof_is_accessible: bool,
+        ): ...
 
 
 class Household(Model):
