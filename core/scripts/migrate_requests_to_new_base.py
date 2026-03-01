@@ -3,6 +3,7 @@ from collections import defaultdict
 import copy
 import pandas as pd
 from datetime import datetime
+import numpy as np
 
 from bam_core.settings import AIRTABLE_BASE_ID, AIRTABLE_TOKEN
 from bam_core.lib.airtable import Airtable
@@ -103,15 +104,6 @@ def select_first_non_null(
     return {}
 
 
-def select_last_non_null(
-    old_field_name: str, new_field_name: str, records: list[dict]
-):
-    for record in reversed(records):
-        if record.get(old_field_name):
-            return {new_field_name: record.get(old_field_name)}
-    return {}
-
-
 def set_true(old_field_name: str, new_field_name: str, records: list[dict]):
     return {new_field_name: True}
 
@@ -127,37 +119,70 @@ def select_oldest_request(item_df):
     return item_df
 
 
+def convert_str_to_int(num_str, num_digits=np.inf):
+    num_str = "".join([c for c in str(num_str).strip() if c.isdigit()])
+    
+    if len(num_str) > num_digits:
+        num_str = num_str[:num_digits]
+
+    try:
+        return int(num_str) 
+    except (ValueError, KeyError):
+        return None
+
+
 ############################################
 #  Field-Specific Transformation Functions #
 ############################################
 
-
-def transform_zip_code(
+def transform_address_fields(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
     """
-    Attempt to format the zip code into a 5 digit integer.
-    If it fails, set it to None.
+    Get the most recent non-empty address and get all related address fields.
     """
-    # we only migrate valid zip codes
-    output = select_last_non_null(old_field_name, new_field_name, records)
-    zip_code = output.get(new_field_name)
 
-    # attempt to format the zip code #
-    # remove all non-digit characters
-    zip_code = "".join([c for c in str(zip_code).strip() if c.isdigit()])
-    # Take the first 5 digits
-    if len(zip_code) > 5:
-        zip_code = zip_code[:5]
+    non_empty_idx = [i for i in range(len(records)) if records[i].get("Cleaned Address")]
+    if len(non_empty_idx) > 0:
+        i = non_empty_idx[0]
+    else:
+        non_empty_idx = [i for i in range(len(records)) if records[i].get("Current Address")]
+        if len(non_empty_idx) > 0:
+            i = non_empty_idx[0]
+        else:
+            i = 0
+    
+    address = records[i].get("Cleaned Address", "")
+    address_accuracy = records[i].get("Cleaned Address Accuracy")
+    street_address = records[i].get("Current Address", "")
+    city_state = records[i].get("Current Address - City, State", "")
+    zip_code = records[i].get("Current Address - Zip Code", "")
+    geocode = records[i].get("Geocode")
+    bin = records[i].get("Building Identification Number", "")
 
-    try:
-        # attempt to convert to int
-        output[new_field_name] = int(zip_code)
-    except (ValueError, KeyError):
-        # otherwise set it to None
-        output[new_field_name] = None
+    if address == "":
+        address = street_address + ' ' + city_state + ' ' + zip_code
 
-    return output
+    return {
+        "Address": address,
+        "Address Accuracy": address_accuracy,
+        "Street Address": street_address,
+        "City, State": city_state,
+        "Zip Code": convert_str_to_int(zip_code, num_digits=5),
+        "Geocode": geocode,
+        "Building Identification Number": convert_str_to_int(bin),
+    }
+
+
+def transform_last_texted(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
+    """
+    Get most recent date they were texted for outreach.
+    """
+    last_date = max([r.get(old_field_name, "") for r in records])
+    last_date = None if last_date == "" else datetime.strptime(last_date, "%Y-%m-%d").date()
+    return { new_field_name: last_date }
 
 
 def transform_date_submitted(
@@ -210,11 +235,10 @@ def transform_email(
     If there are valid emails, set the new field to the first valid email
     otherwise set it to an empty string.
     """
-    #
     email = ""
     # only merge valid emails
     email_error = str(NO_EMAIL_ERROR)
-    for r in reversed(records):
+    for r in records:
         if r.get(old_field_name):
             email_output = format_email(r.get(old_field_name))
             email = email_output.get("email")
@@ -282,12 +306,10 @@ def transform_other_languages(
     """
     Concatenate all "other" languages into a single line text.
     """
-
     other_languages = [r.get(old_field_name, "").strip() for r in records]
     other_languages = [l for l in set(other_languages) if l != ""]
-    return {
-        new_field_name: "\n".join(other_languages)
-    }
+    other_languages = "\n".join(other_languages) if len(other_languages) > 0 else None
+    return { new_field_name: other_languages }
 
 
 def transform_internet_access(
@@ -318,20 +340,33 @@ def transform_internet_access(
     return output
 
 
-def transform_roof_accessible(
+def transform_mesh_status(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
     """
-    Transform the roof access field into a single boolean value by checking if
-    any of the records have the tag "Tengo acceso de mi techo / Roof access in my building".
+    Transform MESH-related fields: "MESH - Status", "MESH - Has LOS", "Roof Accessible?"
     """
-    tag = "Tengo acceso de mi techo / Roof access in my building"
 
-    return {
-        new_field_name: any(
-            [tag in r.get(old_field_name, []) for r in records]
-        )
-    }
+    output = {}
+
+    # Any records indicating the building is roof accessible?
+    tag = "Tengo acceso de mi techo / Roof access in my building"
+    output["Roof Accessible?"] = any(
+        [tag in r.get("MESH - To confirm during outreach (before install)", []) for r in records]
+    )
+
+    # Any records indicating LOS?
+    output["MESH - Has LOS"] = any(
+        [r.get("MESH - Has LOS", False) for r in records]
+    )
+
+    # Oldest MESH status that is not empty and not duplicate:
+    for record in reversed(records):
+        curr_stat = record.get("MESH - Status")
+        if curr_stat and curr_stat != "Duplicate":
+            output["MESH - Status"] = curr_stat
+    
+    return output
 
 
 def transform_case_notes(
@@ -366,8 +401,8 @@ def transform_cita_availability(
     """
     output = transform_lists(old_field_name, old_field_name, records, return_set=True)
     return {
-        "Needs Delivery": True if "Needs Delivery" in output[old_field_name] else None,
-        "Needs Email Outreach": True if "Needs Email Outreach" in output[old_field_name] else None,
+        "Needs Delivery": "Needs Delivery" in output[old_field_name],
+        "Needs Email Outreach": "Needs Email Outreach" in output[old_field_name],
     }
 
 
@@ -516,7 +551,7 @@ def transform_household_records(household_records: list[dict]) -> dict:
     FIELD_MAPPING = {
         "First Name": {
             "new_field": "Name",
-            "transform_fx": select_last_non_null,
+            "transform_fx": select_first_non_null,
         },
         PHONE_FIELD: {
             "new_field": PHONE_FIELD,
@@ -543,41 +578,9 @@ def transform_household_records(household_records: list[dict]) -> dict:
             "new_field": "Other Languages",
             "transform_fx": transform_other_languages,
         },
-        "Furniture Acknowledgement": {
-            "new_field": "Furniture Acknowledgement",
-            "transform_fx": set_true,
-        },
-        "Open Requests": {
-            "new_field": "Request Types",
-            "transform_fx": transform_open_requests,
-        },
-        "Internet Access": {
-            "new_field": "Internet Access",
-            "transform_fx": transform_internet_access,
-        },
-        "MESH - To confirm during outreach (before install)": {
-            "new_field": "Roof Accessible?",
-            "transform_fx": transform_roof_accessible,
-        },
         "Case Notes": {
             "new_field": "Notes",
             "transform_fx": transform_case_notes,
-        },
-        "Current Address": {
-            "new_field": "Street Address",
-            "transform_fx": select_last_non_null,
-        },
-        "Current Address - City, State": {
-            "new_field": "City, State",
-            "transform_fx": select_last_non_null,
-        },
-        "Current Address - Zip Code": {
-            "new_field": "Zip Code",
-            "transform_fx": transform_zip_code,
-        },
-        "Geocode": {
-            "new_field": "Geocode",
-            "transform_fx": select_last_non_null,
         },
         # Creates First Date Submitted and Last Date Submitted fields
         DATE_SUBMITTED_FIELD: {
@@ -588,10 +591,35 @@ def transform_household_records(household_records: list[dict]) -> dict:
         "Cita Availability": {
             "new_field": "",
             "transform_fx": transform_cita_availability,
+        },
+        "Open Requests": {
+            "new_field": "Request Types",
+            "transform_fx": transform_open_requests,
+        },
+        "All Address Fields": {
+            "new_field": "",
+            "transform_fx": transform_address_fields,
+        },
+        "Last Auto Texted": {
+            "new_field": "Last Texted",
+            "transform_fx": transform_last_texted,
+        },
+        "Furniture Acknowledgement": {
+            "new_field": "Furniture Acknowledgement",
+            "transform_fx": set_true,
+        },
+        "Internet Access": {
+            "new_field": "Internet Access",
+            "transform_fx": transform_internet_access,
+        },
+        # Creates "MESH - Status", "MESH - Has LOS", "Roof Accessible?"
+        "MESH": {
+            "new_field": "",
+            "transform_fx": transform_mesh_status
         }
     }
 
-    # sort records by Date Submitted
+    # sort records by Date Submitted (order from most recent to oldest)
     records = list(
         sorted(
             household_records,
@@ -653,7 +681,12 @@ def create_requests_records(record: dict, household: Household):
         record.get("Kitchen Items", pd.DataFrame()),
     ], ignore_index=True)
     request_records1 = [
-            Request(type=req, legacy_date_submitted=datetime.strptime(date, "%Y-%m-%d").date(), household=household)
+            Request(
+                household=household,
+                type=req,
+                status="Open",
+                legacy_date_submitted=datetime.strptime(date, "%Y-%m-%d").date()
+            )
             for req, date in zip(all_reqs1.get("item",[]), all_reqs1.get(DATE_SUBMITTED_FIELD,[]))
                 if req not in TYPES_TO_EXCLUDE
     ]
@@ -664,7 +697,13 @@ def create_requests_records(record: dict, household: Household):
         record.get("Bed Details", pd.DataFrame()),
     ], ignore_index=True)
     request_records2 = [
-            Request(type=req, legacy_date_submitted=datetime.strptime(date, "%Y-%m-%d").date(), household=household, geocode=record.get("Geocode", ""))
+            Request(
+                household=household,
+                type=req,
+                status="Open",
+                legacy_date_submitted=datetime.strptime(date, "%Y-%m-%d").date(),
+                geocode=record.get("Geocode", None)
+            )
             for req, date in zip(all_reqs2.get("item",[]), all_reqs2.get(DATE_SUBMITTED_FIELD,[]))
                 if req not in TYPES_TO_EXCLUDE
     ]
@@ -685,19 +724,26 @@ def create_ss_requests_records(record: dict, household: Household):
     ss_records = []
     for req,date in zip(ss_reqs.get("item",[]), ss_reqs.get(DATE_SUBMITTED_FIELD,[])):
         ss_record = SocialServiceRequest(
-            type=req,
-            legacy_date_submitted=datetime.strptime(date, "%Y-%m-%d").date(),
             household=household,
+            type=req,
+            status="Open",
+            legacy_date_submitted=datetime.strptime(date, "%Y-%m-%d").date(),
         )
         if (req == "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助"):
+            ss_record.bin = record.get("Building Identification Number", None)
+            ss_record.geocode = record.get("Geocode", None)
+            ss_record.cleaned_address = record.get("Address", None)
+            ss_record.address_accuracy = record.get("Address Accuracy", None)
+            ss_record.street_address = record.get("Street Address", None)
+            ss_record.city_and_state = record.get("City, State", None)
+            ss_record.zip_code = record.get("Zip Code", None)
             ss_record.internet_access = record.get("Internet Access", [])
             ss_record.roof_is_accessible = record.get("Roof Accessible?", False)
-            ss_record.street_address = record.get("Street Address", "")
-            ss_record.city_and_state = record.get("City, State", "")
-            ss_record.zip_code = record.get("Zip Code", None)
-            ss_record.geocode = record.get("Geocode", "")
-        ss_records.append(ss_record)
+            ss_record.has_los = record.get("MESH - Has LOS", False)
+            ss_record.mesh_status = record.get("MESH - Status", None)
 
+        ss_records.append(ss_record)
+    
     SocialServiceRequest.batch_save(ss_records)
     return ss_records
 
@@ -715,11 +761,15 @@ def create_household_record(record: dict):
         phone_is_intl=record["Int'l Phone Number?"],
         email=record['Email'],
         email_error=record['Email Error'],
+        legacy_first_date_submitted=record['Legacy First Date Submitted'],
+        legacy_last_date_submitted=record['Legacy Last Date Submitted'],
         languages=record['Languages'],
         other_languages=record['Other Languages'],
         notes=record['Notes'],
-        legacy_first_date_submitted=record['Legacy First Date Submitted'],
-        legacy_last_date_submitted=record['Legacy Last Date Submitted'],
+        last_texted=record["Last Texted"],
+        last_called=None,
+        needs_delivery=record["Needs Delivery"],
+        needs_email_outreach=record["Needs Email Outreach"],
     )
     household.save()
     return household
