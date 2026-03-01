@@ -3,6 +3,7 @@ from collections import defaultdict
 import copy
 import pandas as pd
 from datetime import datetime
+import numpy as np
 
 from bam_core.settings import AIRTABLE_BASE_ID, AIRTABLE_TOKEN
 from bam_core.lib.airtable import Airtable
@@ -118,37 +119,47 @@ def select_oldest_request(item_df):
     return item_df
 
 
+def convert_str_to_int(num_str, num_digits=np.inf):
+    num_str = "".join([c for c in str(num_str).strip() if c.isdigit()])
+    
+    if len(num_str) > num_digits:
+        num_str = num_str[:num_digits]
+
+    try:
+        return int(num_str) 
+    except (ValueError, KeyError):
+        return None
+
+
 ############################################
 #  Field-Specific Transformation Functions #
 ############################################
 
-
-def transform_zip_code(
+def transform_address_fields(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
     """
-    Attempt to format the zip code into a 5 digit integer.
-    If it fails, set it to None.
+    Get the most recent non-empty address and get all related address fields.
     """
-    # we only migrate valid zip codes
-    output = select_first_non_null(old_field_name, new_field_name, records)
-    zip_code = output.get(new_field_name)
-
-    # attempt to format the zip code #
-    # remove all non-digit characters
-    zip_code = "".join([c for c in str(zip_code).strip() if c.isdigit()])
-    # Take the first 5 digits
-    if len(zip_code) > 5:
-        zip_code = zip_code[:5]
-
-    try:
-        # attempt to convert to int
-        output[new_field_name] = int(zip_code)
-    except (ValueError, KeyError):
-        # otherwise set it to None
-        output[new_field_name] = None
-
-    return output
+    non_empty_idx = [i for i in range(len(records)) if records[i].get("Cleaned Address")]
+    if len(non_empty_idx) > 0:
+        i = non_empty_idx[0]
+    else:
+        non_empty_idx = [i for i in range(len(records)) if records[i].get("Current Address")]
+        if len(non_empty_idx) > 0:
+            i = non_empty_idx[0]
+        else:
+            i = 0
+    
+    return {
+        "Address": records[i].get("Cleaned Address"),
+        "Address Accuracy": records[i].get("Cleaned Address Accuracy"),
+        "Street Address": records[i].get("Current Address"),
+        "City, State": records[i].get("Current Address - City, State"),
+        "Zip Code": convert_str_to_int(records[i].get("Current Address - Zip Code", ""), num_digits=5),
+        "Geocode": records[i].get("Geocode"),
+        "Building Identification Number": convert_str_to_int(records[i].get("Building Identification Number", "")),
+    }
 
 
 def transform_date_submitted(
@@ -553,21 +564,9 @@ def transform_household_records(household_records: list[dict]) -> dict:
             "new_field": "Notes",
             "transform_fx": transform_case_notes,
         },
-        "Current Address": {
-            "new_field": "Street Address",
-            "transform_fx": select_first_non_null,
-        },
-        "Current Address - City, State": {
-            "new_field": "City, State",
-            "transform_fx": select_first_non_null,
-        },
-        "Current Address - Zip Code": {
-            "new_field": "Zip Code",
-            "transform_fx": transform_zip_code,
-        },
-        "Geocode": {
-            "new_field": "Geocode",
-            "transform_fx": select_first_non_null,
+        "All Address Fields": {
+            "new_field": "",
+            "transform_fx": transform_address_fields,
         },
         # Creates First Date Submitted and Last Date Submitted fields
         DATE_SUBMITTED_FIELD: {
