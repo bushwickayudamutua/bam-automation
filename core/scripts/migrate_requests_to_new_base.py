@@ -141,6 +141,7 @@ def transform_address_fields(
     """
     Get the most recent non-empty address and get all related address fields.
     """
+
     non_empty_idx = [i for i in range(len(records)) if records[i].get("Cleaned Address")]
     if len(non_empty_idx) > 0:
         i = non_empty_idx[0]
@@ -151,14 +152,25 @@ def transform_address_fields(
         else:
             i = 0
     
+    address = records[i].get("Cleaned Address", "")
+    address_accuracy = records[i].get("Cleaned Address Accuracy")
+    street_address = records[i].get("Current Address", "")
+    city_state = records[i].get("Current Address - City, State", "")
+    zip_code = records[i].get("Current Address - Zip Code", "")
+    geocode = records[i].get("Geocode")
+    bin = records[i].get("Building Identification Number", "")
+
+    if address == "":
+        address = street_address + ' ' + city_state + ' ' + zip_code
+
     return {
-        "Address": records[i].get("Cleaned Address"),
-        "Address Accuracy": records[i].get("Cleaned Address Accuracy"),
-        "Street Address": records[i].get("Current Address"),
-        "City, State": records[i].get("Current Address - City, State"),
-        "Zip Code": convert_str_to_int(records[i].get("Current Address - Zip Code", ""), num_digits=5),
-        "Geocode": records[i].get("Geocode"),
-        "Building Identification Number": convert_str_to_int(records[i].get("Building Identification Number", "")),
+        "Address": address,
+        "Address Accuracy": address_accuracy,
+        "Street Address": street_address,
+        "City, State": city_state,
+        "Zip Code": convert_str_to_int(zip_code, num_digits=5),
+        "Geocode": geocode,
+        "Building Identification Number": convert_str_to_int(bin),
     }
 
 
@@ -328,20 +340,33 @@ def transform_internet_access(
     return output
 
 
-def transform_roof_accessible(
+def transform_mesh_status(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
     """
-    Transform the roof access field into a single boolean value by checking if
-    any of the records have the tag "Tengo acceso de mi techo / Roof access in my building".
+    Transform MESH-related fields: "MESH - Status", "MESH - Has LOS", "Roof Accessible?"
     """
-    tag = "Tengo acceso de mi techo / Roof access in my building"
 
-    return {
-        new_field_name: any(
-            [tag in r.get(old_field_name, []) for r in records]
-        )
-    }
+    output = {}
+
+    # Any records indicating the building is roof accessible?
+    tag = "Tengo acceso de mi techo / Roof access in my building"
+    output["Roof Accessible?"] = any(
+        [tag in r.get("MESH - To confirm during outreach (before install)", []) for r in records]
+    )
+
+    # Any records indicating LOS?
+    output["MESH - Has LOS"] = any(
+        [r.get("MESH - Has LOS", False) for r in records]
+    )
+
+    # Oldest MESH status that is not empty and not duplicate:
+    for record in reversed(records):
+        curr_stat = record.get("MESH - Status")
+        if curr_stat and curr_stat != "Duplicate":
+            output["MESH - Status"] = curr_stat
+    
+    return output
 
 
 def transform_case_notes(
@@ -557,26 +582,6 @@ def transform_household_records(household_records: list[dict]) -> dict:
             "new_field": "Notes",
             "transform_fx": transform_case_notes,
         },
-        "Furniture Acknowledgement": {
-            "new_field": "Furniture Acknowledgement",
-            "transform_fx": set_true,
-        },
-        "Open Requests": {
-            "new_field": "Request Types",
-            "transform_fx": transform_open_requests,
-        },
-        "Internet Access": {
-            "new_field": "Internet Access",
-            "transform_fx": transform_internet_access,
-        },
-        "MESH - To confirm during outreach (before install)": {
-            "new_field": "Roof Accessible?",
-            "transform_fx": transform_roof_accessible,
-        },
-        "All Address Fields": {
-            "new_field": "",
-            "transform_fx": transform_address_fields,
-        },
         # Creates First Date Submitted and Last Date Submitted fields
         DATE_SUBMITTED_FIELD: {
             "new_field": DATE_SUBMITTED_FIELD,
@@ -587,9 +592,30 @@ def transform_household_records(household_records: list[dict]) -> dict:
             "new_field": "",
             "transform_fx": transform_cita_availability,
         },
+        "Open Requests": {
+            "new_field": "Request Types",
+            "transform_fx": transform_open_requests,
+        },
+        "All Address Fields": {
+            "new_field": "",
+            "transform_fx": transform_address_fields,
+        },
         "Last Auto Texted": {
             "new_field": "Last Texted",
             "transform_fx": transform_last_texted,
+        },
+        "Furniture Acknowledgement": {
+            "new_field": "Furniture Acknowledgement",
+            "transform_fx": set_true,
+        },
+        "Internet Access": {
+            "new_field": "Internet Access",
+            "transform_fx": transform_internet_access,
+        },
+        # Creates "MESH - Status", "MESH - Has LOS", "Roof Accessible?"
+        "MESH": {
+            "new_field": "",
+            "transform_fx": transform_mesh_status
         }
     }
 
@@ -713,8 +739,11 @@ def create_ss_requests_records(record: dict, household: Household):
             ss_record.zip_code = record.get("Zip Code", None)
             ss_record.internet_access = record.get("Internet Access", [])
             ss_record.roof_is_accessible = record.get("Roof Accessible?", False)
-        ss_records.append(ss_record)
+            ss_record.has_los = record.get("MESH - Has LOS", False)
+            ss_record.mesh_status = record.get("MESH - Status", None)
 
+        ss_records.append(ss_record)
+    
     SocialServiceRequest.batch_save(ss_records)
     return ss_records
 

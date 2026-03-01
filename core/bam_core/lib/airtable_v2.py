@@ -159,6 +159,8 @@ class SocialServiceRequest(Model):
 
     internet_access = F.MultipleSelectField('Internet Access')
     roof_is_accessible = F.CheckboxField('Roof Accessible?')
+    has_los = F.CheckboxField('MESH - Has LOS')
+    mesh_status = F.SelectField('MESH - Status')
 
     Meta = build_meta('Social Service Requests')
 
@@ -178,5 +180,7 @@ class SocialServiceRequest(Model):
             zip_code: int | None = None,
             internet_access: List[str] = [],
             roof_is_accessible: bool = False,
+            has_los: bool = False,
+            mesh_status: str | None = None,
         ): ...
 
