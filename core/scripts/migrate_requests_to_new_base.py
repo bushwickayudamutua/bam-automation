@@ -162,6 +162,22 @@ def transform_address_fields(
     }
 
 
+# def transform_last_texted(
+#     old_field_name: str, new_field_name: str, records: list[dict]
+# ):
+#     """
+#     Get most recent date they were texted for outreach.
+#     """
+
+#     last_date = max(
+#         [r.get(old_field_name, None) for r in records]
+#     ).split("T")[0]
+
+#     return {
+#         new_field_name: datetime.strptime(last_date, "%Y-%m-%d").date(),
+#     }
+
+
 def transform_date_submitted(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
@@ -283,12 +299,10 @@ def transform_other_languages(
     """
     Concatenate all "other" languages into a single line text.
     """
-
     other_languages = [r.get(old_field_name, "").strip() for r in records]
     other_languages = [l for l in set(other_languages) if l != ""]
-    return {
-        new_field_name: "\n".join(other_languages)
-    }
+    other_languages = "\n".join(other_languages) if len(other_languages) > 0 else None
+    return { new_field_name: other_languages }
 
 
 def transform_internet_access(
@@ -367,8 +381,8 @@ def transform_cita_availability(
     """
     output = transform_lists(old_field_name, old_field_name, records, return_set=True)
     return {
-        "Needs Delivery": True if "Needs Delivery" in output[old_field_name] else None,
-        "Needs Email Outreach": True if "Needs Email Outreach" in output[old_field_name] else None,
+        "Needs Delivery": "Needs Delivery" in output[old_field_name],
+        "Needs Email Outreach": "Needs Email Outreach" in output[old_field_name],
     }
 
 
@@ -544,6 +558,10 @@ def transform_household_records(household_records: list[dict]) -> dict:
             "new_field": "Other Languages",
             "transform_fx": transform_other_languages,
         },
+        "Case Notes": {
+            "new_field": "Notes",
+            "transform_fx": transform_case_notes,
+        },
         "Furniture Acknowledgement": {
             "new_field": "Furniture Acknowledgement",
             "transform_fx": set_true,
@@ -560,10 +578,6 @@ def transform_household_records(household_records: list[dict]) -> dict:
             "new_field": "Roof Accessible?",
             "transform_fx": transform_roof_accessible,
         },
-        "Case Notes": {
-            "new_field": "Notes",
-            "transform_fx": transform_case_notes,
-        },
         "All Address Fields": {
             "new_field": "",
             "transform_fx": transform_address_fields,
@@ -577,6 +591,10 @@ def transform_household_records(household_records: list[dict]) -> dict:
         "Cita Availability": {
             "new_field": "",
             "transform_fx": transform_cita_availability,
+        },
+        "Last Auto Texted": {
+            "new_field": "Last Texted",
+            "transform_fx": transform_last_texted,
         }
     }
 
@@ -719,13 +737,13 @@ def create_household_record(record: dict):
         phone_is_intl=record["Int'l Phone Number?"],
         email=record['Email'],
         email_error=record['Email Error'],
+        legacy_first_date_submitted=record['Legacy First Date Submitted'],
+        legacy_last_date_submitted=record['Legacy Last Date Submitted'],
         languages=record['Languages'],
         other_languages=record['Other Languages'],
         notes=record['Notes'],
-        legacy_first_date_submitted=record['Legacy First Date Submitted'],
-        legacy_last_date_submitted=record['Legacy Last Date Submitted'],
         last_texted=record["Last Texted"],
-        last_called=record["Last Called"],
+        last_called=None,
         needs_delivery=record["Needs Delivery"],
         needs_email_outreach=record["Needs Email Outreach"],
     )
