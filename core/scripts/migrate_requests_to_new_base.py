@@ -162,20 +162,15 @@ def transform_address_fields(
     }
 
 
-# def transform_last_texted(
-#     old_field_name: str, new_field_name: str, records: list[dict]
-# ):
-#     """
-#     Get most recent date they were texted for outreach.
-#     """
-
-#     last_date = max(
-#         [r.get(old_field_name, None) for r in records]
-#     ).split("T")[0]
-
-#     return {
-#         new_field_name: datetime.strptime(last_date, "%Y-%m-%d").date(),
-#     }
+def transform_last_texted(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
+    """
+    Get most recent date they were texted for outreach.
+    """
+    last_date = max([r.get(old_field_name, "") for r in records])
+    last_date = None if last_date == "" else datetime.strptime(last_date, "%Y-%m-%d").date()
+    return { new_field_name: last_date }
 
 
 def transform_date_submitted(
