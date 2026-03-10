@@ -112,13 +112,6 @@ def set_empty(old_field_name: str, new_field_name: str, records: list[dict]):
     return {new_field_name: ""}
 
 
-def select_oldest_request(item_df):
-    item_df.sort_values(by=DATE_SUBMITTED_FIELD, ascending=True, inplace=True)
-    item_df.drop_duplicates(subset="item", keep='first', inplace=True)
-    item_df.reset_index(drop=True, inplace=True)
-    return item_df
-
-
 def convert_str_to_int(num_str, num_digits=np.inf):
     num_str = "".join([c for c in str(num_str).strip() if c.isdigit()])
     
@@ -528,9 +521,18 @@ def transform_open_requests(
     
     # add any remaining items to the top-level list
     output[new_field_name] = pd.concat([output[new_field_name], all_items_df])
-
-    # pick oldest request of each type:
-    output = {name: select_oldest_request(item_df) for name, item_df in output.items()}
+    
+    # de-dupe requests of each type (keep oldest and latest dates):
+    output = {
+        name: (
+            item_df
+            .groupby("item")[DATE_SUBMITTED_FIELD]
+            .agg(["min", "max"])
+            .reset_index()
+            .rename(columns={"min": "Oldest "+DATE_SUBMITTED_FIELD, "max": "Latest "+DATE_SUBMITTED_FIELD})
+        )
+        for name, item_df in output.items()
+    }
     
     return output
 
@@ -681,14 +683,15 @@ def create_requests_records(record: dict, household: Household):
         record.get("Kitchen Items", pd.DataFrame()),
     ], ignore_index=True)
     request_records1 = [
-            Request(
-                household=household,
-                type=req,
-                status="Open",
-                legacy_date_submitted=datetime.strptime(date, "%Y-%m-%d").date()
-            )
-            for req, date in zip(all_reqs1.get("item",[]), all_reqs1.get(DATE_SUBMITTED_FIELD,[]))
-                if req not in TYPES_TO_EXCLUDE
+        Request(
+            household=household,
+            type=row["item"],
+            status="Open",
+            legacy_date_submitted=datetime.strptime(row["Oldest "+DATE_SUBMITTED_FIELD], "%Y-%m-%d").date(),
+            last_requested=datetime.strptime(row["Latest "+DATE_SUBMITTED_FIELD], "%Y-%m-%d").date()
+        )
+        for row in all_reqs1.itertuples()
+            if row["item"] not in TYPES_TO_EXCLUDE
     ]
 
     # combine the list of requests (with geocode, and no other address information)
@@ -697,15 +700,16 @@ def create_requests_records(record: dict, household: Household):
         record.get("Bed Details", pd.DataFrame()),
     ], ignore_index=True)
     request_records2 = [
-            Request(
-                household=household,
-                type=req,
-                status="Open",
-                legacy_date_submitted=datetime.strptime(date, "%Y-%m-%d").date(),
-                geocode=record.get("Geocode", None)
-            )
-            for req, date in zip(all_reqs2.get("item",[]), all_reqs2.get(DATE_SUBMITTED_FIELD,[]))
-                if req not in TYPES_TO_EXCLUDE
+        Request(
+            household=household,
+            type=row["item"],
+            status="Open",
+            legacy_date_submitted=datetime.strptime(row["Oldest "+DATE_SUBMITTED_FIELD], "%Y-%m-%d").date(),
+            last_requested=datetime.strptime(row["Latest "+DATE_SUBMITTED_FIELD], "%Y-%m-%d").date(),
+            geocode=record.get("Geocode", None)
+        )
+        for row in all_reqs2.itertuples()
+            if row["item"] not in TYPES_TO_EXCLUDE
     ]
 
     request_records = request_records1 + request_records2
@@ -722,14 +726,15 @@ def create_ss_requests_records(record: dict, household: Household):
     """
     ss_reqs = record.get("Social Service Requests", pd.DataFrame())
     ss_records = []
-    for req,date in zip(ss_reqs.get("item",[]), ss_reqs.get(DATE_SUBMITTED_FIELD,[])):
+    for row in ss_reqs.itertuples():
         ss_record = SocialServiceRequest(
             household=household,
-            type=req,
+            type=row["item"],
             status="Open",
-            legacy_date_submitted=datetime.strptime(date, "%Y-%m-%d").date(),
+            legacy_date_submitted=datetime.strptime(row["Oldest "+DATE_SUBMITTED_FIELD], "%Y-%m-%d").date(),
+            last_requested=datetime.strptime(row["Latest "+DATE_SUBMITTED_FIELD], "%Y-%m-%d").date(),
         )
-        if (req == "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助"):
+        if (row["item"] == "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助"):
             ss_record.bin = record.get("Building Identification Number", None)
             ss_record.geocode = record.get("Geocode", None)
             ss_record.cleaned_address = record.get("Address", None)
@@ -823,6 +828,6 @@ def main():
             raise e
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
 

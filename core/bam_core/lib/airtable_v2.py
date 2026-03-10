@@ -123,6 +123,7 @@ class Request(Model):
     type = F.SelectField('Type')
     status = F.SelectField('Status')
 
+    last_requested = F.DateField('Last Requested')
     legacy_date_submitted = F.DateField('Legacy Date Submitted')
     request_opened_at = F.DateField('Request Opened At')
 
@@ -137,6 +138,7 @@ class Request(Model):
             type: str,
             status: str = "Open",
             legacy_date_submitted: date | None,
+            last_requested: date | None,
             geocode: str | None = None
         ): ...
 
@@ -146,6 +148,7 @@ class SocialServiceRequest(Model):
     type = F.SelectField('Type')
     status = F.SelectField('Status')
 
+    last_requested = F.DateField('Last Requested')
     legacy_date_submitted = F.DateField('Legacy Date Submitted')
     request_opened_at = F.DateField('Request Opened At', readonly=True)
     
@@ -171,6 +174,7 @@ class SocialServiceRequest(Model):
             type: str,
             status: str = "Open",
             legacy_date_submitted: date | None,
+            last_requested: date | None,
             bin: int | None = None,
             geocode: str | None = None,
             cleaned_address: str | None = None,
