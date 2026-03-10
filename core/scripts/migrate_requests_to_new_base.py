@@ -682,35 +682,39 @@ def create_requests_records(record: dict, household: Household):
         record.get("Request Types", pd.DataFrame()),
         record.get("Kitchen Items", pd.DataFrame()),
     ], ignore_index=True)
-    request_records1 = [
-        Request(
-            household=household,
-            type=row["item"],
-            status="Open",
-            legacy_date_submitted=datetime.strptime(row["Oldest "+DATE_SUBMITTED_FIELD], "%Y-%m-%d").date(),
-            last_requested=datetime.strptime(row["Latest "+DATE_SUBMITTED_FIELD], "%Y-%m-%d").date()
-        )
-        for row in all_reqs1.itertuples()
-            if row["item"] not in TYPES_TO_EXCLUDE
-    ]
+    request_records1 = []
+    if(all_reqs1.shape[0] > 0):
+        request_records1 = [
+            Request(
+                household=household,
+                type=req_type,
+                status="Open",
+                legacy_date_submitted=datetime.strptime(oldest_date, "%Y-%m-%d").date(),
+                last_requested=datetime.strptime(latest_date, "%Y-%m-%d").date()
+            )
+            for req_type, oldest_date, latest_date in zip(all_reqs1["item"], all_reqs1["Oldest "+DATE_SUBMITTED_FIELD], all_reqs1["Latest "+DATE_SUBMITTED_FIELD])
+                if req_type not in TYPES_TO_EXCLUDE
+        ]
 
     # combine the list of requests (with geocode, and no other address information)
     all_reqs2 = pd.concat([
         record.get("Furniture Items", pd.DataFrame()),
         record.get("Bed Details", pd.DataFrame()),
     ], ignore_index=True)
-    request_records2 = [
-        Request(
-            household=household,
-            type=row["item"],
-            status="Open",
-            legacy_date_submitted=datetime.strptime(row["Oldest "+DATE_SUBMITTED_FIELD], "%Y-%m-%d").date(),
-            last_requested=datetime.strptime(row["Latest "+DATE_SUBMITTED_FIELD], "%Y-%m-%d").date(),
-            geocode=record.get("Geocode", None)
-        )
-        for row in all_reqs2.itertuples()
-            if row["item"] not in TYPES_TO_EXCLUDE
-    ]
+    request_records2 = []
+    if(all_reqs2.shape[0] > 0):
+        request_records2 = [
+            Request(
+                household=household,
+                type=req_type,
+                status="Open",
+                legacy_date_submitted=datetime.strptime(oldest_date, "%Y-%m-%d").date(),
+                last_requested=datetime.strptime(latest_date, "%Y-%m-%d").date(),
+                geocode=record.get("Geocode", None)
+            )
+            for req_type, oldest_date, latest_date in zip(all_reqs2["item"], all_reqs2["Oldest "+DATE_SUBMITTED_FIELD], all_reqs2["Latest "+DATE_SUBMITTED_FIELD])
+                if req_type not in TYPES_TO_EXCLUDE
+        ]
 
     request_records = request_records1 + request_records2
     Request.batch_save(request_records)
@@ -726,28 +730,29 @@ def create_ss_requests_records(record: dict, household: Household):
     """
     ss_reqs = record.get("Social Service Requests", pd.DataFrame())
     ss_records = []
-    for row in ss_reqs.itertuples():
-        ss_record = SocialServiceRequest(
-            household=household,
-            type=row["item"],
-            status="Open",
-            legacy_date_submitted=datetime.strptime(row["Oldest "+DATE_SUBMITTED_FIELD], "%Y-%m-%d").date(),
-            last_requested=datetime.strptime(row["Latest "+DATE_SUBMITTED_FIELD], "%Y-%m-%d").date(),
-        )
-        if (row["item"] == "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助"):
-            ss_record.bin = record.get("Building Identification Number", None)
-            ss_record.geocode = record.get("Geocode", None)
-            ss_record.cleaned_address = record.get("Address", None)
-            ss_record.address_accuracy = record.get("Address Accuracy", None)
-            ss_record.street_address = record.get("Street Address", None)
-            ss_record.city_and_state = record.get("City, State", None)
-            ss_record.zip_code = record.get("Zip Code", None)
-            ss_record.internet_access = record.get("Internet Access", [])
-            ss_record.roof_is_accessible = record.get("Roof Accessible?", False)
-            ss_record.has_los = record.get("MESH - Has LOS", False)
-            ss_record.mesh_status = record.get("MESH - Status", None)
+    if(ss_reqs.shape[0] > 0):
+        for req_type, oldest_date, latest_date in zip(ss_reqs["item"], ss_reqs["Oldest "+DATE_SUBMITTED_FIELD], ss_reqs["Latest "+DATE_SUBMITTED_FIELD]):
+            ss_record = SocialServiceRequest(
+                household=household,
+                type=req_type,
+                status="Open",
+                legacy_date_submitted=datetime.strptime(oldest_date, "%Y-%m-%d").date(),
+                last_requested=datetime.strptime(latest_date, "%Y-%m-%d").date(),
+            )
+            if (req_type == "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助"):
+                ss_record.bin = record.get("Building Identification Number", None)
+                ss_record.geocode = record.get("Geocode", None)
+                ss_record.cleaned_address = record.get("Address", None)
+                ss_record.address_accuracy = record.get("Address Accuracy", None)
+                ss_record.street_address = record.get("Street Address", None)
+                ss_record.city_and_state = record.get("City, State", None)
+                ss_record.zip_code = record.get("Zip Code", None)
+                ss_record.internet_access = record.get("Internet Access", [])
+                ss_record.roof_is_accessible = record.get("Roof Accessible?", False)
+                ss_record.has_los = record.get("MESH - Has LOS", False)
+                ss_record.mesh_status = record.get("MESH - Status", None)
 
-        ss_records.append(ss_record)
+            ss_records.append(ss_record)
     
     SocialServiceRequest.batch_save(ss_records)
     return ss_records
@@ -828,6 +833,6 @@ def main():
             raise e
 
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()
 
