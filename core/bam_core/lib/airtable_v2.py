@@ -94,15 +94,17 @@ class Household(Model):
                      legacy_last_date_submitted: date): ...
 
 
-class Request(Model):
+class BaseRequest(Model):
     household = F.SingleLinkField('Household', Household)
-    type = F.SelectField('Type')
 
     legacy_date_submitted = F.DateField('Legacy Date Submitted')
     request_opened_at = F.DateField('Request Opened At')
 
     status = F.SelectField('Status')
 
+
+class Request(BaseRequest):
+    type = F.SelectField('Type')
     geocode = F.TextField('Geocode')
 
     Meta = build_meta('Requests')
@@ -113,27 +115,25 @@ class Request(Model):
                      geocode: str | None = None): ...
 
 
-
-class SocialServiceRequest(Model):
-    household = F.SingleLinkField('Household', Household)
+class SocialServiceRequest(BaseRequest):
     type = F.SelectField('Type')
-
-    legacy_date_submitted = F.DateField('Legacy Date Submitted')
-    request_opened_at = F.DateField('Request Opened At', readonly=True)
-
-    status = F.SelectField('Status')
-
-    internet_access = F.MultipleSelectField('Internet Access')
-    roof_is_accessible = F.CheckboxField('Roof Accessible?')
-    street_address = F.TextField('Street Address')
-    city_and_state = F.TextField('City, State')
-    zip_code = F.NumberField('Zip Code')
-    geocode = F.TextField('Geocode')
 
     Meta = build_meta('Social Service Requests')
 
     if TYPE_CHECKING:
         def __init__(self, *, household: Household, type: str,
+                     legacy_date_submitted: date | None = None): ...
+
+
+class MeshRequest(BaseRequest):
+    internet_access = F.MultipleSelectField('Internet Access')
+    street_address = F.TextField('Street Address')
+    city_and_state = F.TextField('City, State')
+    zip_code = F.NumberField('Zip Code')
+
+    Meta = build_meta('Mesh Requests')
+
+    if TYPE_CHECKING:
+        def __init__(self, *, household: Household,
                      legacy_date_submitted: date | None = None,
-                     internet_access: List[str] = [],
-                     roof_is_accessible: bool = False): ...
+                     internet_access: List[str] = []): ...
