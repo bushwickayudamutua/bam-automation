@@ -6,15 +6,23 @@ from pyairtable.orm import Model, fields as F
 from bam_core import settings
 
 
-def build_meta(table_name: str):
-    return {
-        'base_id': settings.AIRTABLE_V2_BASE_ID,
-        'api_key': settings.AIRTABLE_V2_TOKEN,
-        'table_name': table_name,
-    }
+class BamModelMeta(type):
+    @property
+    def Meta(cls):
+        return {
+            'base_id': settings.AIRTABLE_V2_BASE_ID,
+            'api_key': settings.AIRTABLE_V2_TOKEN,
+            'table_name': cls.table_name,
+        }
 
 
-class FormSubmission(Model):
+class BamModel(Model, metaclass=BamModelMeta):
+    table_name = 'Table'
+
+
+class FormSubmission(BamModel):
+    table_name = 'Assistance Request Form Submissions'
+
     bam_id = F.AutoNumberField('ID')
 
     # household details
@@ -49,8 +57,6 @@ class FormSubmission(Model):
     legacy_first_date_submitted = F.DateField('Legacy First Date Submitted')
     legacy_last_date_submitted = F.DateField('Legacy Last Date Submitted')
 
-    Meta = build_meta('Assistance Request Form Submissions')
-
     if TYPE_CHECKING:
         def __init__(self, *, name: str, phone_number: str, email: str,
                      languages: List[str], other_languages: str,
@@ -64,7 +70,9 @@ class FormSubmission(Model):
                      legacy_last_date_submitted: date,): ...
 
 
-class Household(Model):
+class Household(BamModel):
+    table_name = 'Households'
+
     bam_id = F.AutoNumberField('ID')
     name = F.TextField('Name')
 
@@ -84,17 +92,16 @@ class Household(Model):
 
     last_texted = F.DateField('Last Texted')
 
-    Meta = build_meta('Households')
-
     if TYPE_CHECKING:
         def __init__(self, *, name: str, phone_number: str,
                      phone_is_invalid: bool, phone_is_intl: bool, email: str,
-                     email_error: str, languages: List[str], other_languages: str, notes: str,
+                     email_error: str, languages: List[str],
+                     other_languages: str, notes: str,
                      legacy_first_date_submitted: date,
                      legacy_last_date_submitted: date): ...
 
 
-class BaseRequest(Model):
+class BaseRequest(BamModel):
     household = F.SingleLinkField('Household', Household)
 
     legacy_date_submitted = F.DateField('Legacy Date Submitted')
@@ -104,10 +111,10 @@ class BaseRequest(Model):
 
 
 class Request(BaseRequest):
+    table_name = 'Requests'
+
     type = F.SelectField('Type')
     geocode = F.TextField('Geocode')
-
-    Meta = build_meta('Requests')
 
     if TYPE_CHECKING:
         def __init__(self, *, household: Household, type: str,
@@ -116,9 +123,9 @@ class Request(BaseRequest):
 
 
 class SocialServiceRequest(BaseRequest):
-    type = F.SelectField('Type')
+    table_name = 'Social Service Requests'
 
-    Meta = build_meta('Social Service Requests')
+    type = F.SelectField('Type')
 
     if TYPE_CHECKING:
         def __init__(self, *, household: Household, type: str,
@@ -126,12 +133,12 @@ class SocialServiceRequest(BaseRequest):
 
 
 class MeshRequest(BaseRequest):
+    table_name = 'Mesh Requests'
+
     internet_access = F.MultipleSelectField('Internet Access')
     street_address = F.TextField('Street Address')
     city_and_state = F.TextField('City, State')
     zip_code = F.NumberField('Zip Code')
-
-    Meta = build_meta('Mesh Requests')
 
     if TYPE_CHECKING:
         def __init__(self, *, household: Household,
