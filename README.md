@@ -31,6 +31,9 @@ cp .env.sample .env
 ## [`app`](app/)
 This folder contains a [`fastapi`](https://fastapi.tiangolo.com/) application designed to provide additional functionality to Airtable automations via HTTP requests.
 
+## [`automation-scripts`](automation-scripts/)
+This folder contains scripts used in Airtable automations. There is no automatic deploy at the moment, but at the very least it provides a place for us to track changes.
+
 ## [`core`](core/)
 
 This folder contains a python module with reusable utilities for connecting and interacting with our tech services (Airtable, Dialpad, Twilio, Mailjet, Digital Ocean, etc). This module is automatically included in every function's virtual environment.

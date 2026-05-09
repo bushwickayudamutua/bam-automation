@@ -53,21 +53,27 @@ class FormSubmission(BamModel):
     internet_access = F.MultipleSelectField('Internet Access')
     roof_is_accessible = F.CheckboxField('Roof Accessible?')
 
-    # timeline metadata
-    legacy_first_date_submitted = F.DateField('Legacy First Date Submitted')
-    legacy_last_date_submitted = F.DateField('Legacy Last Date Submitted')
-
     if TYPE_CHECKING:
-        def __init__(self, *, name: str, phone_number: str, email: str,
-                     languages: List[str], other_languages: str,
-                     notes: str, street_address: str,
-                     city_and_state: str, zip_code: int,
-                     request_types: List[str], furniture_acknowledgement: bool,
-                     furniture_items: List[str], bed_details: List[str],
-                     kitchen_items: List[str], ss_request_types: List[str],
-                     internet_access: List[str], roof_is_accessible: bool,
-                     legacy_first_date_submitted: date,
-                     legacy_last_date_submitted: date,): ...
+        def __init__(
+            self, *,
+            name: str,
+            phone_number: str,
+            email: str,
+            languages: List[str],
+            other_languages: str,
+            notes: str,
+            street_address: str,
+            city_and_state: str,
+            zip_code: int,
+            request_types: List[str],
+            furniture_acknowledgement: bool,
+            furniture_items: List[str],
+            bed_details: List[str],
+            kitchen_items: List[str],
+            ss_request_types: List[str],
+            internet_access: List[str],
+            roof_is_accessible: bool,
+        ): ...
 
 
 class Household(BamModel):
@@ -85,25 +91,43 @@ class Household(BamModel):
 
     languages = F.MultipleSelectField('Languages')
     other_languages = F.TextField('Other Languages')
+
     notes = F.TextField('Notes')
 
     legacy_first_date_submitted = F.DateField('Legacy First Date Submitted')
     legacy_last_date_submitted = F.DateField('Legacy Last Date Submitted')
 
     last_texted = F.DateField('Last Texted')
+    last_called = F.DateField('Last Called')
+
+    needs_delivery = F.CheckboxField('Needs Delivery')
+    needs_email_outreach = F.CheckboxField('Needs Email Outreach')
 
     if TYPE_CHECKING:
-        def __init__(self, *, name: str, phone_number: str,
-                     phone_is_invalid: bool, phone_is_intl: bool, email: str,
-                     email_error: str, languages: List[str],
-                     other_languages: str, notes: str,
-                     legacy_first_date_submitted: date,
-                     legacy_last_date_submitted: date): ...
+        def __init__(
+            self, *,
+            name: str,
+            phone_number: str,
+            phone_is_invalid: bool,
+            phone_is_intl: bool,
+            email: str,
+            email_error: str,
+            legacy_first_date_submitted: date,
+            legacy_last_date_submitted: date,
+            languages: List[str],
+            other_languages: str | None = None,
+            notes: str | None = None,
+            last_texted: date | None = None,
+            last_called: date | None = None,
+            needs_delivery: bool = False,
+            needs_email_outreach: bool = False
+        ): ...
 
 
 class BaseRequest(BamModel):
     household = F.SingleLinkField('Household', Household)
 
+    last_requested = F.DateField('Last Requested')
     legacy_date_submitted = F.DateField('Legacy Date Submitted')
     request_opened_at = F.DateField('Request Opened At')
 
@@ -117,10 +141,15 @@ class Request(BaseRequest):
     geocode = F.TextField('Geocode')
 
     if TYPE_CHECKING:
-        def __init__(self, *, household: Household, type: str,
-                     legacy_date_submitted: date | None = None,
-                     geocode: str | None = None): ...
-
+        def __init__(
+            self, *,
+            household: Household,
+            type: str,
+            status: str = "Open",
+            legacy_date_submitted: date | None,
+            last_requested: date | None,
+            geocode: str | None = None
+        ): ...
 
 class SocialServiceRequest(BaseRequest):
     table_name = 'Social Service Requests'
@@ -128,8 +157,14 @@ class SocialServiceRequest(BaseRequest):
     type = F.SelectField('Type')
 
     if TYPE_CHECKING:
-        def __init__(self, *, household: Household, type: str,
-                     legacy_date_submitted: date | None = None): ...
+        def __init__(
+            self, *,
+            household: Household,
+            type: str,
+            status: str = "Open",
+            legacy_date_submitted: date | None,
+            last_requested: date | None
+        ): ...
 
 
 class MeshRequest(BaseRequest):
@@ -141,6 +176,14 @@ class MeshRequest(BaseRequest):
     zip_code = F.NumberField('Zip Code')
 
     if TYPE_CHECKING:
-        def __init__(self, *, household: Household,
-                     legacy_date_submitted: date | None = None,
-                     internet_access: List[str] = []): ...
+        def __init__(
+            self, *,
+            household: Household,
+            status: str = "Open",
+            legacy_date_submitted: date | None,
+            last_requested: date | None,
+            internet_access: List[str] = [],
+            street_address: str,
+            city_and_state: str,
+            zip_code: int
+        ): ...

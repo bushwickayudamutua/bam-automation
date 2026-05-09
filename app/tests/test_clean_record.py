@@ -131,7 +131,7 @@ def test_clean_record_with_invalid_email():
     assert response.json() == {
         "email": "invalid",
         "phone": "",
-        "email_error": "The email address is not valid. It must have exactly one @-sign.",
+        "email_error": "An email address must have an @-sign.",
         "phone_is_invalid": True,
         "phone_is_intl": False,
     }
