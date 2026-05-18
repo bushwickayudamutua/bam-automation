@@ -6,15 +6,23 @@ from pyairtable.orm import Model, fields as F
 from bam_core import settings
 
 
-def build_meta(table_name: str):
-    return {
-        'base_id': settings.AIRTABLE_V2_BASE_ID,
-        'api_key': settings.AIRTABLE_V2_TOKEN,
-        'table_name': table_name,
-    }
+class BamModelMeta(type):
+    @property
+    def Meta(cls):
+        return {
+            'base_id': settings.AIRTABLE_V2_BASE_ID,
+            'api_key': settings.AIRTABLE_V2_TOKEN,
+            'table_name': cls.table_name,
+        }
 
 
-class FormSubmission(Model):
+class BamModel(Model, metaclass=BamModelMeta):
+    table_name = 'Table'
+
+
+class FormSubmission(BamModel):
+    table_name = 'Assistance Request Form Submissions'
+
     bam_id = F.AutoNumberField('ID')
 
     # household details
@@ -45,8 +53,6 @@ class FormSubmission(Model):
     internet_access = F.MultipleSelectField('Internet Access')
     roof_is_accessible = F.CheckboxField('Roof Accessible?')
 
-    Meta = build_meta('Assistance Request Form Submissions')
-
     if TYPE_CHECKING:
         def __init__(
             self, *,
@@ -70,7 +76,9 @@ class FormSubmission(Model):
         ): ...
 
 
-class Household(Model):
+class Household(BamModel):
+    table_name = 'Households'
+
     bam_id = F.AutoNumberField('ID')
     name = F.TextField('Name')
 
@@ -95,8 +103,6 @@ class Household(Model):
     needs_delivery = F.CheckboxField('Needs Delivery')
     needs_email_outreach = F.CheckboxField('Needs Email Outreach')
 
-    Meta = build_meta('Households')
-
     if TYPE_CHECKING:
         def __init__(
             self, *,
@@ -118,18 +124,21 @@ class Household(Model):
         ): ...
 
 
-class Request(Model):
+class BaseRequest(BamModel):
     household = F.SingleLinkField('Household', Household)
-    type = F.SelectField('Type')
-    status = F.SelectField('Status')
 
     last_requested = F.DateField('Last Requested')
     legacy_date_submitted = F.DateField('Legacy Date Submitted')
     request_opened_at = F.DateField('Request Opened At')
 
-    geocode = F.TextField('Geocode')
+    status = F.SelectField('Status')
 
-    Meta = build_meta('Requests')
+
+class Request(BaseRequest):
+    table_name = 'Requests'
+
+    type = F.SelectField('Type')
+    geocode = F.TextField('Geocode')
 
     if TYPE_CHECKING:
         def __init__(
@@ -142,30 +151,10 @@ class Request(Model):
             geocode: str | None = None
         ): ...
 
+class SocialServiceRequest(BaseRequest):
+    table_name = 'Social Service Requests'
 
-class SocialServiceRequest(Model):
-    household = F.SingleLinkField('Household', Household)
     type = F.SelectField('Type')
-    status = F.SelectField('Status')
-
-    last_requested = F.DateField('Last Requested')
-    legacy_date_submitted = F.DateField('Legacy Date Submitted')
-    request_opened_at = F.DateField('Request Opened At', readonly=True)
-    
-    bin = F.NumberField("Building Identification Number")
-    geocode = F.TextField('Geocode')
-    cleaned_address = F.TextField('Address')
-    address_accuracy = F.SelectField('Address Accuracy')
-    street_address = F.TextField('Street Address')
-    city_and_state = F.TextField('City, State')
-    zip_code = F.NumberField('Zip Code')
-
-    internet_access = F.MultipleSelectField('Internet Access')
-    roof_is_accessible = F.CheckboxField('Roof Accessible?')
-    has_los = F.CheckboxField('MESH - Has LOS')
-    mesh_status = F.SelectField('MESH - Status')
-
-    Meta = build_meta('Social Service Requests')
 
     if TYPE_CHECKING:
         def __init__(
@@ -174,17 +163,27 @@ class SocialServiceRequest(Model):
             type: str,
             status: str = "Open",
             legacy_date_submitted: date | None,
-            last_requested: date | None,
-            bin: int | None = None,
-            geocode: str | None = None,
-            cleaned_address: str | None = None,
-            address_accuracy: str | None = None,
-            street_address: str | None = None,
-            city_and_state: str | None = None,
-            zip_code: int | None = None,
-            internet_access: List[str] = [],
-            roof_is_accessible: bool = False,
-            has_los: bool = False,
-            mesh_status: str | None = None,
+            last_requested: date | None
         ): ...
 
+
+class MeshRequest(BaseRequest):
+    table_name = 'Mesh Requests'
+
+    internet_access = F.MultipleSelectField('Internet Access')
+    street_address = F.TextField('Street Address')
+    city_and_state = F.TextField('City, State')
+    zip_code = F.NumberField('Zip Code')
+
+    if TYPE_CHECKING:
+        def __init__(
+            self, *,
+            household: Household,
+            status: str = "Open",
+            legacy_date_submitted: date | None,
+            last_requested: date | None,
+            internet_access: List[str] = [],
+            street_address: str,
+            city_and_state: str,
+            zip_code: int
+        ): ...
