@@ -1,5 +1,7 @@
 from typing import TypedDict
 
+from bam_core.utils.etc import to_list
+
 # datetime format in Airtable
 AIRTABLE_DATETIME_FORMAT = r"%Y-%m-%dT%H:%M:%S.%fZ"
 
@@ -451,6 +453,17 @@ SOCIAL_SERVICES_REQUESTS_SCHEMA = {
         },
     },
 }
+
+LOW_COST_INTERNET_AT_HOME_TYPE = (
+    "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助"
+)
+_mesh_internet_item = SOCIAL_SERVICES_REQUESTS_SCHEMA["items"][
+    LOW_COST_INTERNET_AT_HOME_TYPE
+]
+MESH_INTERNET_DELIVERED_TIMEOUT_TAGS = frozenset(
+    to_list(_mesh_internet_item["delivered"])
+    + to_list(_mesh_internet_item["timeout"])
+)
 
 # Mappings for all requests
 REQUESTS_SCHEMA = [

@@ -70,7 +70,9 @@ def extract_open_requests_per_household():
     for record_id, snapshot in afr.get_last_snapshots(grouped_records):
 
         # identify the open requests for the snapshot
-        open_requests = afr.get_open_requests_for_snapshot(record_id, snapshot)
+        open_requests = afr.get_open_requests_for_snapshot(
+            record_id, snapshot, include_all_mesh=True
+        )
 
         # if there are open requests, add them to the household
         # and format the phone number
