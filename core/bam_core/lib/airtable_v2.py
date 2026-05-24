@@ -129,7 +129,7 @@ class BaseRequest(BamModel):
 
     last_requested = F.DateField('Last Requested')
     legacy_date_submitted = F.DateField('Legacy Date Submitted')
-    request_opened_at = F.DateField('Request Opened At')
+    request_opened_at = F.DateField('Request Opened At', readonly=True)
 
     status = F.SelectField('Status')
 
@@ -168,9 +168,14 @@ class SocialServiceRequest(BaseRequest):
 
 
 class MeshRequest(BaseRequest):
+    """Aligned to live `Mesh Requests` table (schema.bases:read). See `.cursor/skills/bam-airtable/schema-mesh.md`."""
+
     table_name = 'Mesh Requests'
 
     internet_access = F.MultipleSelectField('Internet Access')
+    address = F.TextField('Address')
+    address_accuracy = F.SelectField('Address Accuracy')
+    building_identification_number = F.NumberField('Building Identification Number')
     street_address = F.TextField('Street Address')
     city_and_state = F.TextField('City, State')
     zip_code = F.NumberField('Zip Code')
@@ -183,7 +188,10 @@ class MeshRequest(BaseRequest):
             legacy_date_submitted: date | None,
             last_requested: date | None,
             internet_access: List[str] = [],
-            street_address: str,
-            city_and_state: str,
-            zip_code: int
+            address: str | None = None,
+            address_accuracy: str | None = None,
+            building_identification_number: int | None = None,
+            street_address: str | None = None,
+            city_and_state: str | None = None,
+            zip_code: int | None = None,
         ): ...
