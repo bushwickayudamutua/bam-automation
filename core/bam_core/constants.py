@@ -627,7 +627,7 @@ KITCHEN_VIEWS = [
 
 TOILETRIES_VIEWS = [
     View(
-        name="Essential Goods: Pads - LOCKED",
+        name="Essential Goods: Pads & Tampons - LOCKED",
         status_field_name="Essential Goods Requests Status",
         timeout_flag_value="Pads Timeout",
     ),
