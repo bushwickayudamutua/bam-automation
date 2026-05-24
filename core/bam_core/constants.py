@@ -532,12 +532,12 @@ MESH_VIEW_NAME = "MESH - Pending installs, by address (Lu)"
 
 FOOD_VIEWS = [
     View(
-        name="Food Distro - Open Groceries requests",
+        name="Food Distro - Open Groceries requests - LOCKED",
         status_field_name="Food Request Status",
         timeout_flag_value="Groceries Request Timeout",
     ),
     View(
-        name="Food Distro - Open Hot Food requests",
+        name="Food Distro - Open Hot Food requests - LOCKED",
         status_field_name="Food Request Status",
         timeout_flag_value="Hot Food Request Timeout",
     ),
@@ -545,12 +545,12 @@ FOOD_VIEWS = [
 
 EG_VIEWS = [
     View(
-        name="Essential Goods: Clothing Requests",
+        name="Essential Goods: Clothing Requests - LOCKED",
         status_field_name="Essential Goods Requests Status",
         timeout_flag_value="Clothing Assistance Timeout",
     ),
     View(
-        name="Essential Goods: Pet Food",
+        name="Essential Goods: Pet Food - LOCKED",
         status_field_name="Essential Goods Requests Status",
         timeout_flag_value="Pet Food Timeout",
     ),
@@ -558,37 +558,37 @@ EG_VIEWS = [
 
 FURNITURE_VIEWS = [
     View(
-        name="Essential Goods: AC",
+        name="Essential Goods: AC - LOCKED",
         status_field_name="Essential Goods Requests Status",
         timeout_flag_value="AC Timeout",
     ),
     View(
-        name="Essential Goods: Desks",
+        name="Essential Goods: Desks - LOCKED",
         status_field_name="Essential Goods Requests Status",
         timeout_flag_value="Desk Timeout",
     ),
     View(
-        name="Essential Goods: King Beds",
+        name="Essential Goods: King Beds - LOCKED",
         status_field_name="Essential Goods Requests Status",
         timeout_flag_value="Furniture Timeout",
     ),
     View(
-        name="Essential Goods: Queen Beds",
+        name="Essential Goods: Queen Beds - LOCKED",
         status_field_name="Essential Goods Requests Status",
         timeout_flag_value="Furniture Timeout",
     ),
     View(
-        name="Essential Goods: Full Beds",
+        name="Essential Goods: Full Beds - LOCKED",
         status_field_name="Essential Goods Requests Status",
         timeout_flag_value="Furniture Timeout",
     ),
     View(
-        name="Essential Goods: Twin Beds",
+        name="Essential Goods: Twin Beds - LOCKED",
         status_field_name="Essential Goods Requests Status",
         timeout_flag_value="Furniture Timeout",
     ),
     View(
-        name="Essential Goods: Cribs",
+        name="Essential Goods: Cribs - LOCKED",
         status_field_name="Essential Goods Requests Status",
         timeout_flag_value="Furniture Timeout",
     ),
@@ -596,7 +596,7 @@ FURNITURE_VIEWS = [
 
 SCHOOL_SUPPLIES_VIEWS = [
     View(
-        name="Essential Goods: School Supplies",
+        name="Essential Goods: School Supplies - LOCKED",
         status_field_name="Essential Goods Requests Status",
         timeout_flag_value="School Supplies Timeout",
     ),
@@ -604,22 +604,22 @@ SCHOOL_SUPPLIES_VIEWS = [
 
 KITCHEN_VIEWS = [
     View(
-        name="Essential Goods: Refrigerators",
+        name="Essential Goods: Refrigerators - LOCKED",
         status_field_name="Essential Goods Requests Status",
         timeout_flag_value="Fridge Timeout",
     ),
     View(
-        name="Essential Goods: Microwaves",
+        name="Essential Goods: Microwaves - LOCKED",
         status_field_name="Essential Goods Requests Status",
         timeout_flag_value="Microwave Timeout",
     ),
     View(
-        name="Essential Goods: Pots & Pans",
+        name="Essential Goods: Pots & Pans - LOCKED",
         status_field_name="Essential Goods Requests Status",
         timeout_flag_value="Pots & Pans Timeout",
     ),
     View(
-        name="Essential Goods: Plates + Cups",
+        name="Essential Goods: Plates + Cups - LOCKED",
         status_field_name="Essential Goods Requests Status",
         timeout_flag_value="Kitchen Supplies Timeout",
     ),
@@ -627,22 +627,22 @@ KITCHEN_VIEWS = [
 
 TOILETRIES_VIEWS = [
     View(
-        name="Essential Goods: Pads",
+        name="Essential Goods: Pads & Tampons - LOCKED",
         status_field_name="Essential Goods Requests Status",
         timeout_flag_value="Pads Timeout",
     ),
     View(
-        name="Essential Goods: Baby Diapers",
+        name="Essential Goods: Baby Diapers - LOCKED",
         status_field_name="Essential Goods Requests Status",
         timeout_flag_value="Baby Diapers Timeout",
     ),
     View(
-        name="Essential Goods: Adult Diapers",
+        name="Essential Goods: Adult Diapers - LOCKED",
         status_field_name="Essential Goods Requests Status",
         timeout_flag_value="Adult Diapers Timeout",
     ),
     View(
-        name="Essential Goods: Soap & Shower Products",
+        name="Essential Goods: Soap & Shower Products - LOCKED",
         status_field_name="Essential Goods Requests Status",
         timeout_flag_value="Soap & Shower Products Timeout",
     ),
@@ -650,42 +650,42 @@ TOILETRIES_VIEWS = [
 
 SOCIAL_SERVICES_VIEWS = [
     View(
-        name="Social Services: WIC / SNAP / P-EBT",
+        name="Social Services: WIC / SNAP / P-EBT - LOCKED",
         status_field_name="Social Services Request Status",
         timeout_flag_value="Food Benefits Assistance Timeout",
     ),
     View(
-        name="Social Services: K-12 Assistance",
+        name="Social Services: K-12 Assistance - LOCKED",
         status_field_name="Social Services Request Status",
         timeout_flag_value="In School Services Assistance Timeout",
     ),
     View(
-        name="Social Services: Housing Assistance",
+        name="Social Services: Housing Assistance - LOCKED",
         status_field_name="Social Services Request Status",
         timeout_flag_value="Tenant Legal Assistance Timeout",
     ),
     View(
-        name="Social Services: Health Insurance",
+        name="Social Services: Health Insurance - LOCKED",
         status_field_name="Social Services Request Status",
         timeout_flag_value="Health Insurance Assistance Timeout",
     ),
     View(
-        name="Social Services: Low-Cost Internet Access",
+        name="Social Services: Low-Cost Internet Access - LOCKED",
         status_field_name="Social Services Request Status",
         timeout_flag_value="Low-Cost Internet Access Timeout",
     ),
     View(
-        name="Social Services: Small Business Support",
+        name="Social Services: Small Business Support - LOCKED",
         status_field_name="Social Services Request Status",
         timeout_flag_value="Small Business Support Timeout",
     ),
     View(
-        name="Social Services: English Classes",
+        name="Social Services: English Classes - LOCKED",
         status_field_name="Social Services Request Status",
         timeout_flag_value="English Classes Timeout",
     ),
     View(
-        name="Social Services: Disabled children",
+        name="Social Services: Disabled children - LOCKED",
         status_field_name="Social Services Request Status",
         timeout_flag_value="Child Disability Assistance Timeout",
     ),
