@@ -132,45 +132,6 @@ def convert_str_to_int(num_str, num_digits=np.inf):
 #  Field-Specific Transformation Functions #
 ############################################
 
-def transform_address_fields(
-    old_field_name: str, new_field_name: str, records: list[dict]
-):
-    """
-    Get the most recent non-empty address and get all related address fields.
-    """
-
-    non_empty_idx = [i for i in range(len(records)) if records[i].get("Cleaned Address")]
-    if len(non_empty_idx) > 0:
-        i = non_empty_idx[0]
-    else:
-        non_empty_idx = [i for i in range(len(records)) if records[i].get("Current Address")]
-        if len(non_empty_idx) > 0:
-            i = non_empty_idx[0]
-        else:
-            i = 0
-    
-    address = records[i].get("Cleaned Address", "")
-    address_accuracy = records[i].get("Cleaned Address Accuracy")
-    street_address = records[i].get("Current Address", "")
-    city_state = records[i].get("Current Address - City, State", "")
-    zip_code = records[i].get("Current Address - Zip Code", "")
-    geocode = records[i].get("Geocode")
-    bin = records[i].get("Building Identification Number", "")
-
-    if address == "":
-        address = street_address + ' ' + city_state + ' ' + zip_code
-
-    return {
-        "Address": address,
-        "Address Accuracy": address_accuracy,
-        "Street Address": street_address,
-        "City, State": city_state,
-        "Zip Code": convert_str_to_int(zip_code, num_digits=5),
-        "Geocode": geocode,
-        "Building Identification Number": convert_str_to_int(bin),
-    }
-
-
 def transform_last_texted(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
@@ -410,7 +371,6 @@ def transform_mesh_requests(
             if selected_address_record:
                 address = selected_address_record.get("Cleaned Address", "")
                 address_accuracy = selected_address_record.get("Cleaned Address Accuracy")
-                geocode = selected_address_record.get("Geocode")
                 if address == "":
                     street_address = selected_address_record.get("Current Address", "")
                     city_state = selected_address_record.get("Current Address - City, State", "")
@@ -682,7 +642,7 @@ def transform_household_records(household_records: list[dict]) -> dict:
         }
         "Geocode": {
             "new_field": "Geocode",
-            "transform_fx": transform_geocode,
+            "transform_fx": select_first_non_null,
         },
         "Last Auto Texted": {
             "new_field": "Last Texted",
