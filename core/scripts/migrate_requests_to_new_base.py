@@ -270,9 +270,7 @@ def transform_other_languages(
     return { new_field_name: other_languages }
 
 
-def transform_internet_access(
-    old_field_name: str, new_field_name: str, records: list[dict]
-):
+def get_internet_access(records: list[dict]):
     """
     Transform the internet access field into a single list of internet access requests.
     Also apply a mapping to the internet access requests to map from the old names to the new names.
@@ -285,17 +283,52 @@ def transform_internet_access(
         "Uso el red público afuera / I use public internet access": "Uso el red público afuera / I use public internet access / 我只能使用公共網絡上網",
     }
     # we only migrate valid internet access
-    output = transform_lists(old_field_name, new_field_name, records)
+    output = transform_lists("Internet Access", "Internet Access", records)
     # apply internet mapping
-    output[new_field_name] = list(
+    output = list(
         set(
             [
                 INTERNET_MAPPING.get(item, item)
-                for item in output[new_field_name]
+                for item in output["Internet Access"]
             ]
         )
     )
     return output
+
+
+def get_best_address(records: list[dict]):
+
+    ADDRESS_PIPELINE_RANK = {
+        "Apartment": 4,
+        "Building": 3,
+        "Address Outside NY": 2,
+        "No result": 1,
+        "Invalid Address Provided": 0,
+        "": -1
+    }
+
+    # pick the most accurate address:
+    best_rank = -1
+    best_accuracy = None
+    address = None
+    street_address = ""
+    city_state = ""
+    zip_code = ""
+    for record in records:
+        accuracy = record.get("Cleaned Address Accuracy", "")
+        rank = ADDRESS_PIPELINE_RANK.get(accuracy)
+        if rank is not None and rank >= 0 and rank > best_rank:
+            best_rank = rank
+            best_accuracy = accuracy
+            address = record.get("Cleaned Address", "").strip()
+            street_address = record.get("Current Address", "")
+            city_state = record.get("Current Address - City, State", "")
+            zip_code = record.get("Current Address - Zip Code", "")
+            if address == "":
+                address = (street_address + ' ' + city_state + ' ' + zip_code).strip()
+            address = None if address == "" else address
+    
+    return best_accuracy, address, street_address, city_state, zip_code
 
 
 def get_best_mesh_status(mesh_records: list[dict]) -> dict | None:
@@ -303,17 +336,10 @@ def get_best_mesh_status(mesh_records: list[dict]) -> dict | None:
 
     # MESH status pipeline (higher --> further along, -1 --> closed/delivered).
     MESH_PIPELINE_RANK = {
-        # Delivered / Closed / ignore:
-        "YAY! MESH INSTALLED!": -1,
-        "NYCHA - Currently Does Not Qualify": -1,
-        "Cannot Install - Other Reason": -1,
-        "Cannot Install - Does not have LOS": -1,
-        "Cannot Install - No Roof Access": -1,
-        "Not Interested": -1,
-        "Duplicate": -1,
-
+        # Empty `MESH - Status` (open):
+        "": 0,
+        
         # In-progress (open):
-        "": 0, # Empty `MESH - Status`
         "Step 1 - Interested in Mesh": 1,
         "Roof Access In Process": 2,
         "Confirming Premission with Landlord": 3,
@@ -322,18 +348,28 @@ def get_best_mesh_status(mesh_records: list[dict]) -> dict | None:
         "Step 3 - Scheduling IN-PROGRESS": 6,
         "Install Scheduled": 7,
         "INSTALL PENDING ELDERT REPAIR": 8,
+
+        # Delivered / Closed / ignore:
+        "YAY! MESH INSTALLED!": 9,
+        "NYCHA - Currently Does Not Qualify": 10,
+        "Cannot Install - Other Reason": 11,
+        "Cannot Install - Does not have LOS": 12,
+        "Cannot Install - No Roof Access": 13,
+        "Not Interested": 14,
+        "Duplicate": 15,
     }
     
     # pick the best non-closed MESH status:
+    best_stat = None
     best_rank = -1
-    selected_record = None
     for record in mesh_records:
         stat = record.get("MESH - Status", "")
         rank = MESH_PIPELINE_RANK.get(stat)
-        if rank and rank > best_rank:
+        if rank is not None and rank >= 0 and rank > best_rank:
+            best_stat = "Open" if stat == "" else stat
             best_rank = rank
-            selected_record = record.copy()
-    return selected_record if best_rank > 0 else None
+
+    return best_stat if (best_rank >= 0 and best_rank <= 8) else None
 
 
 def transform_mesh_requests(
@@ -345,47 +381,27 @@ def transform_mesh_requests(
     mesh_per_bin = defaultdict(list)
     for record in records:
         if LOW_COST_INTERNET_AT_HOME_TYPE in record.get("Open Requests", []):
-            bin_val = convert_str_to_int(record.get("Building Identification Number", ""))
-            if bin_val:
-                mesh_per_bin[bin_val].append(record)
+            bin_val = record.get("Building Identification Number", "")
+            mesh_per_bin[bin_val].append(record)
 
     mesh_requests = []
     for bin_val, bin_records in mesh_per_bin.items():
-        selected_status_record = get_best_mesh_status(bin_records)
-        if selected_status_record:
-            # Get address fields for this BIN:
-            selected_address_record = None
-            if selected_status_record.get("Cleaned Address"):
-                selected_address_record = selected_status_record.copy()
-            else:
-                selected_address_record = [r for r in bin_records if r.get("Cleaned Address")]
-                if len(selected_address_record) > 0:
-                    selected_address_record = selected_address_record[0].copy()
-                else if selected_status_record.get("Current Address"):
-                    selected_address_record = selected_status_record.copy()
-                else:
-                    selected_address_record = [r for r in bin_records if r.get("Current Address")]
-                    if len(selected_address_record) > 0:
-                        selected_address_record = selected_address_record[0].copy()
-            
-            if selected_address_record:
-                address = selected_address_record.get("Cleaned Address", "")
-                address_accuracy = selected_address_record.get("Cleaned Address Accuracy")
-                if address == "":
-                    street_address = selected_address_record.get("Current Address", "")
-                    city_state = selected_address_record.get("Current Address - City, State", "")
-                    zip_code = selected_address_record.get("Current Address - Zip Code", "")
-                    address = street_address + ' ' + city_state + ' ' + zip_code
-
+        mesh_status = get_best_mesh_status(bin_records)
+        if mesh_status:
+            internet_access = get_internet_access(bin_records)
             mesh_dates = transform_date_submitted(DATE_SUBMITTED_FIELD, DATE_SUBMITTED_FIELD, bin_records)
+            address_accuracy, address, street_address, city_state, zip_code = get_best_address(bin_records)  
             mesh_requests.append({
-                "Status": selected_status_record["MESH - Status"],
+                "Status": mesh_status,
                 "Oldest "+DATE_SUBMITTED_FIELD: mesh_dates["Legacy First "+DATE_SUBMITTED_FIELD],
                 "Latest "+DATE_SUBMITTED_FIELD: mesh_dates["Legacy Last "+DATE_SUBMITTED_FIELD],
-                "Address": address,
                 "Address Accuracy": address_accuracy,
+                "Address": address,
+                "Street Address": street_address,
+                "City, State": city_state,
+                "Zip Code": zip_code,
                 "Building Identification Number": convert_str_to_int(bin_val),
-                **transform_internet_access("Internet Access", "Internet Access", bin_records),
+                "Internet Access": internet_access,
             })
 
     return {"MESH Requests": mesh_requests} if mesh_requests else {}
@@ -639,7 +655,7 @@ def transform_household_records(household_records: list[dict]) -> dict:
         "MESH": { # MESH Requests per Phone+BIN:
             "new_field": "MESH Requests",
             "transform_fx": transform_mesh_requests
-        }
+        },
         "Geocode": {
             "new_field": "Geocode",
             "transform_fx": select_first_non_null,
@@ -801,10 +817,13 @@ def create_mesh_requests_records(record: dict, household: Household):
             legacy_date_submitted=r.get("Oldest "+DATE_SUBMITTED_FIELD),
             last_requested=r.get("Latest "+DATE_SUBMITTED_FIELD),
             internet_access=r.get("Internet Access", []),
-            address=r.get("Address"),
             address_accuracy=r.get("Address Accuracy"),
+            address=r.get("Address"),
+            street_address=r.get("Street Address"),
+            city_and_state=r.get("City, State"),
+            zip_code=r.get("Zip Code"),
             building_identification_number=r.get("Building Identification Number"),
-        ), for r in record.get("MESH Requests", [])
+        ) for r in record.get("MESH Requests", [])
     ]
     
     if mesh_records:
