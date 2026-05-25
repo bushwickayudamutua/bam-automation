@@ -299,35 +299,53 @@ def get_internet_access(records: list[dict]):
 def get_best_address(records: list[dict]):
 
     ADDRESS_PIPELINE_RANK = {
-        "Apartment": 4,
-        "Building": 3,
-        "Address Outside NY": 2,
-        "No result": 1,
-        "Invalid Address Provided": 0,
-        "": -1
+        "Apartment": 1,
+        "Building": 2,
+        "Address Outside NY": 1,
+        "No result": 0,
+        "": 0,
+        "Invalid Address Provided": -1,
     }
 
-    # pick the most accurate address:
-    best_rank = -1
-    best_accuracy = None
-    address = None
-    street_address = ""
-    city_state = ""
-    zip_code = ""
-    for record in records:
-        accuracy = record.get("Cleaned Address Accuracy", "")
-        rank = ADDRESS_PIPELINE_RANK.get(accuracy)
-        if rank is not None and rank >= 0 and rank > best_rank:
-            best_rank = rank
-            best_accuracy = accuracy
-            address = record.get("Cleaned Address", "").strip()
-            street_address = record.get("Current Address", "")
-            city_state = record.get("Current Address - City, State", "")
-            zip_code = record.get("Current Address - Zip Code", "")
-            if address == "":
-                address = (street_address + ' ' + city_state + ' ' + zip_code).strip()
-            address = None if address == "" else address
+    best_idx_rank = np.argmax([
+        ADDRESS_PIPELINE_RANK.get(r.get("Cleaned Address Accuracy", ""), -2)
+        for r in records
+    ])
+    best_idx = best_idx_rank
+
+    address = records[best_idx].get("Cleaned Address", "").strip()
+    street_address = records[best_idx].get("Current Address", "").strip()
+    if address == "" and street_address == "":
+        best_idx = [
+            i for i in range(len(records))
+            if records[i].get("Cleaned Address", "").strip() != ""
+        ]
+        if len(best_idx) > 0:
+            best_idx = best_idx[0]
+        else:
+            best_idx = [
+                i for i in range(len(records))
+                if records[i].get("Current Address", "").strip() != ""
+            ]
+            if len(best_idx) > 0:
+                best_idx = best_idx[0]
+            else:
+                best_idx = best_idx_rank
     
+    best_accuracy = records[best_idx].get("Cleaned Address Accuracy")
+
+    address = records[best_idx].get("Cleaned Address", "").strip()
+    street_address = records[best_idx].get("Current Address", "").strip()
+    city_state = records[best_idx].get("Current Address - City, State", "").strip()
+    zip_code = records[best_idx].get("Current Address - Zip Code", "").strip()
+    if address == "":
+        address = (street_address + ' ' + city_state + ' ' + zip_code).strip()
+    
+    address = None if address == "" else address
+    street_address = None if street_address == "" else street_address
+    city_state = None if city_state == "" else city_state
+    zip_code = convert_str_to_int(zip_code, num_digits=5)
+
     return best_accuracy, address, street_address, city_state, zip_code
 
 
