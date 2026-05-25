@@ -270,7 +270,7 @@ def transform_other_languages(
     return { new_field_name: other_languages }
 
 
-def get_internet_access(records: list[dict]):
+def transform_internet_access(records: list[dict]):
     """
     Transform the internet access field into a single list of internet access requests.
     Also apply a mapping to the internet access requests to map from the old names to the new names.
@@ -293,10 +293,12 @@ def get_internet_access(records: list[dict]):
             ]
         )
     )
-    return output
+    return {
+        "Internet Access": output,
+    }
 
 
-def get_best_address(records: list[dict]):
+def transform_address(records: list[dict]):
 
     ADDRESS_PIPELINE_RANK = {
         "Apartment": 3,
@@ -346,7 +348,13 @@ def get_best_address(records: list[dict]):
     city_state = None if city_state == "" else city_state
     zip_code = convert_str_to_int(zip_code, num_digits=5)
 
-    return best_accuracy, address, street_address, city_state, zip_code
+    return {
+        "Address Accuracy": best_accuracy,
+        "Address": address,
+        "Street Address": street_address,
+        "City, State": city_state,
+        "Zip Code": zip_code,
+    }
 
 
 def get_best_mesh_status(mesh_records: list[dict]) -> dict | None:
@@ -412,20 +420,15 @@ def transform_mesh_requests(
     for bin_val, bin_records in mesh_per_bin.items():
         mesh_status = get_best_mesh_status(bin_records)
         if mesh_status:
-            internet_access = get_internet_access(bin_records)
             mesh_dates = transform_date_submitted(DATE_SUBMITTED_FIELD, DATE_SUBMITTED_FIELD, bin_records)
-            address_accuracy, address, street_address, city_state, zip_code = get_best_address(bin_records)  
+            mesh_address = transform_address(bin_records)
+            internet_access = transform_internet_access(bin_records)
             mesh_requests.append({
                 "Status": mesh_status,
-                "Oldest "+DATE_SUBMITTED_FIELD: mesh_dates["Legacy First "+DATE_SUBMITTED_FIELD],
-                "Latest "+DATE_SUBMITTED_FIELD: mesh_dates["Legacy Last "+DATE_SUBMITTED_FIELD],
-                "Address Accuracy": address_accuracy,
-                "Address": address,
-                "Street Address": street_address,
-                "City, State": city_state,
-                "Zip Code": zip_code,
                 "Building Identification Number": convert_str_to_int(bin_val),
-                "Internet Access": internet_access,
+                **mesh_dates,
+                **mesh_address,
+                **internet_access,
             })
 
     return {"MESH Requests": mesh_requests} if mesh_requests else {}
@@ -607,7 +610,12 @@ def transform_open_requests(
             .groupby("item")[DATE_SUBMITTED_FIELD]
             .agg(["min", "max"])
             .reset_index()
-            .rename(columns={"min": "Oldest "+DATE_SUBMITTED_FIELD, "max": "Latest "+DATE_SUBMITTED_FIELD})
+            .rename(
+                columns={
+                    "min": "Legacy First "+DATE_SUBMITTED_FIELD,
+                    "max": "Legacy Last "+DATE_SUBMITTED_FIELD,
+                }
+            )
         )
         for name, item_df in output.items()
     }
@@ -740,9 +748,10 @@ def transform_households(households: dict[str, list[dict]]) -> list[dict]:
 @retry(attempts=5, wait=1, backoff=2)
 def create_requests_records(record: dict, household: Household):
     """
-    Create a list of requests records from the transformed legacy assistance request record.
-    :param record: The legacy assistance request record
-    :return: A list of request IDs
+    Create Requests rows from the transformed legacy assistance request record.
+    :param record: The transformed household record
+    :param household: The saved Household instance
+    :return: List of Request instances (empty if none to create)
     """
     TYPES_TO_EXCLUDE = [
         "Muebles / Furniture / 家具",
@@ -756,17 +765,21 @@ def create_requests_records(record: dict, household: Household):
         record.get("Kitchen Items", pd.DataFrame()),
     ], ignore_index=True)
     request_records1 = []
-    if(all_reqs1.shape[0] > 0):
+    if all_reqs1.shape[0] > 0:
         request_records1 = [
             Request(
                 household=household,
                 type=req_type,
                 status="Open",
                 legacy_date_submitted=datetime.strptime(oldest_date, "%Y-%m-%d").date(),
-                last_requested=datetime.strptime(latest_date, "%Y-%m-%d").date()
+                last_requested=datetime.strptime(latest_date, "%Y-%m-%d").date(),
             )
-            for req_type, oldest_date, latest_date in zip(all_reqs1["item"], all_reqs1["Oldest "+DATE_SUBMITTED_FIELD], all_reqs1["Latest "+DATE_SUBMITTED_FIELD])
-                if req_type not in TYPES_TO_EXCLUDE
+            for req_type, oldest_date, latest_date in zip(
+                all_reqs1["item"],
+                all_reqs1["Legacy First "+DATE_SUBMITTED_FIELD],
+                all_reqs1["Legacy Last "+DATE_SUBMITTED_FIELD]
+            )
+            if req_type not in TYPES_TO_EXCLUDE
         ]
 
     # combine the list of requests (with geocode, and no other address information)
@@ -775,7 +788,7 @@ def create_requests_records(record: dict, household: Household):
         record.get("Bed Details", pd.DataFrame()),
     ], ignore_index=True)
     request_records2 = []
-    if(all_reqs2.shape[0] > 0):
+    if all_reqs2.shape[0] > 0:
         request_records2 = [
             Request(
                 household=household,
@@ -783,73 +796,81 @@ def create_requests_records(record: dict, household: Household):
                 status="Open",
                 legacy_date_submitted=datetime.strptime(oldest_date, "%Y-%m-%d").date(),
                 last_requested=datetime.strptime(latest_date, "%Y-%m-%d").date(),
-                geocode=record.get("Geocode", None)
+                geocode=record.get("Geocode"),
             )
-            for req_type, oldest_date, latest_date in zip(all_reqs2["item"], all_reqs2["Oldest "+DATE_SUBMITTED_FIELD], all_reqs2["Latest "+DATE_SUBMITTED_FIELD])
-                if req_type not in TYPES_TO_EXCLUDE
+            for req_type, oldest_date, latest_date in zip(
+                all_reqs2["item"],
+                all_reqs2["Legacy First "+DATE_SUBMITTED_FIELD],
+                all_reqs2["Legacy Last "+DATE_SUBMITTED_FIELD],
+            )
+            if req_type not in TYPES_TO_EXCLUDE
         ]
 
     request_records = request_records1 + request_records2
-    Request.batch_save(request_records)
+    if request_records:
+        Request.batch_save(request_records)
     return request_records
 
 
 @retry(attempts=5, wait=1, backoff=2)
 def create_ss_requests_records(record: dict, household: Household):
     """
-    Create a list of social service requests records from the transformed legacy assistance request record.
-    :param record: The legacy assistance request record
-    :return: A list of social service request IDs
+    Create Social Service Requests rows from the transformed legacy assistance request record.
+    :param record: The transformed household record
+    :param household: The saved Household instance
+    :return: List of SocialServiceRequest instances (empty if none to create)
     """
     ss_reqs = record.get("Social Service Requests", pd.DataFrame())
     ss_records = []
     if ss_reqs.shape[0] > 0:
-        for req_type, oldest_date, latest_date in zip(
-            ss_reqs["item"],
-            ss_reqs["Oldest " + DATE_SUBMITTED_FIELD],
-            ss_reqs["Latest " + DATE_SUBMITTED_FIELD],
-        ):
-            if req_type == LOW_COST_INTERNET_AT_HOME_TYPE:
-                continue
-            ss_records.append(
-                SocialServiceRequest(
-                    household=household,
-                    type=req_type,
-                    status="Open",
-                    legacy_date_submitted=datetime.strptime(
-                        oldest_date, "%Y-%m-%d"
-                    ).date(),
-                    last_requested=datetime.strptime(
-                        latest_date, "%Y-%m-%d"
-                    ).date(),
-                )
+        ss_records = [
+            SocialServiceRequest(
+                household=household,
+                type=req_type,
+                status="Open",
+                legacy_date_submitted=datetime.strptime(oldest_date, "%Y-%m-%d").date(),
+                last_requested=datetime.strptime(latest_date, "%Y-%m-%d").date(),
             )
+            for req_type, oldest_date, latest_date in zip(
+                ss_reqs["item"],
+                ss_reqs["Legacy First " + DATE_SUBMITTED_FIELD],
+                ss_reqs["Legacy Last " + DATE_SUBMITTED_FIELD],
+            )
+            if req_type != LOW_COST_INTERNET_AT_HOME_TYPE
+        ]  
 
-    SocialServiceRequest.batch_save(ss_records)
+    if ss_records:
+        SocialServiceRequest.batch_save(ss_records)
     return ss_records
 
 
 @retry(attempts=5, wait=1, backoff=2)
 def create_mesh_requests_records(record: dict, household: Household):
     """
-    Create one Mesh Requests row per (phone, BIN) from transform_mesh_requests.
+    Create Mesh Requests rows from the transformed legacy assistance request record.
+    :param record: The transformed household record
+    :param household: The saved Household instance
+    :return: List of MeshRequest instances (empty if none to create)
     """
-    mesh_records = [
-        MeshRequest(
-            household=household,
-            status=r.get("Status"),
-            legacy_date_submitted=r.get("Oldest "+DATE_SUBMITTED_FIELD),
-            last_requested=r.get("Latest "+DATE_SUBMITTED_FIELD),
-            internet_access=r.get("Internet Access", []),
-            address_accuracy=r.get("Address Accuracy"),
-            address=r.get("Address"),
-            street_address=r.get("Street Address"),
-            city_and_state=r.get("City, State"),
-            zip_code=r.get("Zip Code"),
-            building_identification_number=r.get("Building Identification Number"),
-        ) for r in record.get("MESH Requests", [])
-    ]
-    
+    mesh_reqs = record.get("MESH Requests", [])
+    mesh_records = []
+    if mesh_reqs:
+        mesh_records = [
+            MeshRequest(
+                household=household,
+                status=r.get("Status"),
+                legacy_date_submitted=datetime.strptime(r.get("Legacy First "+DATE_SUBMITTED_FIELD), "%Y-%m-%d").date(),
+                last_requested=datetime.strptime(r.get("Legacy Last "+DATE_SUBMITTED_FIELD), "%Y-%m-%d").date(),
+                internet_access=r.get("Internet Access", []),
+                address_accuracy=r.get("Address Accuracy"),
+                address=r.get("Address"),
+                street_address=r.get("Street Address"),
+                city_and_state=r.get("City, State"),
+                zip_code=r.get("Zip Code"),
+                building_identification_number=r.get("Building Identification Number"),
+            ) for r in mesh_reqs
+        ]
+
     if mesh_records:
         MeshRequest.batch_save(mesh_records)
     return mesh_records
