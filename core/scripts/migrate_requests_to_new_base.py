@@ -299,7 +299,7 @@ def get_internet_access(records: list[dict]):
 def get_best_address(records: list[dict]):
 
     ADDRESS_PIPELINE_RANK = {
-        "Apartment": 1,
+        "Apartment": 3,
         "Building": 2,
         "Address Outside NY": 1,
         "No result": 0,
