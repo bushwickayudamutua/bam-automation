@@ -352,7 +352,7 @@ def get_best_address(records: list[dict]):
 def get_best_mesh_status(mesh_records: list[dict]) -> dict | None:
     """Best non-closed MESH - Status for a household (unique phone & BIN)."""
 
-    # MESH status pipeline (higher --> further along, -1 --> closed/delivered).
+    # MESH status pipeline (higher --> further along).
     MESH_PIPELINE_RANK = {
         # Empty `MESH - Status` (open):
         "": 0,
@@ -365,16 +365,22 @@ def get_best_mesh_status(mesh_records: list[dict]) -> dict | None:
         "Step 2- LOS Confirmed": 5,
         "Step 3 - Scheduling IN-PROGRESS": 6,
         "Install Scheduled": 7,
-        "INSTALL PENDING ELDERT REPAIR": 8,
 
         # Delivered / Closed / ignore:
-        "YAY! MESH INSTALLED!": 9,
-        "NYCHA - Currently Does Not Qualify": 10,
-        "Cannot Install - Other Reason": 11,
-        "Cannot Install - Does not have LOS": 12,
-        "Cannot Install - No Roof Access": 13,
-        "Not Interested": 14,
-        "Duplicate": 15,
+        "YAY! MESH INSTALLED!": 8,
+        "NYCHA - Currently Does Not Qualify": 9,
+        "Cannot Install - Other Reason": 10,
+        "Cannot Install - Does not have LOS": 11,
+        "Cannot Install - No Roof Access": 12,
+        "Not Interested": 13,
+        "Duplicate": 14,
+
+        # Needs repair (open):
+        "INSTALL PENDING ELDERT REPAIR": 15,
+    }
+    OPEN_RANKS = list(range(8)) + [15]
+    MESH_STATUS_OLD_TO_NEW = {
+        "": "Open",
     }
     
     # pick the best non-closed MESH status:
@@ -384,10 +390,10 @@ def get_best_mesh_status(mesh_records: list[dict]) -> dict | None:
         stat = record.get("MESH - Status", "")
         rank = MESH_PIPELINE_RANK.get(stat)
         if rank is not None and rank >= 0 and rank > best_rank:
-            best_stat = "Open" if stat == "" else stat
+            best_stat = MESH_STATUS_OLD_TO_NEW.get(stat, stat)
             best_rank = rank
 
-    return best_stat if (best_rank >= 0 and best_rank <= 8) else None
+    return best_stat if best_rank in OPEN_RANKS else None
 
 
 def transform_mesh_requests(
