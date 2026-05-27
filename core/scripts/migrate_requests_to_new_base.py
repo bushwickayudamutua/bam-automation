@@ -274,7 +274,9 @@ def transform_other_languages(
     return { new_field_name: other_languages }
 
 
-def transform_internet_access(records: list[dict]):
+def transform_internet_access(
+    old_field_name: str, new_field_name: str, records: list[dict]
+):
     """
     Transform the internet access field into a single list of internet access requests.
     Also apply a mapping to the internet access requests to map from the old names to the new names.
@@ -287,19 +289,17 @@ def transform_internet_access(records: list[dict]):
         "Uso el red público afuera / I use public internet access": "Uso el red público afuera / I use public internet access / 我只能使用公共網絡上網",
     }
     # we only migrate valid internet access
-    output = transform_lists("Internet Access", "Internet Access", records)
+    output = transform_lists(old_field_name, new_field_name, records)
     # apply internet mapping
-    output = list(
+    output[new_field_name] = list(
         set(
             [
                 INTERNET_MAPPING.get(item, item)
-                for item in output["Internet Access"]
+                for item in output[new_field_name]
             ]
         )
     )
-    return {
-        "Internet Access": output,
-    }
+    return output
 
 
 def transform_address(records: list[dict]):
@@ -426,7 +426,19 @@ def transform_mesh_requests(
         if mesh_status:
             mesh_dates = transform_date_submitted(DATE_SUBMITTED_FIELD, DATE_SUBMITTED_FIELD, bin_records)
             mesh_address = transform_address(bin_records)
-            internet_access = transform_internet_access(bin_records)
+            internet_access = transform_internet_access("Internet Access", "Internet Access", bin_records)
+            
+            # # Any records indicating the building is roof accessible?
+            # tag = "Tengo acceso de mi techo / Roof access in my building"
+            # output["Roof Accessible?"] = any(
+            #     [tag in r.get("MESH - To confirm during outreach (before install)", []) for r in records]
+            # )
+
+            # # Any records indicating LOS?
+            # output["MESH - Has LOS"] = any(
+            #     [r.get("MESH - Has LOS", False) for r in records]
+            # )
+                    
             mesh_requests.append({
                 "Status": mesh_status,
                 "Building Identification Number": convert_str_to_int(bin_val),
@@ -735,74 +747,6 @@ def transform_households(households: dict[str, list[dict]]) -> list[dict]:
 #   Airtable Record Creation          #
 #######################################
 
-
-def _escape_airtable_formula_str(value: str) -> str:
-    return value.replace("'", "''")
-
-
-def _household_by_phone_formula(phone_number: str) -> str:
-    return f"{{{PHONE_FIELD}}}='{_escape_airtable_formula_str(phone_number)}'"
-
-
-def _linked_to_household_formula(household_id: str) -> str:
-    return f"{{Household}}='{household_id}'"
-
-
-def find_household_by_phone(phone_number: str) -> Household | None:
-    if not phone_number:
-        return None
-    return Household.first(formula=_household_by_phone_formula(phone_number))
-
-
-def _household_from_record(record: dict) -> Household:
-    return Household(
-        name=record.get("Name"),
-        phone_number=record.get(PHONE_FIELD),
-        phone_is_invalid=record.get("Invalid Phone Number?"),
-        phone_is_intl=record.get("Int'l Phone Number?"),
-        email=record.get("Email"),
-        email_error=record.get("Email Error"),
-        legacy_first_date_submitted=format_date(
-            record.get("Legacy First " + DATE_SUBMITTED_FIELD)
-        ),
-        legacy_last_date_submitted=format_date(
-            record.get("Legacy Last " + DATE_SUBMITTED_FIELD)
-        ),
-        languages=record.get("Languages") or [],
-        other_languages=record.get("Other Languages"),
-        notes=record.get("Notes"),
-        last_texted=format_date(record.get("Last Texted")),
-        last_called=None,
-        needs_delivery=record.get("Needs Delivery"),
-        needs_email_outreach=record.get("Needs Email Outreach"),
-    )
-
-
-def _existing_request_types(household: Household) -> set[str]:
-    return {
-        r.type
-        for r in Request.all(formula=_linked_to_household_formula(household.id))
-        if r.type
-    }
-
-
-def _existing_ss_request_types(household: Household) -> set[str]:
-    return {
-        r.type
-        for r in SocialServiceRequest.all(
-            formula=_linked_to_household_formula(household.id)
-        )
-        if r.type
-    }
-
-
-def _existing_mesh_bins(household: Household) -> set:
-    return {
-        r.building_identification_number
-        for r in MeshRequest.all(formula=_linked_to_household_formula(household.id))
-    }
-
-
 @retry(attempts=5, wait=1, backoff=2)
 def create_requests_records(record: dict, household: Household):
     """
@@ -816,7 +760,6 @@ def create_requests_records(record: dict, household: Household):
         "Cosas de Cocina / Kitchen Supplies / 廚房用品",
         "Cama / Bed / 床",
     ]
-    existing_types = _existing_request_types(household)
 
     # combine the list of requests (no address information)
     all_reqs1 = pd.concat([
@@ -839,7 +782,6 @@ def create_requests_records(record: dict, household: Household):
                 all_reqs1["Legacy Last "+DATE_SUBMITTED_FIELD],
             )
             if req_type not in TYPES_TO_EXCLUDE
-            and req_type not in existing_types
         ]
 
     # combine the list of requests (with geocode, and no other address information)
@@ -887,7 +829,6 @@ def create_ss_requests_records(record: dict, household: Household):
     }
 
     ss_reqs = record.get("Social Service Requests", pd.DataFrame())
-    existing_types = _existing_ss_request_types(household)
     ss_records = []
     if ss_reqs.shape[0] > 0:
         ss_records = [
@@ -904,7 +845,6 @@ def create_ss_requests_records(record: dict, household: Household):
                 ss_reqs["Legacy Last "+DATE_SUBMITTED_FIELD],
             )
             if req_type != LOW_COST_INTERNET_AT_HOME_TYPE
-            and req_type not in existing_types
         ]
 
     if ss_records:
@@ -921,7 +861,6 @@ def create_mesh_requests_records(record: dict, household: Household):
     :return: List of MeshRequest instances (empty if none to create)
     """
     mesh_reqs = record.get("MESH Requests", [])
-    existing_bins = _existing_mesh_bins(household)
     mesh_records = []
     if mesh_reqs:
         mesh_records = [
@@ -939,7 +878,6 @@ def create_mesh_requests_records(record: dict, household: Household):
                 building_identification_number=r.get("Building Identification Number"),
             )
             for r in mesh_reqs
-            if r.get("Building Identification Number") not in existing_bins
         ]
 
     if mesh_records:
@@ -948,33 +886,28 @@ def create_mesh_requests_records(record: dict, household: Household):
 
 
 @retry(attempts=5, wait=1, backoff=2)
-def get_or_create_household_record(record: dict) -> Household:
+def create_household_record(record: dict):
     """
-    Find household by phone or create one. On retry, updates the existing row.
+    Create a household record from the transformed legacy assistance request record.
+    :param record: The legacy assistance request record
+    :return: The created Household instance
     """
-    phone_number = record.get(PHONE_FIELD)
-    household = find_household_by_phone(phone_number)
-    fresh = _household_from_record(record)
-    if household:
-        household.name = fresh.name
-        household.phone_number = fresh.phone_number
-        household.phone_is_invalid = fresh.phone_is_invalid
-        household.phone_is_intl = fresh.phone_is_intl
-        household.email = fresh.email
-        household.email_error = fresh.email_error
-        household.legacy_first_date_submitted = fresh.legacy_first_date_submitted
-        household.legacy_last_date_submitted = fresh.legacy_last_date_submitted
-        household.languages = fresh.languages
-        household.other_languages = fresh.other_languages
-        household.notes = fresh.notes
-        household.last_texted = fresh.last_texted
-        household.last_called = fresh.last_called
-        household.needs_delivery = fresh.needs_delivery
-        household.needs_email_outreach = fresh.needs_email_outreach
-        household.save()
-        return household
-    fresh.save()
-    return fresh
+    household = Household(
+        name=record.get("Name"),
+        phone_number=record.get(PHONE_FIELD),
+        phone_is_invalid=record.get("Invalid Phone Number?"),
+        phone_is_intl=record.get("Int'l Phone Number?"),
+        email=record.get("Email"),
+        email_error=record.get("Email Error"),
+        legacy_first_date_submitted=format_date(record.get("Legacy First "+DATE_SUBMITTED_FIELD)),
+        legacy_last_date_submitted=format_date(record.get("Legacy Last "+DATE_SUBMITTED_FIELD)),
+        languages=record.get("Languages"),
+        other_languages=record.get("Other Languages"),
+        notes=record.get("Notes"),
+        last_texted=format_date(record.get("Last Texted")),
+    )
+    household.save()
+    return household
 
 
 def load_household(record: dict):
@@ -990,7 +923,7 @@ def load_household(record: dict):
     :param record: The legacy assistance request record
     :return: None
     """
-    household = get_or_create_household_record(record)
+    household = create_household_record(record)
     create_requests_records(record, household)
     create_ss_requests_records(record, household)
     create_mesh_requests_records(record, household)
