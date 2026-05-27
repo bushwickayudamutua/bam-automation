@@ -427,13 +427,18 @@ def transform_mesh_requests(
             mesh_dates = transform_date_submitted(DATE_SUBMITTED_FIELD, DATE_SUBMITTED_FIELD, bin_records)
             mesh_address = transform_address(bin_records)
             internet_access = transform_internet_access("Internet Access", "Internet Access", bin_records)
-            has_los = any([r.get("MESH - Has LOS", False) for r in bin_records])
+            
+            if mesh_status_rank in [5, 6, 7, 8, 15]:
+                has_los = True
+            else:
+                has_los = any([(r.get("MESH - Has LOS") or False) for r in bin_records])
+
             if mesh_status_rank in [4, 5, 6, 7, 8, 15]:
                 roof_is_accessible = True
             else:
                 field_name = "MESH - To confirm during outreach (before install)"
                 field_value = "Tengo acceso de mi techo / Roof access in my building"
-                roof_is_accessible = any([field_value in r.get(field_name, []) for r in bin_records])
+                roof_is_accessible = any([field_value in (r.get(field_name) or []) for r in bin_records])
             
             mesh_requests.append({
                 "Status": mesh_status,
