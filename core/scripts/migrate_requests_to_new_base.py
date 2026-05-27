@@ -806,7 +806,6 @@ def create_requests_records(record: dict, household: Household):
                 all_reqs2["Legacy Last "+DATE_SUBMITTED_FIELD],
             )
             if req_type not in TYPES_TO_EXCLUDE
-            and req_type not in existing_types
         ]
 
     request_records = request_records1 + request_records2
