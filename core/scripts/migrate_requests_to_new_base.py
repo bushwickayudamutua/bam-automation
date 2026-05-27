@@ -881,6 +881,11 @@ def create_ss_requests_records(record: dict, household: Household):
     :param household: The saved Household instance
     :return: List of SocialServiceRequest instances (empty if none to create)
     """
+    
+    TYPE_MAP = {
+        "Asistencia para niños discapacitados / Assistance for disabled children / 殘疾兒童協助": "Asistencia para niños con discapacidad / Assistance for disabled children / 殘疾兒童協助"
+    }
+
     ss_reqs = record.get("Social Service Requests", pd.DataFrame())
     existing_types = _existing_ss_request_types(household)
     ss_records = []
@@ -888,7 +893,7 @@ def create_ss_requests_records(record: dict, household: Household):
         ss_records = [
             SocialServiceRequest(
                 household=household,
-                type=req_type,
+                type=TYPE_MAP.get(req_type, req_type),
                 status="Open",
                 legacy_date_submitted=format_date(oldest_date),
                 last_requested=format_date(latest_date),
