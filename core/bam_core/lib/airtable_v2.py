@@ -21,6 +21,8 @@ class BamModel(Model, metaclass=BamModelMeta):
 
 
 class FormSubmission(BamModel):
+    """Staging table for form intake — one row per submit, deleted after Write automation."""
+
     table_name = 'Assistance Request Form Submissions'
 
     bam_id = F.AutoNumberField('ID')
@@ -30,8 +32,8 @@ class FormSubmission(BamModel):
     phone_number = F.PhoneNumberField('Phone Number')
     email = F.EmailField('Email')
     languages = F.MultipleSelectField('Languages')
-    other_languages = F.TextField('Other Languages')
-    notes = F.TextField('Notes')
+    other_languages = F.MultilineTextField('Other Languages')
+    notes = F.RichTextField('Notes')
 
     # address details
     street_address = F.TextField('Street Address')
@@ -56,23 +58,23 @@ class FormSubmission(BamModel):
     if TYPE_CHECKING:
         def __init__(
             self, *,
-            name: str,
-            phone_number: str,
-            email: str,
-            languages: List[str],
-            other_languages: str,
-            notes: str,
-            street_address: str,
-            city_and_state: str,
-            zip_code: int,
-            request_types: List[str],
-            furniture_acknowledgement: bool,
-            furniture_items: List[str],
-            bed_details: List[str],
-            kitchen_items: List[str],
-            ss_request_types: List[str],
-            internet_access: List[str],
-            roof_is_accessible: bool,
+            name: str | None = None,
+            phone_number: str | None = None,
+            email: str | None = None,
+            languages: List[str] | None = None,
+            other_languages: str | None = None,
+            notes: str | None = None,
+            street_address: str | None = None,
+            city_and_state: str | None = None,
+            zip_code: int | None = None,
+            request_types: List[str] | None = None,
+            furniture_acknowledgement: bool = False,
+            furniture_items: List[str] | None = None,
+            bed_details: List[str] | None = None,
+            kitchen_items: List[str] | None = None,
+            ss_request_types: List[str] | None = None,
+            internet_access: List[str] | None = None,
+            roof_is_accessible: bool = False,
         ): ...
 
 
@@ -173,6 +175,9 @@ class MeshRequest(BaseRequest):
     table_name = 'Mesh Requests'
 
     internet_access = F.MultipleSelectField('Internet Access')
+    roof_is_accessible = F.CheckboxField('Roof Accessible?')
+    has_los = F.CheckboxField('Has LOS?')
+    
     address = F.TextField('Address')
     address_accuracy = F.SelectField('Address Accuracy')
     building_identification_number = F.NumberField('Building Identification Number')
@@ -188,6 +193,8 @@ class MeshRequest(BaseRequest):
             legacy_date_submitted: date | None,
             last_requested: date | None,
             internet_access: List[str] | None = None,
+            roof_is_accessible: bool = False,
+            has_los: bool = False,
             address: str | None = None,
             address_accuracy: str | None = None,
             building_identification_number: int | None = None,

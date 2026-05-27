@@ -405,7 +405,7 @@ def get_best_mesh_status(mesh_records: list[dict]) -> dict | None:
             best_stat = MESH_STATUS_OLD_TO_NEW.get(stat, stat)
             best_rank = rank
 
-    return best_stat if best_rank in OPEN_RANKS else None
+    return (best_stat, best_rank) if best_rank in OPEN_RANKS else (None, None)
 
 
 def transform_mesh_requests(
@@ -422,26 +422,24 @@ def transform_mesh_requests(
 
     mesh_requests = []
     for bin_val, bin_records in mesh_per_bin.items():
-        mesh_status = get_best_mesh_status(bin_records)
+        mesh_status, mesh_status_rank = get_best_mesh_status(bin_records)
         if mesh_status:
             mesh_dates = transform_date_submitted(DATE_SUBMITTED_FIELD, DATE_SUBMITTED_FIELD, bin_records)
             mesh_address = transform_address(bin_records)
             internet_access = transform_internet_access("Internet Access", "Internet Access", bin_records)
+            has_los = any([r.get("MESH - Has LOS", False) for r in bin_records])
+            if mesh_status_rank in [4, 5, 6, 7, 8, 15]:
+                roof_is_accessible = True
+            else:
+                field_name = "MESH - To confirm during outreach (before install)"
+                fiald_value = "Tengo acceso de mi techo / Roof access in my building"
+                roof_is_accessible = any([fiald_value in r.get(field_name, []) for r in bin_records])
             
-            # # Any records indicating the building is roof accessible?
-            # tag = "Tengo acceso de mi techo / Roof access in my building"
-            # output["Roof Accessible?"] = any(
-            #     [tag in r.get("MESH - To confirm during outreach (before install)", []) for r in records]
-            # )
-
-            # # Any records indicating LOS?
-            # output["MESH - Has LOS"] = any(
-            #     [r.get("MESH - Has LOS", False) for r in records]
-            # )
-                    
             mesh_requests.append({
                 "Status": mesh_status,
                 "Building Identification Number": convert_str_to_int(bin_val),
+                "Roof Accessible?": roof_is_accessible,
+                "Has LOS?": has_los,
                 **mesh_dates,
                 **mesh_address,
                 **internet_access,
@@ -869,6 +867,8 @@ def create_mesh_requests_records(record: dict, household: Household):
                 legacy_date_submitted=format_date(r.get("Legacy First "+DATE_SUBMITTED_FIELD)),
                 last_requested=format_date(r.get("Legacy Last "+DATE_SUBMITTED_FIELD)),
                 internet_access=r.get("Internet Access") or [],
+                roof_is_accessible=r.get("Roof Accessible?"),
+                has_los=r.get("Has LOS?"),
                 address_accuracy=r.get("Address Accuracy"),
                 address=r.get("Address"),
                 street_address=r.get("Street Address"),
