@@ -905,6 +905,9 @@ def create_household_record(record: dict):
         other_languages=record.get("Other Languages"),
         notes=record.get("Notes"),
         last_texted=format_date(record.get("Last Texted")),
+        last_called=None,
+        needs_delivery=record.get("Needs Delivery"),
+        needs_email_outreach=record.get("Needs Email Outreach"),
     )
     household.save()
     return household
@@ -914,12 +917,6 @@ def load_household(record: dict):
     """
     Migrate an assistance request from the old base to the new base,
     creating records in all the necessary tables.
-
-    May create a Household with zero Request/SS/Mesh rows when open tags are
-    all excluded (e.g. food-only). That is intentional; base automations remove
-    households with no open requests.
-
-    Idempotent on retry: household by phone; Request/SS by Type; Mesh by BIN.
     :param record: The legacy assistance request record
     :return: None
     """
@@ -969,10 +966,7 @@ def main():
         try:
             load_household(household_request)
         except Exception as e:
-            print(
-                f"Restart at: {i}  (safe to re-run with --start-at {i}; "
-                "household deduped by phone, child rows by type/BIN)"
-            )
+            print("Restart at:", i)
             raise e
 
 
