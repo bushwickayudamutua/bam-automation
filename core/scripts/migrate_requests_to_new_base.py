@@ -361,7 +361,7 @@ def transform_address(records: list[dict]):
     }
 
 
-def get_best_mesh_status(mesh_records: list[dict]) -> dict | None:
+def get_best_mesh_status(mesh_records: list[dict]) -> tuple[str | None, int | None]:
     """Best non-closed MESH - Status for a household (unique phone & BIN)."""
 
     # MESH status pipeline (higher --> further along).
@@ -432,8 +432,8 @@ def transform_mesh_requests(
                 roof_is_accessible = True
             else:
                 field_name = "MESH - To confirm during outreach (before install)"
-                fiald_value = "Tengo acceso de mi techo / Roof access in my building"
-                roof_is_accessible = any([fiald_value in r.get(field_name, []) for r in bin_records])
+                field_value = "Tengo acceso de mi techo / Roof access in my building"
+                roof_is_accessible = any([field_value in r.get(field_name, []) for r in bin_records])
             
             mesh_requests.append({
                 "Status": mesh_status,
@@ -867,8 +867,8 @@ def create_mesh_requests_records(record: dict, household: Household):
                 legacy_date_submitted=format_date(r.get("Legacy First "+DATE_SUBMITTED_FIELD)),
                 last_requested=format_date(r.get("Legacy Last "+DATE_SUBMITTED_FIELD)),
                 internet_access=r.get("Internet Access") or [],
-                roof_is_accessible=r.get("Roof Accessible?"),
-                has_los=r.get("Has LOS?"),
+                roof_is_accessible=r.get("Roof Accessible?", False),
+                has_los=r.get("Has LOS?", False),
                 address_accuracy=r.get("Address Accuracy"),
                 address=r.get("Address"),
                 street_address=r.get("Street Address"),
