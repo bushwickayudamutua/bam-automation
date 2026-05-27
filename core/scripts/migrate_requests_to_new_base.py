@@ -1008,10 +1008,18 @@ def main():
         default=1,
         help="Start at this record number (for debugging)",
     )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Migrate at most this many households (after --start-at; for trial slices)",
+    )
     args = parser.parse_args()
     legacy_requests = extract_open_requests_per_household()
     transformed_requests = transform_households(legacy_requests)
     transformed_requests_subset = transformed_requests[args.start_at - 1 :]
+    if args.limit is not None:
+        transformed_requests_subset = transformed_requests_subset[: args.limit]
     print(f"Total records to migrate: {len(transformed_requests_subset)}")
     for i, household_request in enumerate(
         transformed_requests_subset, start=args.start_at
