@@ -31,6 +31,18 @@ class UpdateAirtableFieldValue(Function):
             required=True,
         ),
         Param(
+            name="update_last",
+            type="bool",
+            description="If true, update only the last record found per phone number. Otherwise, update all records matching the phone numbers",
+            default=True,
+        ),
+        Param(
+            name="append",
+            type="bool",
+            description="If true, `new_value` is appended to the current value in each record. Otherwise, `new_value` replaces the current value",
+            default=False,
+        ),
+        Param(
             name="view_name",
             type="string",
             description="The optional name of the view to use",
@@ -49,6 +61,8 @@ class UpdateAirtableFieldValue(Function):
         phone_numbers: list[str],
         field_name: str,
         new_value: str,
+        update_last: bool,
+        append: bool,
         view_name: str = "",
         dry_run: bool = True,
     ):
@@ -58,6 +72,8 @@ class UpdateAirtableFieldValue(Function):
             phone_numbers: the list of phone numbers to update
             field_name: the name of the field to update
             new_value: the new value to set
+            update_last: whether to update all records per phone number or last
+            append: whether to append to or replace the old value
             view_name: the name of the view to use
             dry_run: whether to actually update the records or not
         """
@@ -79,10 +95,14 @@ class UpdateAirtableFieldValue(Function):
 
         records = self.airtable.assistance_requests.all(**kwargs)
 
+        # map phone number to list of matching records
         phone_number_to_records = {}
         for record in records:
             try:
-                phone_number_to_records[record["fields"][PHONE_FIELD]] = record
+                phone_number = record["fields"][PHONE_FIELD]
+                if phone_number not in phone_number_to_records:
+                    phone_number_to_records[phone_number] = []
+                phone_number_to_records[phone_number].append(record)
             except KeyError:
                 self.log.warning(
                     f"Unable to get phone number for record id: {record}"
@@ -90,20 +110,29 @@ class UpdateAirtableFieldValue(Function):
 
         for number in phone_numbers:
             try:
-                record = phone_number_to_records[number]
+                records = phone_number_to_records[number]
+                if update_last:
+                    records = records[-1:]
             except KeyError:
                 self.log.warning(f"Could not find record for number {number}")
                 continue
 
-            self.log.info(f"Updating {field_name} to {new_value} for {number}")
+            # append or replace, depending on flag
+            for record in records:
+                # drop phone number for update purposes, just to be safe
+                del record["fields"][PHONE_FIELD]
+                if append:
+                    record["fields"][field_name] += new_value
+                else:
+                    record["fields"][field_name] = new_value
+
+            self.log.info(f"Updating {field_name} with {new_value} (append: {append}) for {number}")
             if not dry_run:
                 try:
-                    self.airtable.assistance_requests.update(
-                        str(record["id"]), {field_name: new_value}
-                    )
+                    self.airtable.assistance_requests.batch_update(records)
                 except Exception as e:
                     self.log.error(
-                        f"Error updating field {field_name} to {new_value} for {number}: {e}"
+                        f"Error updating field {field_name} with {new_value} (append: {append}) for {number}: {e}"
                     )
                     raise e
 
@@ -116,6 +145,10 @@ class UpdateAirtableFieldValue(Function):
                 f"No phone numbers read from the inputted text: {text}"
             )
         self.log.info(f"Found {len(phone_numbers)} phone numbers in text.")
+
+        # extract update_last and append flags
+        update_last = params.get("update_last", True)
+        append = params.get("append", False)
 
         # extract field name, new value, and view name
         field_name = params["field_name"].strip()
@@ -133,7 +166,13 @@ class UpdateAirtableFieldValue(Function):
 
         # run the updates
         self.update_field(
-            phone_numbers, field_name, new_value, view_name, dry_run
+            phone_numbers,
+            field_name,
+            new_value,
+            update_last,
+            append,
+            view_name,
+            dry_run,
         )
 
 
