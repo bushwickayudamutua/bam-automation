@@ -9,7 +9,8 @@ from bam_core.utils.serde import obj_to_json
 
 class UpdateWebsiteRequestData(Function):
     """
-    Update the request counts on the website
+    Queries Airtable for the count of open requests across multiple item categories (pots and pans, beds, pads, diapers, clothing, etc.) and writes a JSON metrics file to Digital Ocean Space.
+    The output powers the live request counts displayed on the BAM website.
     """
 
     CONFIG = {
@@ -109,7 +110,7 @@ class UpdateWebsiteRequestData(Function):
             name="dry_run",
             type="bool",
             default=True,
-            description="If true, data will not be written to the digital ocean space.",
+            description="If true, data will not be written to Digital Ocean Space.",
         )
     )
 
@@ -121,15 +122,16 @@ class UpdateWebsiteRequestData(Function):
             "updated_at": now.strftime(r"%Y-%m-%dT%H:%M:%S.%fZ"),
         }
         for metric in self.CONFIG.get("metrics"):
-            metric_name = metric.pop("name")
-            translations = metric.pop("translations", {})
-            self.log.info(f"Generating metric:\n\t{metric}")
+            metric_name = metric.get("name")
+            translations = metric.get("translations", {})
+            metric_kwargs = {k: v for k, v in metric.items() if k not in ("name", "translations")}
+            self.log.info(f"Generating metric:\n\t{metric_kwargs}")
             output = {
                 "name": metric_name,
                 "translations": translations,
                 "value": None,
             }
-            output["value"] = self.airtable.get_view_count(**metric)
+            output["value"] = self.airtable.get_view_count(**metric_kwargs)
             output_data["metrics"].append(output)
         self.log.info(f"Generated metrics:\n\t{output_data['metrics']}")
         if params["dry_run"]:

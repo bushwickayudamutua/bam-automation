@@ -6,7 +6,8 @@ from bam_core.utils.etc import now_est
 
 class SendDialpadSMSV2(Function):
     """
-    Given a list of Airtable views, send SMS messages to phone numbers in the view via Dialpad.
+    Fetches open requests from an Airtable view and sends a personalized SMS to each household via Dialpad, deduplicating by household ID.
+    Supports an optional exclusion list view to skip specific households, and an optional cap on the total number of messages sent.
     """
 
     params = Params(

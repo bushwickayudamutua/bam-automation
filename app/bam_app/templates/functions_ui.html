@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BAM Functions</title>
+  <link rel="stylesheet" href="/static/functions_ui.css?v=4" />
+</head>
+<body>
+  <div class="parallax-bg" aria-hidden="true">
+    <div class="circle orange"></div>
+    <div class="circle blue"></div>
+  </div>
+
+  <nav>
+    <a href="/" class="nav-brand">BAM</a>
+    <span class="nav-title">Functions</span>
+  </nav>
+
+  <main class="shell">
+    <header class="hero">
+      <p class="sub">Select a function, fill out its params, run it, and inspect the response.</p>
+    </header>
+
+    <section class="grid">
+      <div class="panel">
+        <div class="field">
+          <label for="apikey">API Key</label>
+          <div class="inline-row">
+            <input id="apikey" type="password" placeholder="Enter API key" autocomplete="off" />
+            <button id="loadFunctionsBtn" class="btn-primary mini">Load</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="functionSelect">Function</label>
+          <select id="functionSelect" disabled>
+            <option value="">— load functions first —</option>
+          </select>
+          <p id="functionDesc" class="param-hint"></p>
+        </div>
+
+        <div class="status-line" id="statusLine"></div>
+
+        <div id="paramsContainer"></div>
+
+        <div class="field-group inline">
+          <button id="runBtn" class="btn-run" disabled>
+            <span class="btn-label">Run Function</span>
+            <span class="spinner"></span>
+          </button>
+          <button id="resetBtn" class="btn-ghost mini" disabled>Reset</button>
+        </div>
+      </div>
+
+      <div class="panel results-panel">
+        <div class="result-block">
+          <div class="result-header">
+            <div class="result-label">Error</div>
+            <button class="copy-btn" data-target="errorBox">Copy</button>
+          </div>
+          <pre id="errorBox">(no error)</pre>
+        </div>
+        <div class="result-block">
+          <div class="result-header">
+            <div class="result-label">Logs</div>
+            <button class="copy-btn" data-target="logsBox">Copy</button>
+          </div>
+          <pre id="logsBox">(no logs)</pre>
+        </div>
+        <div class="result-block">
+          <div class="result-header">
+            <div class="result-label">Response</div>
+            <button class="copy-btn" data-target="responseBox">Copy</button>
+          </div>
+          <pre id="responseBox">{}</pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/functions_ui.js?v=4"></script>
+</body>
+</html>

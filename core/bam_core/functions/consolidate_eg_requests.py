@@ -42,22 +42,9 @@ STATUS_FIELD_MAP = {
 
 class ConsolidateEssentialGoodsRequests(Function):
     """
-    Given:
-        * a `REQUEST_FIELD`
-            - (Either `eg`, `kitchen`, `furniture`)
-        * an `REQUEST_VALUE` item
-            - (eg `Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品`)
-        * a `SOURCE_VIEW`, or the associated view of "open" requests for this item
-            - (eg `Essential Goods: Soap & Shower Products`)
-        * a list of `TARGET_VIEWS`, or other views of "open" requests
-            - (eg `["Essential Goods: Pads", "Essential Goods: Baby Diapers"]`)
-    For each of the `TARGET_VIEWS`, find any phone numbers that are also in the `SOURCE_VIEW`.
-    In the case that a matching record in the `TARGET_VIEW` has a request in the specified field,
-    and the status is set to "timeout", delete the "timeout" status from the record in the `TARGET_VIEW`
-    and add a "timeout" status to the record in the `SOURCE_VIEW`.
-    In the case that a  matching record in the `TARGET_VIEW` does not have a request of the specified type,
-    add one so it opens a request for this item, and add a "timeout" flag to the record in the `SOURCE_VIEW`,
-    thereby closing that request.
+    Moves open essential goods requests from a source Airtable view to matching records in one or more target views, consolidating duplicate requests across views.
+    For each phone number found in both the source and target views, it either transfers the request item or marks the source record as a timeout to close it.
+    Designed to simplify fulfillment by consolidating related requests into a single record.
     """
 
     params = Params(
@@ -82,7 +69,7 @@ class ConsolidateEssentialGoodsRequests(Function):
         Param(
             name="target_views",
             type="string_list",
-            description="The target view to consolidate requests to",
+            description="A list of Airtable view names to consolidate matching requests into.",
             required=True,
         ),
         Param(

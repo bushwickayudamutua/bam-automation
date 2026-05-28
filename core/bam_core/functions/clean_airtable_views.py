@@ -8,7 +8,8 @@ from bam_core.utils.email import format_email, NO_EMAIL_ERROR
 
 class CleanAirtableViews(Function):
     """
-    Clean phone numbers and email addresses in Airtable
+    Reformats phone numbers and validates email addresses across the Assistance Requests and Volunteers tables in Airtable.
+    Records with invalid phone numbers are flagged in place, and malformed numbers are normalized to a standard format where possible.
     """
 
     CONFIG = [

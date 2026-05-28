@@ -37,13 +37,18 @@ SNAPSHOT_DATE_FIELD = "Snapshot Date"
 
 
 class AnalyzeFulfilledRequests(Function):
+    """
+    Reads fulfilled request snapshots from Digital Ocean Space and aggregates delivery statistics for items like beds, clothing, and kitchen supplies over the past 31 days.
+    Produces a JSON summary file (website-data/fulfilled-requests.json) with counts per item type and English/Spanish translations.
+    """
+
     use_cache = False
     params = Params(
         Param(
             name="dry_run",
             type="bool",
             default=True,
-            description="If true, data will not be written to the  Google Sheet.",
+            description="If true, fulfilled-requests.json will not be written to Digital Ocean Space.",
         )
     )
 
