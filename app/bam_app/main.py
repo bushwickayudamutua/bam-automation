@@ -123,7 +123,7 @@ def run_function(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail={
-                "error": f"{type(e).__name__}: {e}",
+                "error": str(e),
                 "logs": fn.log_lines,
             },
         )
