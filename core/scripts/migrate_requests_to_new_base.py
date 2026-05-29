@@ -363,9 +363,11 @@ def transform_address(records: list[dict]):
 
 def get_best_mesh_status(mesh_records: list[dict]) -> tuple[str | None, int | None]:
     """Best non-closed MESH - Status for a household (unique phone & BIN)."""
-
+    
     # MESH status pipeline (higher --> further along).
     MESH_PIPELINE_RANK = {
+        "Duplicate": -1,
+
         # Empty `MESH - Status` (open):
         "": 0,
         
@@ -385,12 +387,11 @@ def get_best_mesh_status(mesh_records: list[dict]) -> tuple[str | None, int | No
         "Cannot Install - Does not have LOS": 11,
         "Cannot Install - No Roof Access": 12,
         "Not Interested": 13,
-        "Duplicate": 14,
-
+        
         # Needs repair (open):
-        "INSTALL PENDING ELDERT REPAIR": 15,
+        "INSTALL PENDING ELDERT REPAIR": 14,
     }
-    OPEN_RANKS = list(range(8)) + [15]
+    OPEN_RANKS = list(range(8)) + [14]
     MESH_STATUS_OLD_TO_NEW = {
         "": "Open",
     }
@@ -401,7 +402,7 @@ def get_best_mesh_status(mesh_records: list[dict]) -> tuple[str | None, int | No
     for record in mesh_records:
         stat = record.get("MESH - Status", "")
         rank = MESH_PIPELINE_RANK.get(stat)
-        if rank is not None and rank >= 0 and rank > best_rank:
+        if rank is not None and rank > best_rank:
             best_stat = MESH_STATUS_OLD_TO_NEW.get(stat, stat)
             best_rank = rank
 
@@ -428,12 +429,12 @@ def transform_mesh_requests(
             mesh_address = transform_address(bin_records)
             internet_access = transform_internet_access("Internet Access", "Internet Access", bin_records)
             
-            if mesh_status_rank in [5, 6, 7, 8, 15]:
+            if mesh_status_rank in [5, 6, 7, 14]:
                 has_los = True
             else:
                 has_los = any([(r.get("MESH - Has LOS") or False) for r in bin_records])
 
-            if mesh_status_rank in [4, 5, 6, 7, 8, 15]:
+            if mesh_status_rank in [4, 5, 6, 7, 14]:
                 roof_is_accessible = True
             else:
                 field_name = "MESH - To confirm during outreach (before install)"
