@@ -944,36 +944,69 @@ def main():
         """
     )
     parser.add_argument(
-        "--start-at",
-        type=int,
-        default=1,
-        help="Start at this record number (for debugging)",
+        "--transform_only",
+        action="store_true",
+        help="Transform records without migrating to new base",
     )
     parser.add_argument(
-        "--limit",
-        type=int,
+        "--selected",
+        type=str,
         default=None,
-        help="Migrate at most this many households (after --start-at; for trial slices)",
+        help="Migrate selected households by phone number",
+    )
+    parser.add_argument(
+        "--missing",
+        type=str,
+        default=None,
+        help="Migrate selected households by phone number",
     )
     args = parser.parse_args()
+    
     legacy_requests = extract_open_requests_per_household()
+    if args.selected:
+        with open(args.selected, "r") as sf:
+            selected_numbers = []
+            missing_numbers = []
+            for line_str in sf.read().splitlines()
+                num_str = format_phone_number(line_str.strip())
+                if num_str:
+                    if num_str in legacy_requests:
+                        selected_numbers.append(num_str)
+                    else:
+                        missing_numbers.append(line_str)
+                else:
+                    missing_numbers.append(line_str)
+
+            if len(missing_numbers) > 0:
+                print(f"Missing {len(missing_numbers)} phone numbers!")
+                if args.missing:
+                    with open(args.missing, "w") as mf:
+                        for line_str in missing_numbers:
+                            mf.write(f"{line_str}\n")
+
+            legacy_requests = {phone: legacy_requests[phone] for phone in selected_numbers}
+
+    n_numbers = len(legacy_requests)
+    print(f"Starting transformation for {n_numbers} phone numbers!")
+
     transformed_requests = transform_households(legacy_requests)
-    transformed_requests_subset = transformed_requests[args.start_at - 1 :]
-    if args.limit is not None:
-        transformed_requests_subset = transformed_requests_subset[: args.limit]
-    print(f"Total records to migrate: {len(transformed_requests_subset)}")
-    for i, household_request in enumerate(
-        transformed_requests_subset, start=args.start_at
-    ):
+    n_records = len(transformed_requests)
+
+    if args.transform_only:
+        print(f"Transformed {n_records} records. Skipping migration!")
+        return
+    
+    print(f"Starting migration of {n_records} records.")
+    for i, household_request in enumerate(transformed_requests):
         if i % 100 == 0:
-            print(
-                f"Migrated {i} records. {len(transformed_requests_subset) - i} records left."
-            )
+            print(f"Migrated {i} records. {n_records - i} records left.")
         try:
             load_household(household_request)
+            if i == n_records - 1:
+                print(f"Migrated {i+1} records. None left!")
         except Exception as e:
-            print("Restart at:", i)
-            raise e
+            print(f"Failed at {i+1} for {household_request.get(PHONE_FIELD)}")
+            raise
 
 
 if __name__ == "__main__":
