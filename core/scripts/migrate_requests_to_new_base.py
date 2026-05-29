@@ -363,7 +363,7 @@ def transform_address(records: list[dict]):
 
 def get_best_mesh_status(mesh_records: list[dict]) -> tuple[str | None, int | None]:
     """Best non-closed MESH - Status for a household (unique phone & BIN)."""
-    
+
     # MESH status pipeline (higher --> further along).
     MESH_PIPELINE_RANK = {
         "Duplicate": -1,
@@ -394,6 +394,7 @@ def get_best_mesh_status(mesh_records: list[dict]) -> tuple[str | None, int | No
     OPEN_RANKS = list(range(8)) + [14]
     MESH_STATUS_OLD_TO_NEW = {
         "": "Open",
+        "Confirming Premission with Landlord": "Confirming Permission with Landlord",
     }
     
     # pick the best non-closed MESH status:
