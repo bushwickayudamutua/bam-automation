@@ -952,13 +952,13 @@ def main():
         "--selected",
         type=str,
         default=None,
-        help="Migrate selected households by phone number",
+        help="Selected phone numbers to migrate from the legacy requests",
     )
     parser.add_argument(
         "--missing",
         type=str,
         default=None,
-        help="Migrate selected households by phone number",
+        help="Output for selected phone numbers missing from the legacy requests",
     )
     args = parser.parse_args()
     
@@ -967,7 +967,7 @@ def main():
         with open(args.selected, "r") as sf:
             selected_numbers = []
             missing_numbers = []
-            for line_str in sf.read().splitlines()
+            for line_str in sf.read().splitlines():
                 num_str = format_phone_number(line_str.strip())
                 if num_str:
                     if num_str in legacy_requests:
@@ -991,6 +991,9 @@ def main():
 
     transformed_requests = transform_households(legacy_requests)
     n_records = len(transformed_requests)
+
+    if n_records == 0:
+        print("No records to migrate!")
 
     if args.transform_only:
         print(f"Transformed {n_records} records. Skipping migration!")
