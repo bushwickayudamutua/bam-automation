@@ -5,6 +5,12 @@ import pandas as pd
 from datetime import date, datetime
 import numpy as np
 import os
+import sys
+
+# Allow running as `python scripts/migrate_requests_to_new_base.py` without `pip install -e ./core`
+_CORE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if _CORE_DIR not in sys.path:
+    sys.path.insert(0, _CORE_DIR)
 
 from bam_core.settings import AIRTABLE_BASE_ID, AIRTABLE_TOKEN
 from bam_core.lib.airtable import Airtable
@@ -35,6 +41,7 @@ from bam_core.constants import (
     SOCIAL_SERVICES_REQUESTS_SCHEMA,
     LOW_COST_INTERNET_AT_HOME_TYPE,
 )
+
 
 ########################################
 #  Setup Reference To OG Airtable Base #
@@ -1016,14 +1023,12 @@ def main():
                 print(f"Missing {n_missing} of selected phone numbers!")
 
     print(f"Starting transformation for {n_numbers} phone numbers!")
-
     transformed_requests = transform_households(legacy_requests)
-    n_records = len(transformed_requests)
 
+    n_records = len(transformed_requests)
     if n_records == 0:
         print("No transformed requests to migrate!")
         return
-
     print(f"Transformed {n_records} records!")
 
     if args.subset_func:
