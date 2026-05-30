@@ -1,6 +1,7 @@
 import argparse
 from collections import defaultdict
 import copy
+import logging
 import pandas as pd
 from datetime import date, datetime
 import numpy as np
@@ -41,6 +42,8 @@ from bam_core.constants import (
     SOCIAL_SERVICES_REQUESTS_SCHEMA,
     LOW_COST_INTERNET_AT_HOME_TYPE,
 )
+
+log = logging.getLogger(__name__)
 
 
 ########################################
@@ -955,6 +958,8 @@ def _has_mesh_requests(record: dict):
 
 
 def main():
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+
     parser = argparse.ArgumentParser(
         description="""
             Migrate requests from old base to new base. MAKE SURE YOU HAVE YOUR .env FILE SET UP CORRECTLY.
@@ -993,10 +998,10 @@ def main():
 
     n_numbers = len(legacy_requests)
     if n_numbers == 0:
-        print("Found no open legacy requests!")
+        log.warning("Found no open legacy requests!")
         return
 
-    print(f"Extracted {n_numbers} legacy households!")
+    log.info("Extracted %s legacy households!", n_numbers)
 
     if args.output_dir:
         output_path = os.path.join(args.output_dir, "legacy_households.txt")
@@ -1015,34 +1020,34 @@ def main():
             }
             n_numbers = len(legacy_requests)
             if n_numbers == 0:
-                print(f"No records to transform after subsetting to '{args.subset}'")
+                log.warning("No records to transform after subsetting to '%s'", args.subset)
                 return
-            print(f"Subsetting to {n_numbers} households from '{args.subset}'")
+            log.info("Subsetting to %s households from '%s'", n_numbers, args.subset)
             n_missing = len(subset_str) - n_numbers
             if n_missing > 0:
-                print(f"Missing {n_missing} of selected phone numbers!")
+                log.warning("Missing %s of provided phone numbers!", n_missing)
 
-    print(f"Starting transformation for {n_numbers} phone numbers!")
+    log.info("Starting transformation for %s phone numbers!", n_numbers)
     transformed_requests = transform_households(legacy_requests)
 
     n_records = len(transformed_requests)
     if n_records == 0:
-        print("No transformed requests to migrate!")
+        log.warning("No transformed requests to migrate!")
         return
-    print(f"Transformed {n_records} records!")
+    log.info("Transformed %s records!", n_records)
 
     if args.subset_func:
-        subset_func = globals()[args.subset_func]
-        if callable(subset_func):
+        subset_func = globals().get(args.subset_func)
+        if subset_func is not None and callable(subset_func):
             transformed_requests = [r for r in transformed_requests if subset_func(r)]
             n_records = len(transformed_requests)
             if n_records == 0:
-                print(f"No records to migrate after subsetting with {args.subset_func}")
+                log.warning("No records to migrate after subsetting with %s", args.subset_func)
                 return
-            print(f"Selected {n_records} households with {args.subset_func}")
+            log.info("Selected %s households with %s", n_records, args.subset_func)
         else:
-            print(f"Function {args.subset_func} is not callable!")
-            return   
+            log.error("Function %s not found or not callable!", args.subset_func)
+            return
 
     if args.output_dir:
         output_path = os.path.join(args.output_dir, "transformed_households.txt")
@@ -1052,22 +1057,22 @@ def main():
                 f.write(f"{line_str}\n")
     
     if args.transform_only:
-        print(f"Skipping migration!")
+        log.info("Skipping migration!")
         return
-    
-    print(f"Starting migration of {n_records} records.")
+
+    log.info("Starting migration of %s records.", n_records)
     for i, household_request in enumerate(transformed_requests):
         if i % 100 == 0:
-            print(f"Migrated {i} records. {n_records - i} records left.")
+            log.info("Migrated %s records. %s records left.", i, n_records - i)
         try:
             load_household(household_request)
             if i == n_records - 1:
-                print(f"Migrated {i+1} records.")
+                log.info("Migrated %s records.", i + 1)
         except Exception:
-            print(f"Failed at {i+1} for {household_request.get(PHONE_FIELD)}")
+            log.error("Failed at %s for %s", i + 1, household_request.get(PHONE_FIELD))
             raise
-    
-    print(f"Migration completed successfully!")
+
+    log.info("Migration completed successfully!")
 
 
 if __name__ == "__main__":
