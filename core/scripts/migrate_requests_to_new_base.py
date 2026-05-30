@@ -4,6 +4,7 @@ import copy
 import pandas as pd
 from datetime import date, datetime
 import numpy as np
+import os
 
 from bam_core.settings import AIRTABLE_BASE_ID, AIRTABLE_TOKEN
 from bam_core.lib.airtable import Airtable
@@ -949,52 +950,65 @@ def main():
         help="Transform records without migrating to new base",
     )
     parser.add_argument(
-        "--selected",
+        "--subset",
         type=str,
         default=None,
         help="Selected phone numbers to migrate from the legacy requests",
     )
     parser.add_argument(
-        "--missing",
+        "--output_dir",
         type=str,
         default=None,
-        help="Output for selected phone numbers missing from the legacy requests",
+        help="Path to output directory",
     )
     args = parser.parse_args()
+
+    if args.output_dir:
+        if not os.path.exists(args.output_dir):
+            os.makedirs(args.output_dir)
     
-    legacy_requests = extract_open_requests_per_household()
-    if args.selected:
-        with open(args.selected, "r") as sf:
-            selected_numbers = []
-            missing_numbers = []
-            for line_str in sf.read().splitlines():
-                num_str = format_phone_number(line_str.strip())
-                if num_str:
-                    if num_str in legacy_requests:
-                        selected_numbers.append(num_str)
-                    else:
-                        missing_numbers.append(line_str)
-                else:
-                    missing_numbers.append(line_str)
+    legacy_requests = extract_open_requests_per_household()  
 
-            if len(missing_numbers) > 0:
-                print(f"Missing {len(missing_numbers)} phone numbers!")
-                if args.missing:
-                    with open(args.missing, "w") as mf:
-                        for line_str in missing_numbers:
-                            mf.write(f"{line_str}\n")
+    if args.output_dir:
+        output_path = os.path.join(args.output_dir, "legacy_households.txt")
+        with open(output_path, "w") as f:
+            for line_str in legacy_requests.keys():
+                f.write(f"{line_str}\n")
 
-            legacy_requests = {phone: legacy_requests[phone] for phone in selected_numbers}
+    if args.subset:
+        with open(args.subset, "r") as f:
+            subset_str = [line_str.strip() for line_str in f.read().splitlines()]
+            selected_numbers = [format_phone_number(num_str) for num_str in subset_str]
+            legacy_requests = {
+                num: requests
+                for num, requests in legacy_requests.items()
+                if num in selected_numbers
+            }
+            n_missing = len(subset_str) - len(legacy_requests)
+            if n_missing > 0:
+                print(f"Missing {n_missing} of selected phone numbers!")
 
     n_numbers = len(legacy_requests)
     print(f"Starting transformation for {n_numbers} phone numbers!")
+
+    if n_numbers == 0:
+        print("No records to transform!")
+        return
 
     transformed_requests = transform_households(legacy_requests)
     n_records = len(transformed_requests)
 
     if n_records == 0:
         print("No records to migrate!")
+        return
 
+    if args.output_dir:
+        output_path = os.path.join(args.output_dir, "transformed_households.txt")
+        with open(output_path, "w") as f:
+            for r in transformed_requests:
+                line_str = r.get(PHONE_FIELD)
+                f.write(f"{line_str}\n")
+    
     if args.transform_only:
         print(f"Transformed {n_records} records. Skipping migration!")
         return
@@ -1007,7 +1021,7 @@ def main():
             load_household(household_request)
             if i == n_records - 1:
                 print(f"Migrated {i+1} records. None left!")
-        except Exception as e:
+        except Exception:
             print(f"Failed at {i+1} for {household_request.get(PHONE_FIELD)}")
             raise
 
