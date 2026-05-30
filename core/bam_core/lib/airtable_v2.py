@@ -92,9 +92,9 @@ class Household(BamModel):
     email_error = F.TextField('Email Error')
 
     languages = F.MultipleSelectField('Languages')
-    other_languages = F.TextField('Other Languages')
+    other_languages = F.MultilineTextField('Other Languages')
 
-    notes = F.TextField('Notes')
+    notes = F.RichTextField('Notes')
 
     legacy_first_date_submitted = F.DateField('Legacy First Date Submitted')
     legacy_last_date_submitted = F.DateField('Legacy Last Date Submitted')
