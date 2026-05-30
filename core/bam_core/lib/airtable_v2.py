@@ -2,6 +2,7 @@ from typing import List, TYPE_CHECKING
 from datetime import date
 
 from pyairtable.orm import Model, fields as F
+from pyairtable.orm.fields import Field
 
 from bam_core import settings
 
@@ -14,6 +15,15 @@ class BamModelMeta(type):
             'api_key': settings.AIRTABLE_V2_TOKEN,
             'table_name': cls.table_name,
         }
+
+    def __new__(mcs, name, bases, namespace, **kwargs):
+        # pyairtable Model.__init__ only accepts kwargs in cls.__dict__, not inherited
+        # fields; copy Field descriptors from bases so BaseRequest fields work on subclasses.
+        for base in bases:
+            for key, value in base.__dict__.items():
+                if isinstance(value, Field) and key not in namespace:
+                    namespace[key] = value
+        return super().__new__(mcs, name, bases, namespace)
 
 
 class BamModel(Model, metaclass=BamModelMeta):
