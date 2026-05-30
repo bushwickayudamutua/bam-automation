@@ -934,6 +934,15 @@ def load_household(record: dict):
 
 
 #######################################
+#   Helper Functions for Testing     #
+#######################################
+
+def _has_mesh_requests(record: dict):
+    mesh_reqs = record.get("MESH Requests", [])
+    return len(mesh_reqs) > 0
+
+
+#######################################
 #   CLI                               #
 #######################################
 
@@ -956,6 +965,12 @@ def main():
         help="Selected phone numbers to migrate from the legacy requests",
     )
     parser.add_argument(
+        "--subset_func",
+        type=str,
+        default=None,
+        help="Function to select phone numbers to migrate from the legacy requests",
+    )
+    parser.add_argument(
         "--output_dir",
         type=str,
         default=None,
@@ -969,6 +984,11 @@ def main():
     
     legacy_requests = extract_open_requests_per_household()  
 
+    n_numbers = len(legacy_requests)
+    if n_numbers == 0:
+        print("Found no legacy requests!")
+        return
+
     if args.output_dir:
         output_path = os.path.join(args.output_dir, "legacy_households.txt")
         with open(output_path, "w") as f:
@@ -978,29 +998,41 @@ def main():
     if args.subset:
         with open(args.subset, "r") as f:
             subset_str = [line_str.strip() for line_str in f.read().splitlines()]
-            selected_numbers = [format_phone_number(num_str) for num_str in subset_str]
+            selected_numbers = {num for num_str in subset_str if (num := format_phone_number(num_str))}
             legacy_requests = {
                 num: requests
                 for num, requests in legacy_requests.items()
                 if num in selected_numbers
             }
-            n_missing = len(subset_str) - len(legacy_requests)
+            n_numbers = len(legacy_requests)
+            if n_numbers == 0:
+                print(f"No records to transform after subsetting to '{args.subset}'")
+                return
+            n_missing = len(subset_str) - n_numbers
             if n_missing > 0:
                 print(f"Missing {n_missing} of selected phone numbers!")
 
-    n_numbers = len(legacy_requests)
     print(f"Starting transformation for {n_numbers} phone numbers!")
-
-    if n_numbers == 0:
-        print("No records to transform!")
-        return
 
     transformed_requests = transform_households(legacy_requests)
     n_records = len(transformed_requests)
 
     if n_records == 0:
-        print("No records to migrate!")
+        print("No transformed requests to migrate!")
         return
+
+    if args.subset_func:
+        subset_func = globals()[args.subset_func]
+        if callable(subset_func):
+            transformed_requests = [r for r in transformed_requests if subset_func(r)]
+            n_records = len(transformed_requests)
+            if n_records == 0:
+                print(f"No records to migrate after subsetting with {args.subset_func}")
+                return
+            print(f"Selected {n_records} households with {args.subset_func}")
+        else:
+            print(f"Function {args.subset_func} is not callable!")
+            return   
 
     if args.output_dir:
         output_path = os.path.join(args.output_dir, "transformed_households.txt")
