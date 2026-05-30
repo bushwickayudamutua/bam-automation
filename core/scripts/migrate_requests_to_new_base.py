@@ -377,35 +377,81 @@ def get_best_mesh_status(mesh_records: list[dict]) -> tuple[str | None, int | No
 
     # MESH status pipeline (higher --> further along).
     MESH_PIPELINE_RANK = {
-        "Duplicate": -1,
-
         # Empty `MESH - Status` (open):
         "": 0,
+        "Duplicate": 0,
+        "Needs Panorama": 0,
+        "Step 2.5 (optional) - Needs Panorama": 0,
+        "Node Building": 0,
+        "Step 2.6 (optional) Node Building": 0,
         
         # In-progress (open):
-        "Step 1 - Interested in Mesh": 1,
-        "Roof Access In Process": 2,
-        "Confirming Premission with Landlord": 3,
-        "Roof Access Confirmed": 4,
-        "Step 2- LOS Confirmed": 5,
-        "Step 3 - Scheduling IN-PROGRESS": 6,
-        "Install Scheduled": 7,
+        "Texted about Mesh": 1,
+        "Step 1 - Interested in Mesh": 2,
+        "Roof Access In Process": 3,
+        "Confirming Premission with Landlord": 4,
+        "Roof Access Confirmed": 5,
+        "Step 4 - Roof Access Confirmed": 5,
+        "Step 2- LOS Confirmed": 6,
+        "Step 2 - LOS Tool Confirmed": 6,
+        "LOS confirmed": 6,
+        "LOS confirmed - Update this": 6,
+        "LOS Tool Confirmed": 6,
+        "Step 3 - LOS Confirmed": 6,
+        "Step 3 - Scheduling IN-PROGRESS": 7,
+        "Install in-progress": 7,
+        "Install in-progress 2022": 7,
+        "Step 5 - Install in-progress": 7,
+        "Install Scheduled": 8,
 
         # Delivered / Closed / ignore:
-        "YAY! MESH INSTALLED!": 8,
-        "NYCHA - Currently Does Not Qualify": 9,
+        "YAY! MESH INSTALLED!": 9,
+        "Mesh installed": 9,
+        "Step 6 - Mesh installed": 9,
+        "NYCHA - Currently Does Not Qualify": 10,
         "Cannot Install - Other Reason": 10,
-        "Cannot Install - Does not have LOS": 11,
-        "Cannot Install - No Roof Access": 12,
-        "Not Interested": 13,
+        ">> MESH Cannot Install": 10,
+        "Cannot Install - Does not have LOS": 10,
+        "Does not have LOS": 10,
+        "No LOS confirmed": 10,
+        "Cannot Install - No Roof Access": 10,
+        "No Roof Access": 10,
+        "Not Interested": 10,
         
         # Needs repair (open):
-        "INSTALL PENDING ELDERT REPAIR": 14,
+        "INSTALL PENDING ELDERT REPAIR": 11,
     }
-    OPEN_RANKS = list(range(8)) + [14]
+    OPEN_RANKS = list(range(9)) + [11]
     MESH_STATUS_OLD_TO_NEW = {
         "": "Open",
+        "Duplicate": "Open",
+        "Needs Panorama": "Open",
+        "Step 2.5 (optional) - Needs Panorama": "Open",
+        "Node Building": "Open",
+        "Step 2.6 (optional) Node Building": "Open",
+
         "Confirming Premission with Landlord": "Confirming Permission with Landlord",
+        
+        "Step 2- LOS Confirmed": "Step 2 - LOS Confirmed",
+        "Step 2 - LOS Tool Confirmed": "Step 2 - LOS Confirmed",
+        "LOS confirmed": "Step 2 - LOS Confirmed",
+        "LOS confirmed - Update this": "Step 2 - LOS Confirmed",
+        "LOS Tool Confirmed": "Step 2 - LOS Confirmed",
+        "Step 3 - LOS Confirmed": "Step 2 - LOS Confirmed",
+        
+        "Step 4 - Roof Access Confirmed": "Roof Access Confirmed",
+        
+        "Install in-progress": "Step 3 - Scheduling IN-PROGRESS",
+        "Install in-progress 2022": "Step 3 - Scheduling IN-PROGRESS",
+        "Step 5 - Install in-progress": "Step 3 - Scheduling IN-PROGRESS",
+        
+        "Mesh installed": "YAY! MESH INSTALLED!",
+        "Step 6 - Mesh installed": "YAY! MESH INSTALLED!",
+        
+        "Does not have LOS": "Cannot Install - Does not have LOS",
+        "No LOS confirmed": "Cannot Install - Does not have LOS",
+        "No Roof Access": "Cannot Install - No Roof Access",
+        ">> MESH Cannot Install": "Cannot Install - Other Reason",
     }
     
     # pick the best non-closed MESH status:
@@ -413,10 +459,12 @@ def get_best_mesh_status(mesh_records: list[dict]) -> tuple[str | None, int | No
     best_rank = -1
     for record in mesh_records:
         stat = record.get("MESH - Status", "")
-        rank = MESH_PIPELINE_RANK.get(stat)
-        if rank is not None and rank > best_rank:
+        rank = MESH_PIPELINE_RANK.get(stat, -1)
+        log.debug("MESH Status: '%s', Rank: %s", stat, rank)
+        if rank > best_rank:
             best_stat = MESH_STATUS_OLD_TO_NEW.get(stat, stat)
             best_rank = rank
+            log.debug("Best MESH Status: '%s', Best Rank: %s", best_stat, best_rank)
 
     return (best_stat, best_rank) if best_rank in OPEN_RANKS else (None, None)
 
@@ -435,18 +483,19 @@ def transform_mesh_requests(
 
     mesh_requests = []
     for bin_val, bin_records in mesh_per_bin.items():
+        log.debug("BIN: '%s', Phone: '%s'", bin_val, bin_records[0].get(PHONE_FIELD))
         mesh_status, mesh_status_rank = get_best_mesh_status(bin_records)
         if mesh_status:
             mesh_dates = transform_date_submitted(DATE_SUBMITTED_FIELD, DATE_SUBMITTED_FIELD, bin_records)
             mesh_address = transform_address(bin_records)
             internet_access = transform_internet_access("Internet Access", "Internet Access", bin_records)
             
-            if mesh_status_rank in [5, 6, 7, 14]:
+            if mesh_status_rank in [6, 7, 8, 11]:
                 has_los = True
             else:
                 has_los = any([(r.get("MESH - Has LOS") or False) for r in bin_records])
 
-            if mesh_status_rank in [4, 5, 6, 7, 14]:
+            if mesh_status_rank in [5, 6, 7, 8, 11]:
                 roof_is_accessible = True
             else:
                 field_name = "MESH - To confirm during outreach (before install)"
