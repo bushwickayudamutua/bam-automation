@@ -986,8 +986,10 @@ def main():
 
     n_numbers = len(legacy_requests)
     if n_numbers == 0:
-        print("Found no legacy requests!")
+        print("Found no open legacy requests!")
         return
+
+    print(f"Extracted {n_numbers} legacy households!")
 
     if args.output_dir:
         output_path = os.path.join(args.output_dir, "legacy_households.txt")
@@ -1008,6 +1010,7 @@ def main():
             if n_numbers == 0:
                 print(f"No records to transform after subsetting to '{args.subset}'")
                 return
+            print(f"Subsetting to {n_numbers} households from '{args.subset}'")
             n_missing = len(subset_str) - n_numbers
             if n_missing > 0:
                 print(f"Missing {n_missing} of selected phone numbers!")
@@ -1020,6 +1023,8 @@ def main():
     if n_records == 0:
         print("No transformed requests to migrate!")
         return
+
+    print(f"Transformed {n_records} records!")
 
     if args.subset_func:
         subset_func = globals()[args.subset_func]
@@ -1042,7 +1047,7 @@ def main():
                 f.write(f"{line_str}\n")
     
     if args.transform_only:
-        print(f"Transformed {n_records} records. Skipping migration!")
+        print(f"Skipping migration!")
         return
     
     print(f"Starting migration of {n_records} records.")
@@ -1052,10 +1057,12 @@ def main():
         try:
             load_household(household_request)
             if i == n_records - 1:
-                print(f"Migrated {i+1} records. None left!")
+                print(f"Migrated {i+1} records.")
         except Exception:
             print(f"Failed at {i+1} for {household_request.get(PHONE_FIELD)}")
             raise
+    
+    print(f"Migration completed successfully!")
 
 
 if __name__ == "__main__":
