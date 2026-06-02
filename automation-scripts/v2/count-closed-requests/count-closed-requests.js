@@ -86,9 +86,9 @@ await Promise.all([
       "Medical Insurance Support",
     "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助":
       "Low-Cost Home Internet",
-    "Asistencia con beneficios de comida / Assistance with food benefits / 食品福利協助 (WIC, SNAP, P-EBT)":
+    "Asistencia con beneficios de comida / Assistance with food benefits / 食品福利協助（WIC, SNAP, P-EBT）":
       "Assistance with Food Benefits",
-    "Asistencia para niños discapacitados / Assistance for disabled children / 殘疾兒童協助":
+    "Asistencia para niños con discapacidad / Assistance for disabled children / 殘疾兒童協助":
       "Assistance for Disabled Children",
   }),
 ]);
