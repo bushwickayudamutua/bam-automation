@@ -219,14 +219,19 @@ class AnalyzeFulfilledRequests(Function):
         )
 
     def get_open_requests_for_snapshot(
-        self, record_id: str, snapshot: Dict[str, Any]
+        self,
+        record_id: str,
+        snapshot: Dict[str, Any],
+        include_all_mesh: bool = False,
     ) -> List[Dict[str, Any]]:
         """
         Get open requests for a snapshot
         """
         # analyze requests for this snapshot
         open_requests = []
-        statuses = Airtable.analyze_requests(snapshot)
+        statuses = Airtable.analyze_requests(
+            snapshot, include_all_mesh=include_all_mesh
+        )
         for tag_type, tag_statuses in statuses.items():
             for item in tag_statuses.get("open", []):
                 h = hashlib.new("sha256")
