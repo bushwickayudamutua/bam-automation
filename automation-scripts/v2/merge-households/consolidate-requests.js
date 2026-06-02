@@ -1,19 +1,19 @@
-const { requestIds, ssRequestIds } = input.config()
+const { requestIds, ssRequestIds, meshRequestIds } = input.config()
 
-async function mergeReqs(tableName, recordIds, mergeFns) {
+async function mergeReqs(tableName, recordIds, keyField, mergeFns) {
     // Pull requests from table
     const requestTable = base.getTable(tableName)
     const requestsQuery = await requestTable.selectRecordsAsync({
         recordIds,
         fields: [
-            'Type',
+            keyField,
             'Request Opened At',
             ...Object.keys(mergeFns),
         ]
     })
     const requests = [...requestsQuery.records]
 
-    // Group requests by type, sorted from oldest to newest
+    // Group requests by key, sorted from oldest to newest
     const requestGroups = new Map()
 
     requests
@@ -25,22 +25,26 @@ async function mergeReqs(tableName, recordIds, mergeFns) {
             return 0
         })
         .forEach((req) => {
-            const type = req.getCellValue('Type').id
-            if (!requestGroups.has(type)) requestGroups.set(type, [])
-            requestGroups.get(type).push(req)
+            const rawKey = req.getCellValue(keyField)
+            const key = typeof rawKey === 'object'
+                ? rawKey.id
+                : rawKey
+            if (!requestGroups.has(key)) requestGroups.set(key, [])
+            requestGroups.get(key).push(req)
         })
 
     // Merge fields according to callbacks, delete repeat requests
     for (let [, reqGroup] of requestGroups) {
         const [firstReq, ...rest] = reqGroup
 
-        await requestTable.updateRecordAsync(
-            firstReq,
-            Object.fromEntries(Object.keys(mergeFns).map((field) => {
+        const x = Object.fromEntries(Object.keys(mergeFns).map((field) => {
                 const fn = mergeFns[field]
                 const value = fn(reqGroup.map((req) => req.getCellValue(field)))
                 return [field, value]
             }))
+        console.log(x)
+        await requestTable.updateRecordAsync(
+            firstReq, x
         )
         await requestTable.deleteRecordsAsync(rest)
     }
@@ -49,18 +53,23 @@ async function mergeReqs(tableName, recordIds, mergeFns) {
 const mergeNotes = (notes) => notes.filter((note) => note !== '').join('\n')
 const getLast = (arr) => arr.pop()
 
-await mergeReqs('Requests', requestIds, {
+await mergeReqs('Requests', requestIds, 'Type', {
     'Last Requested': getLast,
     Geocode: getLast,
 })
-await mergeReqs('Social Service Requests', ssRequestIds, {
+await mergeReqs('Social Service Requests', ssRequestIds, 'Type', {
     'Last Requested': getLast,
-    'Internet Access': (iaLists) =>
-        [...new Set(iaLists.map((iaList) => iaList ?? []).flat())],
-    'Roof Accessible?': getLast,
+})
+await mergeReqs('Mesh Requests', meshRequestIds, 'Building Identification Number', {
+    'Last Requested': getLast,
+    'Internet Access': (iaLists) => {
+        const allSelectionIds = iaLists.map((iaList) => iaList ?? []).flat().map(({ id }) => id)
+        const uniqIds = [...new Set(allSelectionIds)]
+        return uniqIds.map((id) => ({ id }))
+    },
     'Street Address': getLast,
     'City, State': getLast,
     'Zip Code': getLast,
-    Geocode: getLast,
+    Address: getLast,
+    'Address Accuracy': getLast,
 })
-

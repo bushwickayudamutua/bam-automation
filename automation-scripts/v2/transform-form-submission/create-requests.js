@@ -36,21 +36,32 @@ output.set(
   ].flat())
 )
 
+let meshRequested = false
+for (let i = 0; i < ssReqs.length; i++) {
+  if (ssReqs[i] === 'Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助') {
+    meshRequested = true
+    ssReqs.splice(i, 1)
+    break
+  }
+}
+
 const ssRequestTable = base.getTable('Social Service Requests')
 
 output.set(
   'ssRequestIds',
   await ssRequestTable.createRecordsAsync(
-    ssReqs.map((reqType) => {
-      const fields = { Type: { name: reqType } }
-      if (reqType === 'Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助') {
-        fields['Internet Access'] = internetAccess.map((name) => ({ name }))
-        fields['Roof Accessible?'] = roofAccessible
-        fields['Address'] = cleanedAddress
-        fields['Address Accuracy'] = { name: cleanedAddressAccuracy }
-        fields['Building Identification Number'] = Number(bin)
-      }
-      return { fields }
-    })
+    ssReqs.map((reqType) => ({ fields: { Type: { name: reqType } } }))
   )
+)
+
+const meshRequestTable = base.getTable('Mesh Requests')
+
+output.set(
+  'meshRequestId',
+  await meshRequestTable.createRecordAsync({
+    'Internet Access': internetAccess.map((name) => ({ name })),
+    Address: cleanedAddress,
+    'Address Accuracy': { name: cleanedAddressAccuracy },
+    'Building Identification Number': Number(bin),
+  })
 )
