@@ -501,12 +501,12 @@ def transform_mesh_requests(
             mesh_address = transform_address(bin_records)
             internet_access = transform_internet_access("Internet Access", "Internet Access", bin_records)
             
-            if mesh_status_rank in [7, 8, 9, 10, 12]:
+            if mesh_status_rank in [7, 8, 9, 12]:
                 has_los = True
             else:
                 has_los = any([(r.get("MESH - Has LOS") or False) for r in bin_records])
 
-            if mesh_status_rank in [6, 7, 8, 9, 10, 12]:
+            if mesh_status_rank in [6, 7, 8, 9, 12]:
                 roof_is_accessible = True
             else:
                 field_name = "MESH - To confirm during outreach (before install)"
