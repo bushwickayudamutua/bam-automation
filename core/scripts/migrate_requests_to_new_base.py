@@ -377,69 +377,80 @@ def get_best_mesh_status(mesh_records: list[dict]) -> tuple[str | None, int | No
 
     # MESH status pipeline (higher --> further along).
     MESH_PIPELINE_RANK = {
-        # Empty `MESH - Status` (open):
+        # Empty (open):
         "": 0,
         "Duplicate": 0,
-        "Needs Panorama": 0,
-        "Step 2.5 (optional) - Needs Panorama": 0,
         "Node Building": 0,
         "Step 2.6 (optional) Node Building": 0,
         
         # In-progress (open):
         "Texted about Mesh": 1,
-        "Step 1 - Interested in Mesh": 2,
-        "Roof Access In Process": 3,
-        "Confirming Premission with Landlord": 4,
-        "Roof Access Confirmed": 5,
-        "Step 4 - Roof Access Confirmed": 5,
-        "Step 2- LOS Confirmed": 6,
-        "Step 2 - LOS Tool Confirmed": 6,
-        "LOS confirmed": 6,
-        "LOS confirmed - Update this": 6,
-        "LOS Tool Confirmed": 6,
-        "Step 3 - LOS Confirmed": 6,
-        "Step 3 - Scheduling IN-PROGRESS": 7,
-        "Install in-progress": 7,
-        "Install in-progress 2022": 7,
-        "Step 5 - Install in-progress": 7,
-        "Install Scheduled": 8,
 
-        # Delivered / Closed / ignore:
-        "YAY! MESH INSTALLED!": 9,
-        "Mesh installed": 9,
-        "Step 6 - Mesh installed": 9,
-        "NYCHA - Currently Does Not Qualify": 10,
-        "Cannot Install - Other Reason": 10,
-        ">> MESH Cannot Install": 10,
-        "Cannot Install - Does not have LOS": 10,
-        "Does not have LOS": 10,
-        "No LOS confirmed": 10,
-        "Cannot Install - No Roof Access": 10,
-        "No Roof Access": 10,
-        "Not Interested": 10,
+        "Step 1 - Interested in Mesh": 2,
+
+        "Needs Panorama": 3,
+        "Step 2.5 (optional) - Needs Panorama": 3,
+
+        "Roof Access In Process": 4,
+
+        "Confirming Premission with Landlord": 5,
+
+        "Roof Access Confirmed": 6,
+        "Step 4 - Roof Access Confirmed": 6,
+
+        "Step 2- LOS Confirmed": 7,
+        "Step 2 - LOS Tool Confirmed": 7,
+        "LOS confirmed": 7,
+        "LOS confirmed - Update this": 7,
+        "LOS Tool Confirmed": 7,
+        "Step 3 - LOS Confirmed": 7,
+
+        "Step 3 - Scheduling IN-PROGRESS": 8,
+        "Install in-progress": 8,
+        "Install in-progress 2022": 8,
+        "Step 5 - Install in-progress": 8,
+
+        "Install Scheduled": 9,
+
+        # Delivered:
+        "YAY! MESH INSTALLED!": 10,
+        "Mesh installed": 10,
+        "Step 6 - Mesh installed": 10,
+
+        # Closed / ignore:
+        "NYCHA - Currently Does Not Qualify": 11,
+        "Cannot Install - Other Reason": 11,
+        ">> MESH Cannot Install": 11,
+        "Cannot Install - Does not have LOS": 11,
+        "Does not have LOS": 11,
+        "No LOS confirmed": 11,
+        "Cannot Install - No Roof Access": 11,
+        "No Roof Access": 11,
+        "Not Interested": 11,
         
         # Needs repair (open):
-        "INSTALL PENDING ELDERT REPAIR": 11,
+        "INSTALL PENDING ELDERT REPAIR": 12,
     }
-    OPEN_RANKS = list(range(9)) + [11]
+    OPEN_RANKS = list(range(10)) + [12]
     MESH_STATUS_OLD_TO_NEW = {
         "": "Open",
         "Duplicate": "Open",
-        "Needs Panorama": "Open",
-        "Step 2.5 (optional) - Needs Panorama": "Open",
         "Node Building": "Open",
         "Step 2.6 (optional) Node Building": "Open",
 
+        "Needs Panorama": "Needs Panorama",
+        "Step 2.5 (optional) - Needs Panorama": "Needs Panorama",
+
         "Confirming Premission with Landlord": "Confirming Permission with Landlord",
-        
+
+        "Step 4 - Roof Access Confirmed": "Roof Access Confirmed",
+
         "Step 2- LOS Confirmed": "Step 2 - LOS Confirmed",
         "Step 2 - LOS Tool Confirmed": "Step 2 - LOS Confirmed",
         "LOS confirmed": "Step 2 - LOS Confirmed",
         "LOS confirmed - Update this": "Step 2 - LOS Confirmed",
         "LOS Tool Confirmed": "Step 2 - LOS Confirmed",
         "Step 3 - LOS Confirmed": "Step 2 - LOS Confirmed",
-        
-        "Step 4 - Roof Access Confirmed": "Roof Access Confirmed",
         
         "Install in-progress": "Step 3 - Scheduling IN-PROGRESS",
         "Install in-progress 2022": "Step 3 - Scheduling IN-PROGRESS",
@@ -490,12 +501,12 @@ def transform_mesh_requests(
             mesh_address = transform_address(bin_records)
             internet_access = transform_internet_access("Internet Access", "Internet Access", bin_records)
             
-            if mesh_status_rank in [6, 7, 8, 11]:
+            if mesh_status_rank in [7, 8, 9, 10, 12]:
                 has_los = True
             else:
                 has_los = any([(r.get("MESH - Has LOS") or False) for r in bin_records])
 
-            if mesh_status_rank in [5, 6, 7, 8, 11]:
+            if mesh_status_rank in [6, 7, 8, 9, 10, 12]:
                 roof_is_accessible = True
             else:
                 field_name = "MESH - To confirm during outreach (before install)"
