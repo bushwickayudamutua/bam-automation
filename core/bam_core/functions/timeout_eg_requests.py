@@ -102,10 +102,7 @@ class TimeoutEssentialGoodsRequests(Function):
             f"Fetching records for '{request_field}' = '{request_value}'"
         )
         request_records = self.airtable.get_phone_number_to_requests_lookup(
-            formula=formulas.FIND(
-                formulas.STR_VALUE(request_value),
-                formulas.FIELD(request_field),
-            ),
+            formula=formulas.FIND(request_value, formulas.Field(request_field))
             fields=[PHONE_FIELD, request_field, status_field],
         )
         stats = Counter()

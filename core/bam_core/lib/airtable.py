@@ -194,7 +194,7 @@ class Airtable(object):
         Fetch all records from the Assistance Requests table for a single phone number
         """
         return self.get_phone_number_to_requests_lookup(
-            formula=fx.FIND(fx.STR_VALUE(phone_number), fx.FIELD(PHONE_FIELD)),
+            formula=fx.FIND(phone_number, fx.Field(PHONE_FIELD)),
             fields=fields,
             **kwargs,
         ).get(phone_number, [])
