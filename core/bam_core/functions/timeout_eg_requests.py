@@ -6,6 +6,7 @@ from pyairtable import formulas
 from bam_core.functions.base import Function
 from bam_core.functions.params import Params, Param
 from bam_core.utils.etc import to_list
+from bam_core.utils.phone import extract_phone_numbers
 from bam_core.constants import (
     EG_REQUESTS_SCHEMA,
     EG_REQUESTS_FIELD,
@@ -50,6 +51,11 @@ class TimeoutEssentialGoodsRequests(Function):
 
     params = Params(
         Param(
+            name="phone_numbers_to_timeout",
+            type="string",
+            description="The text containing the phone numbers to time out",
+        ),
+        Param(
             name="request_field",
             type="string",
             default="eg",
@@ -62,9 +68,15 @@ class TimeoutEssentialGoodsRequests(Function):
             description="The request to timeout. E.g. 'Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品'",
         ),
         Param(
+            name="until_last_delivered",
+            type="bool",
+            default=True,
+            description="If true, only time out requests that were made before the most recent fulfilled request.",
+        ),
+        Param(
             name="dry_run",
             type="bool",
-            default=False,
+            default=True,
             description="If true, view which timeouts would be added without actually adding them.",
         ),
     )
@@ -83,12 +95,14 @@ class TimeoutEssentialGoodsRequests(Function):
 
     def timeout_requests(
         self,
+        phone_numbers_to_timeout: List[str] | None,
         request_value: str,
         request_field: str,
         timeout_tags: List[str],
         delivered_tags: List[str],
-        status_field: str = EG_STATUS_FIELD,
-        dry_run: bool = False,
+        status_field: str,
+        until_last_delivered: bool,
+        dry_run: bool,
     ) -> Counter:
         """
         For phone numbers which have at least one fulfilled request,
@@ -98,63 +112,88 @@ class TimeoutEssentialGoodsRequests(Function):
 
         # get matching requests
         self.log.info("=" * 60)
-        self.log.info(
-            f"Fetching records for '{request_field}' = '{request_value}'"
-        )
+        msg = f"Fetching records for '{request_field}' = '{request_value}'"
+        formula = formulas.FIND(request_value, formulas.Field(request_field))
+        if phone_numbers_to_timeout is not None:
+            msg = f"{msg}, '{PHONE_FIELD}' IN {phone_numbers_to_timeout}"
+            formula = formulas.AND(
+                formula,
+                formulas.OR(*[
+                    formulas.EQ(number, formulas.Field(PHONE_FIELD))
+                    for number in phone_numbers_to_timeout
+                ]),
+            )
+        self.log.info(msg)
         request_records = self.airtable.get_phone_number_to_requests_lookup(
-            formula=formulas.FIND(request_value, formulas.Field(request_field))
+            formula=formula,
             fields=[PHONE_FIELD, request_field, status_field],
         )
+
         stats = Counter()
         for phone_number, records in request_records.items():
-            if len(records) == 1:
-                # skip phone numbers with only one record
-                stats["single_requests"] += 1
-                continue
-
             latest_delivered_request_created_time = None
             unfulfilled_requests = []
             for record in records:
                 created_at = record["createdTime"]
                 statuses = record.get(status_field, [])
+
+                # update latest_delivered_request_created_time if delivered later
                 if any([d in statuses for d in delivered_tags]):
                     if (
                         latest_delivered_request_created_time is None
                         or created_at > latest_delivered_request_created_time
                     ):
                         latest_delivered_request_created_time = created_at
+                # add to unfulfilled_requests if not delivered or timed out
                 elif any([t not in statuses for t in timeout_tags]):
                     # build up list of unfulfilled requests to timeout
                     unfulfilled_requests.append(record)
 
-            if latest_delivered_request_created_time is None or not len(
-                unfulfilled_requests
-            ):
-                # If there are no delivered requests or unfulfilled requests
-                # continue to the next phone number
-                continue
+            # Handle until_last_delivered logic
+            if until_last_delivered:
+                # If no delivered requests continue to the next phone number
+                if latest_delivered_request_created_time is None:
+                    continue
+
+                # Otherwise filter out later requests
+                unfulfilled_requests = [
+                    rec for rec in unfulfilled_requests
+                    if rec["createdTime"] < latest_delivered_request_created_time
+                ]
 
             for record in unfulfilled_requests:
                 record_id = record["id"]
                 created_at = record["createdTime"]
                 phone_number = record["Phone Number"]
-                if created_at < latest_delivered_request_created_time:
-                    statuses = list(
-                        set(record.get(status_field, []) + timeout_tags)
-                    )
-                    stats["timedout_requests"] += 1
-                    msg = (
-                        f"{'Adding' if not dry_run else 'Would add'}"
-                        f" '{','.join(timeout_tags)}' to the '{status_field}' field for "
-                        f"'{phone_number}' (created_at: {created_at})"
-                    )
-                    self.log.info(msg)
-                    self.update_record(
-                        record_id, {status_field: statuses}, dry_run
-                    )
+
+                statuses = list(
+                    set(record.get(status_field, []) + timeout_tags)
+                )
+                stats["timedout_requests"] += 1
+                msg = (
+                    f"{'Adding' if not dry_run else 'Would add'}"
+                    f" '{','.join(timeout_tags)}' to the '{status_field}' field for "
+                    f"'{phone_number}' (created_at: {created_at})"
+                )
+                self.log.info(msg)
+                self.update_record(record_id, {status_field: statuses}, dry_run)
+
         return dict(stats)
 
     def run(self, params, context):
+        # extract phone numbers from text, if present
+        text = params["phone_numbers_to_timeout"]
+        if text:
+            phone_numbers_to_timeout = extract_phone_numbers(text)
+            if not phone_numbers_to_timeout:
+                raise ValueError(
+                    f"No phone numbers read from the inputted text: {text}"
+                )
+
+            self.log.info(f"Found {len(phone_numbers_to_timeout)} phone numbers in text.")
+        else:
+            phone_numbers_to_timeout = None
+
         # validate input request field
         request_field_shorthand = params["request_field"].strip()
         if request_field_shorthand not in REQUEST_SCHEMA_MAP:
@@ -188,6 +227,9 @@ class TimeoutEssentialGoodsRequests(Function):
         # get the status field to update
         status_field = STATUS_FIELD_MAP[request_field_shorthand]
 
+        # parse until last delivered flag
+        until_last_delivered = params.get("until_last_delivered", True)
+
         # parse dry run flag
         dry_run = params.get("dry_run", True)
 
@@ -200,11 +242,13 @@ class TimeoutEssentialGoodsRequests(Function):
 
         # run the timeout process
         timeout_stats = self.timeout_requests(
+            phone_numbers_to_timeout=phone_numbers_to_timeout,
             request_value=request_value,
             request_field=request_field,
             timeout_tags=timeout_tags,
             delivered_tags=delivered_tags,
             status_field=status_field,
+            until_last_delivered=until_last_delivered,
             dry_run=dry_run,
         )
 
@@ -225,11 +269,13 @@ class TimeoutEssentialGoodsRequests(Function):
         return {
             "parameters_raw": params,
             "parameters_parsed": {
+                "phone_numbers_to_timeout": phone_numbers_to_timeout,
                 "request_field": request_field,
                 "request_value": request_value,
                 "timeout_tags": timeout_tags,
                 "delivered_tags": delivered_tags,
                 "status_field": status_field,
+                "until_last_delivered": until_last_delivered,
                 "dry_run": dry_run,
             },
             "stats": timeout_stats,
