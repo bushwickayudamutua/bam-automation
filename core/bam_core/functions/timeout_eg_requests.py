@@ -145,7 +145,7 @@ class TimeoutEssentialGoodsRequests(Function):
                     ):
                         latest_delivered_request_created_time = created_at
                 # add to unfulfilled_requests if not delivered or timed out
-                elif any([t not in statuses for t in timeout_tags]):
+                elif not any([t in statuses for t in timeout_tags]):
                     # build up list of unfulfilled requests to timeout
                     unfulfilled_requests.append(record)
 
