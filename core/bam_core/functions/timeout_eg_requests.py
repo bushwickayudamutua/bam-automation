@@ -46,7 +46,7 @@ class TimeoutEssentialGoodsRequests(Function):
             - (eg `Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品`)
 
     For all records that have an `REQUEST_VALUE` in the `REQUEST_FIELD`, add an associated "timeout" status to any
-    unfulfilled records for phone numbers which have at least one later fulfilled request.
+    unfulfilled records.
     """
 
     params = Params(
@@ -71,7 +71,7 @@ class TimeoutEssentialGoodsRequests(Function):
             name="until_last_delivered",
             type="bool",
             default=True,
-            description="If true, only time out requests that were made before the most recent fulfilled request.",
+            description="If true, only time out requests with at least one later fulfilled request.",
         ),
         Param(
             name="dry_run",
