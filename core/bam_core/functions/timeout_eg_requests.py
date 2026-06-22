@@ -10,6 +10,9 @@ from bam_core.constants import (
     EG_REQUESTS_SCHEMA,
     EG_REQUESTS_FIELD,
     EG_STATUS_FIELD,
+    SOCIAL_SERVICES_REQUESTS_SCHEMA,
+    SOCIAL_SERVICES_REQUESTS_FIELD,
+    SOCIAL_SERVICES_STATUS_FIELD,
     PHONE_FIELD,
     KITCHEN_REQUESTS_SCHEMA,
     FURNITURE_REQUESTS_SCHEMA,
@@ -22,17 +25,6 @@ REQUEST_SCHEMA_MAP = {
     "eg": EG_REQUESTS_SCHEMA,
     "kitchen": KITCHEN_REQUESTS_SCHEMA,
     "furniture": FURNITURE_REQUESTS_SCHEMA,
-}
-REQUEST_FIELD_MAP = {
-    "eg": EG_REQUESTS_FIELD,
-    "kitchen": KITCHEN_REQUESTS_FIELD,
-    "furniture": FURNITURE_REQUESTS_FIELD,
-}
-
-STATUS_FIELD_MAP = {
-    "eg": EG_STATUS_FIELD,
-    "kitchen": EG_STATUS_FIELD,
-    "furniture": EG_STATUS_FIELD,
 }
 
 
@@ -169,7 +161,7 @@ class TimeoutEssentialGoodsRequests(Function):
 
         # lookup schema and full request field name
         request_schema = REQUEST_SCHEMA_MAP[request_field_shorthand]
-        request_field = REQUEST_FIELD_MAP[request_field_shorthand]
+        request_field = request_schema["request_field"]
 
         # validate request value
         request_value = params["request_value"].strip()
@@ -180,16 +172,14 @@ class TimeoutEssentialGoodsRequests(Function):
                 + "\n\t".join(request_schema["items"].keys())
             )
 
+        request_item = request_schema["items"][request_value]
+
         # get the timeout and delivered tags from the schema
-        timeout_tags = to_list(
-            request_schema["items"][request_value]["timeout"]
-        )
-        delivered_tags = to_list(
-            request_schema["items"][request_value]["delivered"]
-        )
+        timeout_tags = to_list(request_item["timeout"]) + to_list(request_item.get("invalid", []))
+        delivered_tags = to_list(request_item["delivered"])
 
         # get the status field to update
-        status_field = STATUS_FIELD_MAP[request_field_shorthand]
+        status_field = request_schema["status_field"]
 
         # parse dry run flag
         dry_run = params.get("dry_run", True)

@@ -272,9 +272,7 @@ class Airtable(object):
         return analysis
 
     @classmethod
-    def analyze_requests(
-        cls, record: Dict[str, Any], requests_schema=REQUESTS_SCHEMA
-    ) -> Dict[str, List[str]]:
+    def analyze_requests(cls, record: Dict[str, Any]) -> Dict[str, List[str]]:
         """
         Get open requests (not completed nor timed-out) and completed requests from a record.
         NOTE: The record must contain the fields specified in REQUESTS_SCHEMA.
@@ -289,7 +287,7 @@ class Airtable(object):
 
         analysis = defaultdict(lambda: defaultdict(list))
 
-        for schema in requests_schema:
+        for schema in REQUESTS_SCHEMA:
             request_field = schema["request_field"]
             status_field = schema["status_field"]
             request_tags = record.get(request_field, [])
