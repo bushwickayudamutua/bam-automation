@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import Mapping, NotRequired, TypedDict
 
 from bam_core.utils.etc import to_list
 
@@ -53,126 +53,141 @@ REQUEST_FIELDS = [
     SOCIAL_SERVICES_STATUS_FIELD,
 ]
 
+
+class ReqItem(TypedDict):
+    delivered: str | list[str]
+    timeout: str | list[str]
+    invalid: NotRequired[str | list[str]]
+    missed: NotRequired[str | list[str]]
+    items: NotRequired["Schema"]
+    active: NotRequired[bool]
+
+class Schema(TypedDict):
+    request_field: str
+    status_field: str
+    items: Mapping[str, ReqItem]
+
+
 # Mapping of bed requests to statuses
-BED_REQUESTS_SCHEMA = {
-    "request_field": NEW_BED_REQUESTS_FIELD,
-    "status_field": EG_STATUS_FIELD,
-    "items": {
-        "Cuna / Crib / 嬰兒床": {
-            "delivered": "Crib Delivered",
-            "timeout": "Crib Timeout",
-        },
-        "Colchón individual / Twin Mattress / 單人床墊": {
-            "delivered": "Twin Mattress Delivered",
-            "timeout": "Twin Mattress Timeout",
-        },
-        "Colchón matrimonio / Full Mattress / 雙人床墊": {
-            "delivered": "Full Mattress Delivered",
-            "timeout": "Full Mattress Timeout",
-        },
-        "Colchón tamaño Queen / Queen Mattress / 雙人加大床墊": {
-            "delivered": "Queen Mattress Delivered",
-            "timeout": "Queen Mattress Timeout",
-        },
-        "Colchón tamaño King / King Mattress / 雙人特大床墊": {
-            "delivered": "King Mattress Delivered",
-            "timeout": "King Mattress Timeout",
-        },
-        "Cama individual / Twin Mattress + Frame / 單人床墊+床架": {
-            "delivered": "Twin Bed Set Delivered",
-            "timeout": "Twin Bed Set Timeout",
-        },
-        "Cama matrimonio / Full Mattress + Frame / 雙人床墊+床架": {
-            "delivered": "Full Bed Set Delivered",
-            "timeout": "Full Bed Set Timeout",
-        },
-        "Cama tamaño Queen / Queen Mattress + Frame / 雙人加大床墊+床架": {
-            "delivered": "Queen Bed Set Delivered",
-            "timeout": "Queen Bed Set Timeout",
-        },
-        "Cama tamaño King / King Mattress + Frame / 雙人特大床墊+床架": {
-            "delivered": "King Bed Set Delivered",
-            "timeout": "King Bed Set Timeout",
-        },
-        "Bastidor individual / Twin Bed Frame 單人床架": {
-            "delivered": "Twin Bed Frame Delivered",
-            "timeout": "Twin Bed Frame Timeout",
-        },
-        "Bastidor matrimonio / Full Bed Frame / 雙人床架": {
-            "delivered": "Full Bed Frame Delivered",
-            "timeout": "Full Bed Frame Timeout",
-        },
-        "Bastidor tamaño Queen / Queen Bed Frame / 雙人加大床架": {
-            "delivered": "Queen Bed Frame Delivered",
-            "timeout": "Queen Bed Frame Timeout",
-        },
-        "Bastidor tamaño King / King Bed Frame / 雙人特大床架": {
-            "delivered": "King Bed Frame Delivered",
-            "timeout": "King Bed Frame Timeout",
-        },
-        "Litera / Loft or Bunk Bed / 閣樓床或上下床": {
-            "delivered": "Loft/Bunk Bed Delivered",
-            "timeout": "Loft/Bunk Bed Timeout",
-        },
+BED_REQUESTS_SCHEMA = Schema(
+    request_field=NEW_BED_REQUESTS_FIELD,
+    status_field=EG_STATUS_FIELD,
+    items={
+        "Cuna / Crib / 嬰兒床": ReqItem(
+            delivered="Crib Delivered",
+            timeout="Crib Timeout",
+        ),
+        "Colchón individual / Twin Mattress / 單人床墊": ReqItem(
+            delivered="Twin Mattress Delivered",
+            timeout="Twin Mattress Timeout",
+        ),
+        "Colchón matrimonio / Full Mattress / 雙人床墊": ReqItem(
+            delivered="Full Mattress Delivered",
+            timeout="Full Mattress Timeout",
+        ),
+        "Colchón tamaño Queen / Queen Mattress / 雙人加大床墊": ReqItem(
+            delivered="Queen Mattress Delivered",
+            timeout="Queen Mattress Timeout",
+        ),
+        "Colchón tamaño King / King Mattress / 雙人特大床墊": ReqItem(
+            delivered="King Mattress Delivered",
+            timeout="King Mattress Timeout",
+        ),
+        "Cama individual / Twin Mattress + Frame / 單人床墊+床架": ReqItem(
+            delivered="Twin Bed Set Delivered",
+            timeout="Twin Bed Set Timeout",
+        ),
+        "Cama matrimonio / Full Mattress + Frame / 雙人床墊+床架": ReqItem(
+            delivered="Full Bed Set Delivered",
+            timeout="Full Bed Set Timeout",
+        ),
+        "Cama tamaño Queen / Queen Mattress + Frame / 雙人加大床墊+床架": ReqItem(
+            delivered="Queen Bed Set Delivered",
+            timeout="Queen Bed Set Timeout",
+        ),
+        "Cama tamaño King / King Mattress + Frame / 雙人特大床墊+床架": ReqItem(
+            delivered="King Bed Set Delivered",
+            timeout="King Bed Set Timeout",
+        ),
+        "Bastidor individual / Twin Bed Frame 單人床架": ReqItem(
+            delivered="Twin Bed Frame Delivered",
+            timeout="Twin Bed Frame Timeout",
+        ),
+        "Bastidor matrimonio / Full Bed Frame / 雙人床架": ReqItem(
+            delivered="Full Bed Frame Delivered",
+            timeout="Full Bed Frame Timeout",
+        ),
+        "Bastidor tamaño Queen / Queen Bed Frame / 雙人加大床架": ReqItem(
+            delivered="Queen Bed Frame Delivered",
+            timeout="Queen Bed Frame Timeout",
+        ),
+        "Bastidor tamaño King / King Bed Frame / 雙人特大床架": ReqItem(
+            delivered="King Bed Frame Delivered",
+            timeout="King Bed Frame Timeout",
+        ),
+        "Litera / Loft or Bunk Bed / 閣樓床或上下床": ReqItem(
+            delivered="Loft/Bunk Bed Delivered",
+            timeout="Loft/Bunk Bed Timeout",
+        ),
     },
-}
+)
 
 # Common Tags for Furniture Requests
 FURNITURE_REQUEST_BED = "Cama / Bed / 床"
 
 # Mapping of furniture requests to statuses.
 # Note that bed requests are nested under furniture requests.
-FURNITURE_REQUESTS_SCHEMA = {
-    "request_field": FURNITURE_REQUESTS_FIELD,
-    "status_field": EG_STATUS_FIELD,
-    "items": {
-        FURNITURE_REQUEST_BED: {
-            "delivered": ["Mattress Delivered", "Bed Frame Delivered"],
-            "timeout": ["Mattress Timeout", "Bed Frame Timeout"],
-            "items": BED_REQUESTS_SCHEMA,
-        },
-        "Sofa / Sofa / 沙發": {
-            "delivered": "Sofa Delivered",
-            "timeout": "Sofa Timeout",
-        },
-        "Cajonera / Clothes Dresser / 衣櫃": {
-            "delivered": "Dresser Delivered",
-            "timeout": "Dresser Timeout",
-        },
-        "Escritorio / Desk /  書桌": {
-            "delivered": "Desk Delivered",
-            "timeout": "Desk Timeout",
-        },
-        "Mesa de centro / Coffee Table / 咖啡桌": {
-            "delivered": "Coffee Table Delivered",
-            "timeout": "Coffee Table Timeout",
-        },
-        "Sillas / Chairs / 椅子": {
-            "delivered": "Chairs Delivered",
-            "timeout": "Chairs Timeout",
-        },
-        "Almacenamiento / Storage / 儲物櫃": {
-            "delivered": "Storage Delivered",
-            "timeout": "Storage Timeout",
-        },
-        "Mesa Para Comedor / Dining Room Table / 餐桌": {
-            "delivered": "Dining Table Delivered",
-            "timeout": "Dining Table Timeout",
-        },
-        "Nevera / Refrigerator / 冰箱": {
-            "delivered": "Fridge Delivered",
-            "timeout": "Fridge Timeout",
-        },
-        "Aire conditionador / Air Conditioner / 空調": {
-            "delivered": "AC Delivered",
-            "timeout": "AC Timeout",
-        },
-        "Otras / Other / 其他家具": {
-            "delivered": "Other Furniture Delivered",
-            "timeout": "Other Furniture Timeout",
-        },
+FURNITURE_REQUESTS_SCHEMA = Schema(
+    request_field=FURNITURE_REQUESTS_FIELD,
+    status_field=EG_STATUS_FIELD,
+    items={
+        FURNITURE_REQUEST_BED: ReqItem(
+            delivered=["Mattress Delivered", "Bed Frame Delivered"],
+            timeout=["Mattress Timeout", "Bed Frame Timeout"],
+            items=BED_REQUESTS_SCHEMA,
+        ),
+        "Sofa / Sofa / 沙發": ReqItem(
+            delivered="Sofa Delivered",
+            timeout="Sofa Timeout",
+        ),
+        "Cajonera / Clothes Dresser / 衣櫃": ReqItem(
+            delivered="Dresser Delivered",
+            timeout="Dresser Timeout",
+        ),
+        "Escritorio / Desk /  書桌": ReqItem(
+            delivered="Desk Delivered",
+            timeout="Desk Timeout",
+        ),
+        "Mesa de centro / Coffee Table / 咖啡桌": ReqItem(
+            delivered="Coffee Table Delivered",
+            timeout="Coffee Table Timeout",
+        ),
+        "Sillas / Chairs / 椅子": ReqItem(
+            delivered="Chairs Delivered",
+            timeout="Chairs Timeout",
+        ),
+        "Almacenamiento / Storage / 儲物櫃": ReqItem(
+            delivered="Storage Delivered",
+            timeout="Storage Timeout",
+        ),
+        "Mesa Para Comedor / Dining Room Table / 餐桌": ReqItem(
+            delivered="Dining Table Delivered",
+            timeout="Dining Table Timeout",
+        ),
+        "Nevera / Refrigerator / 冰箱": ReqItem(
+            delivered="Fridge Delivered",
+            timeout="Fridge Timeout",
+        ),
+        "Aire conditionador / Air Conditioner / 空調": ReqItem(
+            delivered="AC Delivered",
+            timeout="AC Timeout",
+        ),
+        "Otras / Other / 其他家具": ReqItem(
+            delivered="Other Furniture Delivered",
+            timeout="Other Furniture Timeout",
+        ),
     },
-}
+)
 
 # Common Tags for Kitchen Requests
 KITCHEN_REQUEST_PLATES = "Platos / Plates / 盤子"
@@ -180,44 +195,44 @@ KITCHEN_REQUEST_CUPS = "Tazas / Cups / 杯子"
 KITCHEN_REQUEST_POTS_AND_PANS = "Ollas y Sartenes / Pots & Pans / 鍋碗瓢盆"
 
 # Mapping of kitchen requests to statuses
-KITCHEN_REQUESTS_SCHEMA = {
-    "request_field": KITCHEN_REQUESTS_FIELD,
-    "status_field": EG_STATUS_FIELD,
-    "items": {
-        "Microondas / Microwave / 微波爐": {
-            "delivered": "Microwave Delivered",
-            "timeout": "Microwave Timeout",
-        },
-        KITCHEN_REQUEST_POTS_AND_PANS: {
-            "delivered": "Pots & Pans Delivered",
-            "timeout": "Pots & Pans Timeout",
-        },
-        KITCHEN_REQUEST_PLATES: {
-            "delivered": "Plates Delivered",
-            "timeout": "Plates Timeout",
-        },
-        KITCHEN_REQUEST_CUPS: {
-            "delivered": "Cups Delivered",
-            "timeout": "Cups Timeout",
-        },
-        "Utensilios / Utensils / 餐具": {
-            "delivered": "Utensils Delivered",
-            "timeout": "Utensils Timeout",
-        },
-        "Cafetera / Coffee Maker / 咖啡機": {
-            "delivered": "Coffee Maker Delivered",
-            "timeout": "Coffee Maker Timeout",
-        },
-        "Otras / Other / 其他廚房用品": {
-            "delivered": "Kitchen Supplies Delivered",
-            "timeout": "Kitchen Supplies Timeout",
-        },
-        "Licuadora / Blender / 攪拌機": {
-            "delivered": "Blender / Food Processor Delivered",
-            "timeout": "Blender / Food Processor Timeout",
-        },
+KITCHEN_REQUESTS_SCHEMA = Schema(
+    request_field=KITCHEN_REQUESTS_FIELD,
+    status_field=EG_STATUS_FIELD,
+    items={
+        "Microondas / Microwave / 微波爐": ReqItem(
+            delivered="Microwave Delivered",
+            timeout="Microwave Timeout",
+        ),
+        KITCHEN_REQUEST_POTS_AND_PANS: ReqItem(
+            delivered="Pots & Pans Delivered",
+            timeout="Pots & Pans Timeout",
+        ),
+        KITCHEN_REQUEST_PLATES: ReqItem(
+            delivered="Plates Delivered",
+            timeout="Plates Timeout",
+        ),
+        KITCHEN_REQUEST_CUPS: ReqItem(
+            delivered="Cups Delivered",
+            timeout="Cups Timeout",
+        ),
+        "Utensilios / Utensils / 餐具": ReqItem(
+            delivered="Utensils Delivered",
+            timeout="Utensils Timeout",
+        ),
+        "Cafetera / Coffee Maker / 咖啡機": ReqItem(
+            delivered="Coffee Maker Delivered",
+            timeout="Coffee Maker Timeout",
+        ),
+        "Otras / Other / 其他廚房用品": ReqItem(
+            delivered="Kitchen Supplies Delivered",
+            timeout="Kitchen Supplies Timeout",
+        ),
+        "Licuadora / Blender / 攪拌機": ReqItem(
+            delivered="Blender / Food Processor Delivered",
+            timeout="Blender / Food Processor Timeout",
+        ),
     },
-}
+)
 
 # Common Tags for EG Requests
 EG_REQUEST_PADS = (
@@ -233,193 +248,193 @@ EG_REQUEST_SOAP = "Jabón & Productos de baño / Soap & Shower Products / 肥皂
 
 # Mapping of EG requests to statuses
 # Note that kitchen requests and furniture requests are nested under EG requests.
-EG_REQUESTS_SCHEMA = {
-    "request_field": EG_REQUESTS_FIELD,
-    "status_field": EG_STATUS_FIELD,
-    "items": {
-        EG_REQUEST_SOAP: {
-            "delivered": "Soap & Shower Products Delivered",
-            "timeout": "Soap & Shower Products Timeout",
-            "missed": EG_MISSED_APPT_STATUS,
-        },
-        EG_REQUEST_PADS: {
-            "delivered": "Pads Delivered",
-            "timeout": "Pads Timeout",
-            "missed": EG_MISSED_APPT_STATUS,
-        },
-        EG_REQUEST_BABY_DIAPERS: {
-            "delivered": "Baby Diapers Delivered",
-            "timeout": "Baby Diapers Timeout",
-            "missed": EG_MISSED_APPT_STATUS,
-        },
-        EG_REQUEST_ADULT_DIAPERS: {
-            "delivered": "Adult Diapers Delivered",
-            "timeout": "Adult Diapers Timeout",
-            "missed": EG_MISSED_APPT_STATUS,
-        },
-        EG_REQUEST_CLOTHING: {
-            "delivered": "Clothing Assistance Delivered",
-            "timeout": "Clothing Assistance Timeout",
-            "missed": EG_MISSED_APPT_STATUS,
-        },
-        EG_REQUEST_SCHOOL_SUPPLIES: {
-            "delivered": "School Supplies Delivered",
-            "timeout": "School Supplies Timeout",
-            "missed": EG_MISSED_APPT_STATUS,
-        },
-        EG_REQUEST_KITCHEN_SUPPLIES: {
-            "delivered": "Kitchen Supplies Delivered",
-            "timeout": "Kitchen Supplies Timeout",
-            "missed": EG_MISSED_APPT_STATUS,
-            "items": KITCHEN_REQUESTS_SCHEMA,
-        },
-        EG_REQUEST_FURNITURE: {
-            "delivered": "Furniture Delivered",
-            "timeout": "Furniture Timeout",
-            "missed": EG_MISSED_APPT_STATUS,
-            "items": FURNITURE_REQUESTS_SCHEMA,
-        },
-        "Coche / Stroller / 嬰兒車": {
-            "delivered": "Stroller Delivered",
-            "timeout": "Stroller Timeout",
-            "missed": EG_MISSED_APPT_STATUS,
-        },
-        "Comida de mascota / Pet Food / 寵物食品": {
-            "delivered": "Pet Food Delivered",
-            "timeout": "Pet Food Timeout",
-            "missed": EG_MISSED_APPT_STATUS,
-        },
-        "Historical: Mascaras / Masks / 口罩": {
-            "delivered": "Masks Delivered",
-            "timeout": "Masks Timeout",
-            "missed": EG_MISSED_APPT_STATUS,
-            "active": False,
-        },
-        "Historical: Productos Femenino - Tampones / Feminine Products - Tampons / 衛生棉條": {
-            "delivered": "Tampons Delivered",
-            "timeout": "Tampons Timeout",
-            "missed": EG_MISSED_APPT_STATUS,
-            "active": False,
-        },
-        "Historical: Comida para bebé / Baby Food / 嬰兒食品": {
-            "delivered": "Baby Food Delivered",
-            "timeout": "Baby Food Timeout",
-            "missed": EG_MISSED_APPT_STATUS,
-            "active": False,
-        },
-        "Historical: Formulario para bebé / Baby Formula / 嬰儿奶粉": {
-            "delivered": "Baby Formula Delivered",
-            "timeout": "Baby Formula Timeout",
-            "missed": EG_MISSED_APPT_STATUS,
-            "active": False,
-        },
+EG_REQUESTS_SCHEMA = Schema(
+    request_field=EG_REQUESTS_FIELD,
+    status_field=EG_STATUS_FIELD,
+    items={
+        EG_REQUEST_SOAP: ReqItem(
+            delivered="Soap & Shower Products Delivered",
+            timeout="Soap & Shower Products Timeout",
+            missed=EG_MISSED_APPT_STATUS,
+        ),
+        EG_REQUEST_PADS: ReqItem(
+            delivered="Pads Delivered",
+            timeout="Pads Timeout",
+            missed=EG_MISSED_APPT_STATUS,
+        ),
+        EG_REQUEST_BABY_DIAPERS: ReqItem(
+            delivered="Baby Diapers Delivered",
+            timeout="Baby Diapers Timeout",
+            missed=EG_MISSED_APPT_STATUS,
+        ),
+        EG_REQUEST_ADULT_DIAPERS: ReqItem(
+            delivered="Adult Diapers Delivered",
+            timeout="Adult Diapers Timeout",
+            missed=EG_MISSED_APPT_STATUS,
+        ),
+        EG_REQUEST_CLOTHING: ReqItem(
+            delivered="Clothing Assistance Delivered",
+            timeout="Clothing Assistance Timeout",
+            missed=EG_MISSED_APPT_STATUS,
+        ),
+        EG_REQUEST_SCHOOL_SUPPLIES: ReqItem(
+            delivered="School Supplies Delivered",
+            timeout="School Supplies Timeout",
+            missed=EG_MISSED_APPT_STATUS,
+        ),
+        EG_REQUEST_KITCHEN_SUPPLIES: ReqItem(
+            delivered="Kitchen Supplies Delivered",
+            timeout="Kitchen Supplies Timeout",
+            missed=EG_MISSED_APPT_STATUS,
+            items=KITCHEN_REQUESTS_SCHEMA,
+        ),
+        EG_REQUEST_FURNITURE: ReqItem(
+            delivered="Furniture Delivered",
+            timeout="Furniture Timeout",
+            missed=EG_MISSED_APPT_STATUS,
+            items=FURNITURE_REQUESTS_SCHEMA,
+        ),
+        "Coche / Stroller / 嬰兒車": ReqItem(
+            delivered="Stroller Delivered",
+            timeout="Stroller Timeout",
+            missed=EG_MISSED_APPT_STATUS,
+        ),
+        "Comida de mascota / Pet Food / 寵物食品": ReqItem(
+            delivered="Pet Food Delivered",
+            timeout="Pet Food Timeout",
+            missed=EG_MISSED_APPT_STATUS,
+        ),
+        "Historical: Mascaras / Masks / 口罩": ReqItem(
+            delivered="Masks Delivered",
+            timeout="Masks Timeout",
+            missed=EG_MISSED_APPT_STATUS,
+            active=False,
+        ),
+        "Historical: Productos Femenino - Tampones / Feminine Products - Tampons / 衛生棉條": ReqItem(
+            delivered="Tampons Delivered",
+            timeout="Tampons Timeout",
+            missed=EG_MISSED_APPT_STATUS,
+            active=False,
+        ),
+        "Historical: Comida para bebé / Baby Food / 嬰兒食品": ReqItem(
+            delivered="Baby Food Delivered",
+            timeout="Baby Food Timeout",
+            missed=EG_MISSED_APPT_STATUS,
+            active=False,
+        ),
+        "Historical: Formulario para bebé / Baby Formula / 嬰儿奶粉": ReqItem(
+            delivered="Baby Formula Delivered",
+            timeout="Baby Formula Timeout",
+            missed=EG_MISSED_APPT_STATUS,
+            active=False,
+        ),
     },
-}
+)
 
 FOOD_REQUEST_GROCERIES = "Alimentos / Groceries / 食品"
 
-FOOD_REQUESTS_SCHEMA = {
-    "request_field": FOOD_REQUESTS_FIELD,
-    "status_field": FOOD_STATUS_FIELD,
-    "items": {
-        FOOD_REQUEST_GROCERIES: {
-            "delivered": "Groceries Delivered",
-            "timeout": "Groceries Request Timeout",
-            "missed": FOOD_MISSED_APPT_STATUS,
-        },
-        "Comida caliente / Hot meals / 热食": {
-            "delivered": "Hot Food Delivered",
-            "timeout": "Hot Food Request Timeout",
-        },
+FOOD_REQUESTS_SCHEMA = Schema(
+    request_field=FOOD_REQUESTS_FIELD,
+    status_field=FOOD_STATUS_FIELD,
+    items={
+        FOOD_REQUEST_GROCERIES: ReqItem(
+            delivered="Groceries Delivered",
+            timeout="Groceries Request Timeout",
+            missed=FOOD_MISSED_APPT_STATUS,
+        ),
+        "Comida caliente / Hot meals / 热食": ReqItem(
+            delivered="Hot Food Delivered",
+            timeout="Hot Food Request Timeout",
+        ),
     },
-}
+)
 
-SOCIAL_SERVICES_REQUESTS_SCHEMA = {
-    "request_field": SOCIAL_SERVICES_REQUESTS_FIELD,
-    "status_field": SOCIAL_SERVICES_STATUS_FIELD,
-    "items": {
-        "Asistencia legal de inquilinos / Tenant legal assistance / 租戶法律協助": {
-            "delivered": "Tenant Support Delivered - CUFFH",
-            "timeout": [
+SOCIAL_SERVICES_REQUESTS_SCHEMA = Schema(
+    request_field=SOCIAL_SERVICES_REQUESTS_FIELD,
+    status_field=SOCIAL_SERVICES_STATUS_FIELD,
+    items={
+        "Asistencia legal de inquilinos / Tenant legal assistance / 租戶法律協助": ReqItem(
+            delivered="Tenant Support Delivered - CUFFH",
+            timeout=[
                 "Tenant Legal Assistance Timeout",
                 "All Social Services Timeout",
             ],
-        },
-        "Asistencia con servicios escolares / Assistance with in-school services / 學校服務協助": {
-            "delivered": "In School Services Assistance Delivered",
-            "timeout": [
+        ),
+        "Asistencia con servicios escolares / Assistance with in-school services / 學校服務協助": ReqItem(
+            delivered="In School Services Assistance Delivered",
+            timeout=[
                 "In School Services Assistance Timeout",
                 "All Social Services Timeout",
             ],
-        },
-        "Tutoría estudiantil / Tutoring for students / 學生輔導": {
-            "delivered": "Tutoring Assigned (K-12)",
-            "timeout": [
+        ),
+        "Tutoría estudiantil / Tutoring for students / 學生輔導": ReqItem(
+            delivered="Tutoring Assigned (K-12)",
+            timeout=[
                 "Tutoring Assistance Timeout",
                 "All Social Services Timeout",
             ],
-        },
-        "Clases de inglés / English Classes / 英語課": {
-            "delivered": [
+        ),
+        "Clases de inglés / English Classes / 英語課": ReqItem(
+            delivered=[
                 "Referred to FeLT for English Classes",
                 "English Classes Signup, Confirmed by OBT",
                 "English Classes Signup, confirmed by DOE",
                 "Registered for DOE ESL Classes",
                 "ContraCovid - English Class Intake Scheduled",
             ],
-            "timeout": [
+            timeout=[
                 "English Classes Timeout",
                 "All Social Services Timeout",
             ],
-            "invalid": ["No Longer Interested - English Classes"],
-        },
-        "Asistencia asegurando vivienda/ Securing housing / 住房協助": {
-            "delivered": [
+            invalid=["No Longer Interested - English Classes"],
+        ),
+        "Asistencia asegurando vivienda/ Securing housing / 住房協助": ReqItem(
+            delivered=[
                 "Referred to Riseboro for Housing Assistance",
                 "ContraCovid - Housing Intake Scheduled",
             ],
-            "timeout": [
+            timeout=[
                 "Securing Housing Timeout",
                 "All Social Services Timeout",
             ],
-        },
-        "Asistencia con seguro médico / Medical insurance support / 醫療保險協助": {
-            "delivered": [
+        ),
+        "Asistencia con seguro médico / Medical insurance support / 醫療保險協助": ReqItem(
+            delivered=[
                 "Enrolled in Health Insurance - Metroplus",
                 "Health Insurance Secured - HFNYC",
                 "ContraCovid - Health Insurance Intake Scheduled",
             ],
-            "timeout": [
+            timeout=[
                 "Health Insurance Assistance Timeout",
                 "All Social Services Timeout",
             ],
-            "invalid": ["Already has Health Insurance"],
-        },
-        "Asistencia de Negocios / Small Business Support / 小型企業協助": {
-            "delivered": "Small Business Support Delivered",
-            "timeout": [
+            invalid=["Already has Health Insurance"],
+        ),
+        "Asistencia de Negocios / Small Business Support / 小型企業協助": ReqItem(
+            delivered="Small Business Support Delivered",
+            timeout=[
                 "Small Business Support Timeout",
                 "All Social Services Timeout",
             ],
-        },
-        "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助": {
-            "delivered": "Low-Cost Internet Access Delivered - MESH",
-            "timeout": [
+        ),
+        "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助": ReqItem(
+            delivered="Low-Cost Internet Access Delivered - MESH",
+            timeout=[
                 "Low-Cost Internet Access Timeout",
                 "All Social Services Timeout",
             ],
-        },
-        "Asistencia con beneficios de comida / Assistance with food benefits / 食品福利協助（WIC, SNAP, P-EBT）": {
-            "delivered": [
+        ),
+        "Asistencia con beneficios de comida / Assistance with food benefits / 食品福利協助（WIC, SNAP, P-EBT）": ReqItem(
+            delivered=[
                 "SNAP Signup Completed through WSCAH",
                 "WIC Signup Completed through WSCAH",
                 "ContraCovid - Food Benefits Intake Scheduled",
             ],
-            "timeout": [
+            timeout=[
                 "Food Benefits Assistance Timeout",
                 "All Social Services Timeout",
             ],
-            "invalid": [
+            invalid=[
                 "No Longer Interested in Food Benefits",
                 "Not Eligible for Food Benefits HFNYC",
                 "Not Eligible for Food Benefits WSCAH",
@@ -429,30 +444,30 @@ SOCIAL_SERVICES_REQUESTS_SCHEMA = {
                 "Already has WIC - HFNYC",
                 "Cannot Sign Up for Food Benefits - HFNYC",
             ],
-        },
-        "Asistencia con Transporte / Transportation Assistance / 交通運輸協助": {
-            "delivered": "MetroCard Delivered",
-            "timeout": [
+        ),
+        "Asistencia con Transporte / Transportation Assistance / 交通運輸協助": ReqItem(
+            delivered="MetroCard Delivered",
+            timeout=[
                 "MetroCard Request Timeout",
                 "All Social Services Timeout",
             ],
-        },
-        "Asistencia para niños discapacitados / Assistance for disabled children / 殘疾兒童協助": {
-            "delivered": "Child Disability Assistance Delivered",
-            "timeout": [
+        ),
+        "Asistencia para niños discapacitados / Assistance for disabled children / 殘疾兒童協助": ReqItem(
+            delivered="Child Disability Assistance Delivered",
+            timeout=[
                 "Child Disability Assistance Timeout",
                 "All Social Services Timeout",
             ],
-        },
-        "Asistencia para mascotas / Pet Assistance / 寵物協助": {
-            "delivered": "Pet Assistance Delivered",
-            "timeout": [
+        ),
+        "Asistencia para mascotas / Pet Assistance / 寵物協助": ReqItem(
+            delivered="Pet Assistance Delivered",
+            timeout=[
                 "Pet Assistance Timeout",
                 "All Social Services Timeout",
             ],
-        },
+        ),
     },
-}
+)
 
 LOW_COST_INTERNET_AT_HOME_TYPE = (
     "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助"

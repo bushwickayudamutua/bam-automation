@@ -1,6 +1,6 @@
 import csv
 
-from bam_core.constants import REQUESTS_SCHEMA
+from bam_core.constants import REQUESTS_SCHEMA, Schema
 from bam_core.utils.etc import to_list
 
 # write out a csv with the following columns:
@@ -9,7 +9,7 @@ from bam_core.utils.etc import to_list
 
 def write_schema(
     writer,
-    schema={},
+    schema: Schema,
     parent_request_field=None,
     parent_status_field=None,
 ):

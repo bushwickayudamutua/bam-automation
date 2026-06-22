@@ -277,7 +277,6 @@ class Airtable(object):
     def analyze_requests(
         cls,
         record: Dict[str, Any],
-        requests_schema=REQUESTS_SCHEMA,
         include_all_mesh: bool = False,
     ) -> Dict[str, List[str]]:
         """
@@ -294,7 +293,7 @@ class Airtable(object):
 
         analysis = defaultdict(lambda: defaultdict(list))
 
-        for schema in requests_schema:
+        for schema in REQUESTS_SCHEMA:
             request_field = schema["request_field"]
             status_field = schema["status_field"]
             request_tags = record.get(request_field, [])

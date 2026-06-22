@@ -27,17 +27,6 @@ REQUEST_SCHEMA_MAP = {
     "kitchen": KITCHEN_REQUESTS_SCHEMA,
     "furniture": FURNITURE_REQUESTS_SCHEMA,
 }
-REQUEST_FIELD_MAP = {
-    "eg": EG_REQUESTS_FIELD,
-    "kitchen": KITCHEN_REQUESTS_FIELD,
-    "furniture": FURNITURE_REQUESTS_FIELD,
-}
-
-STATUS_FIELD_MAP = {
-    "eg": EG_STATUS_FIELD,
-    "kitchen": EG_STATUS_FIELD,
-    "furniture": EG_STATUS_FIELD,
-}
 
 
 class ConsolidateEssentialGoodsRequests(Function):
@@ -220,12 +209,13 @@ class ConsolidateEssentialGoodsRequests(Function):
     def run(self, params, context):
         # parse the request field
         request_field_shorthand = params["request_field"].strip()
-        request_field = REQUEST_FIELD_MAP.get(request_field_shorthand)
         schema = REQUEST_SCHEMA_MAP.get(request_field_shorthand)
-        if not request_field or not schema:
+        if not schema:
             raise ValueError(
                 f"Invalid REQUEST_FIELD: {request_field_shorthand}. Choose from: {REQUEST_SCHEMA_MAP.keys()}"
             )
+        request_field = schema["request_field"]
+        status_field = schema["status_field"]
 
         # validate request value
         request_value = params["request_value"].strip()
@@ -233,8 +223,6 @@ class ConsolidateEssentialGoodsRequests(Function):
             raise ValueError(
                 f"Invalid REQUEST_VALUE {request_field}: {request_value}. Choose from: {schema['items'].keys()}"
             )
-        # get the status field
-        status_field = STATUS_FIELD_MAP.get(request_field_shorthand)
 
         # get the timeout flag from the schema
         timeout_tags = to_list(schema["items"][request_value]["timeout"])
