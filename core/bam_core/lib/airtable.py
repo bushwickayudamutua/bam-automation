@@ -18,6 +18,8 @@ from bam_core.constants import (
     REQUEST_FIELDS,
     OLD_REQUEST_TAGS,
     OLD_FIELD_NAMES,
+    LOW_COST_INTERNET_AT_HOME_TYPE,
+    MESH_INTERNET_DELIVERED_TIMEOUT_TAGS,
 )
 
 
@@ -272,7 +274,11 @@ class Airtable(object):
         return analysis
 
     @classmethod
-    def analyze_requests(cls, record: Dict[str, Any]) -> Dict[str, List[str]]:
+    def analyze_requests(
+        cls,
+        record: Dict[str, Any],
+        include_all_mesh: bool = False,
+    ) -> Dict[str, List[str]]:
         """
         Get open requests (not completed nor timed-out) and completed requests from a record.
         NOTE: The record must contain the fields specified in REQUESTS_SCHEMA.
@@ -308,6 +314,13 @@ class Airtable(object):
                     request_tag_schema.get("delivered", [])
                 )
                 timeout_tags = to_list(request_tag_schema.get("timeout", []))
+                if include_all_mesh and request_tag == LOW_COST_INTERNET_AT_HOME_TYPE:
+                    delivered_tags = list(
+                        set(delivered_tags) - MESH_INTERNET_DELIVERED_TIMEOUT_TAGS
+                    )
+                    timeout_tags = list(
+                        set(timeout_tags) - MESH_INTERNET_DELIVERED_TIMEOUT_TAGS
+                    )
                 invalid_tags = to_list(request_tag_schema.get("invalid", []))
                 missed_tag = request_tag_schema.get("missed", None)
                 sub_item_schema = request_tag_schema.get("items", None)

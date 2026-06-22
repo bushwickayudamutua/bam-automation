@@ -1,14 +1,23 @@
 import argparse
 from collections import defaultdict
 import copy
+import logging
 import pandas as pd
-from datetime import datetime
+from datetime import date, datetime
 import numpy as np
+import os
+import sys
+
+# Allow running as `python scripts/migrate_requests_to_new_base.py` without `pip install -e ./core`
+_CORE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if _CORE_DIR not in sys.path:
+    sys.path.insert(0, _CORE_DIR)
 
 from bam_core.settings import AIRTABLE_BASE_ID, AIRTABLE_TOKEN
 from bam_core.lib.airtable import Airtable
 from bam_core.lib.airtable_v2 import (
     Household,
+    MeshRequest,
     Request,
     SocialServiceRequest,
 )
@@ -31,7 +40,11 @@ from bam_core.constants import (
     KITCHEN_REQUESTS_SCHEMA,
     EG_REQUEST_KITCHEN_SUPPLIES,
     SOCIAL_SERVICES_REQUESTS_SCHEMA,
+    LOW_COST_INTERNET_AT_HOME_TYPE,
 )
+
+log = logging.getLogger(__name__)
+
 
 ########################################
 #  Setup Reference To OG Airtable Base #
@@ -70,7 +83,9 @@ def extract_open_requests_per_household():
     for record_id, snapshot in afr.get_last_snapshots(grouped_records):
 
         # identify the open requests for the snapshot
-        open_requests = afr.get_open_requests_for_snapshot(record_id, snapshot)
+        open_requests = afr.get_open_requests_for_snapshot(
+            record_id, snapshot, include_all_mesh=True
+        )
 
         # if there are open requests, add them to the household
         # and format the phone number
@@ -87,6 +102,11 @@ def extract_open_requests_per_household():
 #######################################
 #   Generic Transformation Functions  #
 #######################################
+
+def format_date(date_str: str) -> date | None:
+    if not date_str or date_str == "":
+        return None
+    return datetime.strptime(date_str, "%Y-%m-%d").date()
 
 
 def select_first(
@@ -128,53 +148,15 @@ def convert_str_to_int(num_str, num_digits=np.inf):
 #  Field-Specific Transformation Functions #
 ############################################
 
-def transform_address_fields(
-    old_field_name: str, new_field_name: str, records: list[dict]
-):
-    """
-    Get the most recent non-empty address and get all related address fields.
-    """
-
-    non_empty_idx = [i for i in range(len(records)) if records[i].get("Cleaned Address")]
-    if len(non_empty_idx) > 0:
-        i = non_empty_idx[0]
-    else:
-        non_empty_idx = [i for i in range(len(records)) if records[i].get("Current Address")]
-        if len(non_empty_idx) > 0:
-            i = non_empty_idx[0]
-        else:
-            i = 0
-    
-    address = records[i].get("Cleaned Address", "")
-    address_accuracy = records[i].get("Cleaned Address Accuracy")
-    street_address = records[i].get("Current Address", "")
-    city_state = records[i].get("Current Address - City, State", "")
-    zip_code = records[i].get("Current Address - Zip Code", "")
-    geocode = records[i].get("Geocode")
-    bin = records[i].get("Building Identification Number", "")
-
-    if address == "":
-        address = street_address + ' ' + city_state + ' ' + zip_code
-
-    return {
-        "Address": address,
-        "Address Accuracy": address_accuracy,
-        "Street Address": street_address,
-        "City, State": city_state,
-        "Zip Code": convert_str_to_int(zip_code, num_digits=5),
-        "Geocode": geocode,
-        "Building Identification Number": convert_str_to_int(bin),
-    }
-
-
 def transform_last_texted(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
     """
     Get most recent date they were texted for outreach.
     """
-    last_date = max([r.get(old_field_name, "") for r in records])
-    last_date = None if last_date == "" else datetime.strptime(last_date, "%Y-%m-%d").date()
+    dates = [r.get(old_field_name) for r in records]
+    dates = [d for d in dates if d and d != ""]
+    last_date = max(dates) if dates else None
     return { new_field_name: last_date }
 
 
@@ -186,16 +168,14 @@ def transform_date_submitted(
     representing the first and last date a request was submitted for the household.
     """
     
-    first_date = min(
-        [r[old_field_name] for r in records]
-    ).split("T")[0]
-    last_date = max(
-        [r[old_field_name] for r in records]
-    ).split("T")[0]
+    dates = [r.get(old_field_name) for r in records]
+    dates = [d for d in dates if d and d != ""]
+    first_date = min(dates).split("T")[0] if dates else None
+    last_date = max(dates).split("T")[0] if dates else None
 
     return {
-        f"Legacy First {new_field_name}": datetime.strptime(first_date, "%Y-%m-%d").date(),
-        f"Legacy Last {new_field_name}": datetime.strptime(last_date, "%Y-%m-%d").date(),
+        f"Legacy First {new_field_name}": first_date,
+        f"Legacy Last {new_field_name}": last_date,
     }
 
 
@@ -254,7 +234,7 @@ def transform_lists(
     """
     all_items = set()
     for r in records:
-        all_items.update(r.get(old_field_name, []))
+        all_items.update(r.get(old_field_name) or [])
     
     if return_set:
         return {new_field_name: all_items}
@@ -299,7 +279,7 @@ def transform_other_languages(
     """
     Concatenate all "other" languages into a single line text.
     """
-    other_languages = [r.get(old_field_name, "").strip() for r in records]
+    other_languages = [(r.get(old_field_name) or "").strip() for r in records]
     other_languages = [l for l in set(other_languages) if l != ""]
     other_languages = "\n".join(other_languages) if len(other_languages) > 0 else None
     return { new_field_name: other_languages }
@@ -333,33 +313,206 @@ def transform_internet_access(
     return output
 
 
-def transform_mesh_status(
+def transform_address(records: list[dict]):
+
+    ADDRESS_PIPELINE_RANK = {
+        "Apartment": 3,
+        "Building": 2,
+        "Address Outside NY": 1,
+        "No result": 0,
+        "": 0,
+        "Invalid Address Provided": -1,
+    }
+
+    best_idx_rank = np.argmax([
+        ADDRESS_PIPELINE_RANK.get(r.get("Cleaned Address Accuracy", ""), -2)
+        for r in records
+    ])
+    best_idx = best_idx_rank
+
+    address = records[best_idx].get("Cleaned Address", "").strip()
+    street_address = records[best_idx].get("Current Address", "").strip()
+    if address == "" and street_address == "":
+        best_idx = [
+            i for i in range(len(records))
+            if records[i].get("Cleaned Address", "").strip() != ""
+        ]
+        if len(best_idx) > 0:
+            best_idx = best_idx[0]
+        else:
+            best_idx = [
+                i for i in range(len(records))
+                if records[i].get("Current Address", "").strip() != ""
+            ]
+            if len(best_idx) > 0:
+                best_idx = best_idx[0]
+            else:
+                best_idx = best_idx_rank
+    
+    best_accuracy = records[best_idx].get("Cleaned Address Accuracy")
+
+    address = records[best_idx].get("Cleaned Address", "").strip()
+    street_address = records[best_idx].get("Current Address", "").strip()
+    city_state = records[best_idx].get("Current Address - City, State", "").strip()
+    zip_code = records[best_idx].get("Current Address - Zip Code", "").strip()
+    if address == "":
+        address = (street_address + ' ' + city_state + ' ' + zip_code).strip()
+    
+    address = None if address == "" else address
+    street_address = None if street_address == "" else street_address
+    city_state = None if city_state == "" else city_state
+    zip_code = convert_str_to_int(zip_code, num_digits=5)
+
+    return {
+        "Address Accuracy": best_accuracy,
+        "Address": address,
+        "Street Address": street_address,
+        "City, State": city_state,
+        "Zip Code": zip_code,
+    }
+
+
+def get_best_mesh_status(mesh_records: list[dict]) -> tuple[str | None, int | None]:
+    """Best non-closed MESH - Status for a household (unique phone & BIN)."""
+
+    # MESH status pipeline (higher --> further along).
+    MESH_PIPELINE_RANK = {
+        # Empty `MESH - Status` (open):
+        "": 0,
+        "Duplicate": 0,
+        "Needs Panorama": 0,
+        "Step 2.5 (optional) - Needs Panorama": 0,
+        "Node Building": 0,
+        "Step 2.6 (optional) Node Building": 0,
+        
+        # In-progress (open):
+        "Texted about Mesh": 1,
+        "Step 1 - Interested in Mesh": 2,
+        "Roof Access In Process": 3,
+        "Confirming Premission with Landlord": 4,
+        "Roof Access Confirmed": 5,
+        "Step 4 - Roof Access Confirmed": 5,
+        "Step 2- LOS Confirmed": 6,
+        "Step 2 - LOS Tool Confirmed": 6,
+        "LOS confirmed": 6,
+        "LOS confirmed - Update this": 6,
+        "LOS Tool Confirmed": 6,
+        "Step 3 - LOS Confirmed": 6,
+        "Step 3 - Scheduling IN-PROGRESS": 7,
+        "Install in-progress": 7,
+        "Install in-progress 2022": 7,
+        "Step 5 - Install in-progress": 7,
+        "Install Scheduled": 8,
+
+        # Delivered / Closed / ignore:
+        "YAY! MESH INSTALLED!": 9,
+        "Mesh installed": 9,
+        "Step 6 - Mesh installed": 9,
+        "NYCHA - Currently Does Not Qualify": 10,
+        "Cannot Install - Other Reason": 10,
+        ">> MESH Cannot Install": 10,
+        "Cannot Install - Does not have LOS": 10,
+        "Does not have LOS": 10,
+        "No LOS confirmed": 10,
+        "Cannot Install - No Roof Access": 10,
+        "No Roof Access": 10,
+        "Not Interested": 10,
+        
+        # Needs repair (open):
+        "INSTALL PENDING ELDERT REPAIR": 11,
+    }
+    OPEN_RANKS = list(range(9)) + [11]
+    MESH_STATUS_OLD_TO_NEW = {
+        "": "Open",
+        "Duplicate": "Open",
+        "Needs Panorama": "Open",
+        "Step 2.5 (optional) - Needs Panorama": "Open",
+        "Node Building": "Open",
+        "Step 2.6 (optional) Node Building": "Open",
+
+        "Confirming Premission with Landlord": "Confirming Permission with Landlord",
+        
+        "Step 2- LOS Confirmed": "Step 2 - LOS Confirmed",
+        "Step 2 - LOS Tool Confirmed": "Step 2 - LOS Confirmed",
+        "LOS confirmed": "Step 2 - LOS Confirmed",
+        "LOS confirmed - Update this": "Step 2 - LOS Confirmed",
+        "LOS Tool Confirmed": "Step 2 - LOS Confirmed",
+        "Step 3 - LOS Confirmed": "Step 2 - LOS Confirmed",
+        
+        "Step 4 - Roof Access Confirmed": "Roof Access Confirmed",
+        
+        "Install in-progress": "Step 3 - Scheduling IN-PROGRESS",
+        "Install in-progress 2022": "Step 3 - Scheduling IN-PROGRESS",
+        "Step 5 - Install in-progress": "Step 3 - Scheduling IN-PROGRESS",
+        
+        "Mesh installed": "YAY! MESH INSTALLED!",
+        "Step 6 - Mesh installed": "YAY! MESH INSTALLED!",
+        
+        "Does not have LOS": "Cannot Install - Does not have LOS",
+        "No LOS confirmed": "Cannot Install - Does not have LOS",
+        "No Roof Access": "Cannot Install - No Roof Access",
+        ">> MESH Cannot Install": "Cannot Install - Other Reason",
+    }
+    
+    # pick the best non-closed MESH status:
+    best_stat = None
+    best_rank = -1
+    for record in mesh_records:
+        stat = record.get("MESH - Status", "")
+        rank = MESH_PIPELINE_RANK.get(stat, -1)
+        log.debug("MESH Status: '%s', Rank: %s", stat, rank)
+        if rank > best_rank:
+            best_stat = MESH_STATUS_OLD_TO_NEW.get(stat, stat)
+            best_rank = rank
+            log.debug("Best MESH Status: '%s', Best Rank: %s", best_stat, best_rank)
+
+    return (best_stat, best_rank) if best_rank in OPEN_RANKS else (None, None)
+
+
+def transform_mesh_requests(
     old_field_name: str, new_field_name: str, records: list[dict]
 ):
     """
-    Transform MESH-related fields: "MESH - Status", "MESH - Has LOS", "Roof Accessible?"
+    Find the best MESH status (latest in the pipeline) for each household (unique phone & BIN).
     """
+    mesh_per_bin = defaultdict(list)
+    for record in records:
+        if LOW_COST_INTERNET_AT_HOME_TYPE in (record.get("Open Requests") or []):
+            bin_val = record.get("Building Identification Number", "")
+            mesh_per_bin[bin_val].append(record)
 
-    output = {}
+    mesh_requests = []
+    for bin_val, bin_records in mesh_per_bin.items():
+        log.debug("BIN: '%s', Phone: '%s'", bin_val, bin_records[0].get(PHONE_FIELD))
+        mesh_status, mesh_status_rank = get_best_mesh_status(bin_records)
+        if mesh_status:
+            mesh_dates = transform_date_submitted(DATE_SUBMITTED_FIELD, DATE_SUBMITTED_FIELD, bin_records)
+            mesh_address = transform_address(bin_records)
+            internet_access = transform_internet_access("Internet Access", "Internet Access", bin_records)
+            
+            if mesh_status_rank in [6, 7, 8, 11]:
+                has_los = True
+            else:
+                has_los = any([(r.get("MESH - Has LOS") or False) for r in bin_records])
 
-    # Any records indicating the building is roof accessible?
-    tag = "Tengo acceso de mi techo / Roof access in my building"
-    output["Roof Accessible?"] = any(
-        [tag in r.get("MESH - To confirm during outreach (before install)", []) for r in records]
-    )
+            if mesh_status_rank in [5, 6, 7, 8, 11]:
+                roof_is_accessible = True
+            else:
+                field_name = "MESH - To confirm during outreach (before install)"
+                field_value = "Tengo acceso de mi techo / Roof access in my building"
+                roof_is_accessible = any([field_value in (r.get(field_name) or []) for r in bin_records])
+            
+            mesh_requests.append({
+                "Status": mesh_status,
+                "Building Identification Number": convert_str_to_int(bin_val),
+                "Roof Accessible?": roof_is_accessible,
+                "Has LOS?": has_los,
+                **mesh_dates,
+                **mesh_address,
+                **internet_access,
+            })
 
-    # Any records indicating LOS?
-    output["MESH - Has LOS"] = any(
-        [r.get("MESH - Has LOS", False) for r in records]
-    )
-
-    # Oldest MESH status that is not empty and not duplicate:
-    for record in reversed(records):
-        curr_stat = record.get("MESH - Status")
-        if curr_stat and curr_stat != "Duplicate":
-            output["MESH - Status"] = curr_stat
-    
-    return output
+    return {"MESH Requests": mesh_requests} if mesh_requests else {}
 
 
 def transform_case_notes(
@@ -448,22 +601,29 @@ def transform_open_requests(
 
     # exclude these items from migration
     EXCLUDE_ITEMS = [
+        "Asistencia legal de inquilinos / Tenant legal assistance / 租戶法律協助",
+        "Asistencia con servicios escolares / Assistance with in-school services / 學校服務協助",
+        "Asistencia asegurando vivienda/ Securing housing / 住房協助",
+        "Asistencia con seguro médico / Medical insurance support / 醫療保險協助",
+        "Asistencia de Negocios / Small Business Support / 小型企業協助",
+        "Asistencia con beneficios de comida / Assistance with food benefits / 食品福利協助（WIC, SNAP, P-EBT）",
+        "Asistencia con Transporte / Transportation Assistance / 交通運輸協助",
+        "Asistencia legal de inmigración / Immigration legal assistance / 移民法律協助",
         "Asistencia para mascotas / Pet Assistance / 寵物協助",
         "Comida de mascota / Pet Food / 寵物食品",
+        "Alimentos / Groceries / 食品",
+        "Comida caliente / Hot meals / 热食",
+        "Otras / Other / 其他家具",
+        "Otras / Other / 其他廚房用品",
+        LOW_COST_INTERNET_AT_HOME_TYPE, # MESH Requests are handled separately
     ]
-
-    # rename these items
-    ITEM_MAPPING = {
-        "Otras / Other / 其他家具": "Otras Muebles / Other Furniture / 其他家具",
-        "Otras / Other / 其他廚房用品": "Otras Cosas de Cocina / Other Kitchen Items / 其他廚房用品",
-    }
 
     all_items_df = [
         pd.DataFrame({
             "item": [item],
-            DATE_SUBMITTED_FIELD: [r.get(DATE_SUBMITTED_FIELD, "").split("T")[0]],
+            DATE_SUBMITTED_FIELD: [(r.get(DATE_SUBMITTED_FIELD) or "").split("T")[0]],
         })
-        for r in records for item in r.get(old_field_name, [])
+        for r in records for item in (r.get(old_field_name) or [])
     ]
     all_items_df = pd.concat(all_items_df or [pd.DataFrame()], ignore_index=True)
 
@@ -502,17 +662,6 @@ def transform_open_requests(
                 new_item_df["item"] = new_request_type
                 output[request_type_output_field] = pd.concat([output[request_type_output_field], new_item_df])
             
-            # apply item mapping if present
-            item_map_idx = all_items_df["item"].isin(ITEM_MAPPING) & sub_item_idx
-            if item_map_idx.any():
-                # add the new item to the output list
-                new_item_df = all_items_df[item_map_idx].copy()
-                new_item_df["item"] = [ITEM_MAPPING[i] for i in new_item_df["item"]]
-                output[items_output_field] = pd.concat([output[items_output_field], new_item_df])
-                # remove the old item from the top-level list
-                all_items_df = all_items_df[~item_map_idx]
-                sub_item_idx = all_items_df["item"].isin(sub_items)
-            
             # add the item to the output list
             new_item_df = all_items_df[sub_item_idx].copy()
             output[items_output_field] = pd.concat([output[items_output_field], new_item_df])
@@ -529,7 +678,12 @@ def transform_open_requests(
             .groupby("item")[DATE_SUBMITTED_FIELD]
             .agg(["min", "max"])
             .reset_index()
-            .rename(columns={"min": "Oldest "+DATE_SUBMITTED_FIELD, "max": "Latest "+DATE_SUBMITTED_FIELD})
+            .rename(
+                columns={
+                    "min": "Legacy First "+DATE_SUBMITTED_FIELD,
+                    "max": "Legacy Last "+DATE_SUBMITTED_FIELD,
+                }
+            )
         )
         for name, item_df in output.items()
     }
@@ -594,13 +748,17 @@ def transform_household_records(household_records: list[dict]) -> dict:
             "new_field": "",
             "transform_fx": transform_cita_availability,
         },
-        "Open Requests": {
+        "Open Requests": { # Requests per Phone (everything except MESH Requests):
             "new_field": "Request Types",
             "transform_fx": transform_open_requests,
         },
-        "All Address Fields": {
-            "new_field": "",
-            "transform_fx": transform_address_fields,
+        "MESH": { # MESH Requests per Phone+BIN:
+            "new_field": "MESH Requests",
+            "transform_fx": transform_mesh_requests
+        },
+        "Geocode": {
+            "new_field": "Geocode",
+            "transform_fx": select_first_non_null,
         },
         "Last Auto Texted": {
             "new_field": "Last Texted",
@@ -610,15 +768,6 @@ def transform_household_records(household_records: list[dict]) -> dict:
             "new_field": "Furniture Acknowledgement",
             "transform_fx": set_true,
         },
-        "Internet Access": {
-            "new_field": "Internet Access",
-            "transform_fx": transform_internet_access,
-        },
-        # Creates "MESH - Status", "MESH - Has LOS", "Roof Accessible?"
-        "MESH": {
-            "new_field": "",
-            "transform_fx": transform_mesh_status
-        }
     }
 
     # sort records by Date Submitted (order from most recent to oldest)
@@ -663,13 +812,13 @@ def transform_households(households: dict[str, list[dict]]) -> list[dict]:
 #   Airtable Record Creation          #
 #######################################
 
-
 @retry(attempts=5, wait=1, backoff=2)
 def create_requests_records(record: dict, household: Household):
     """
-    Create a list of requests records from the transformed legacy assistance request record.
-    :param record: The legacy assistance request record
-    :return: A list of request IDs
+    Create Requests rows from the transformed legacy assistance request record.
+    :param record: The transformed household record
+    :param household: The saved Household instance
+    :return: List of Request instances (empty if none to create)
     """
     TYPES_TO_EXCLUDE = [
         "Muebles / Furniture / 家具",
@@ -683,17 +832,21 @@ def create_requests_records(record: dict, household: Household):
         record.get("Kitchen Items", pd.DataFrame()),
     ], ignore_index=True)
     request_records1 = []
-    if(all_reqs1.shape[0] > 0):
+    if all_reqs1.shape[0] > 0:
         request_records1 = [
             Request(
                 household=household,
                 type=req_type,
                 status="Open",
-                legacy_date_submitted=datetime.strptime(oldest_date, "%Y-%m-%d").date(),
-                last_requested=datetime.strptime(latest_date, "%Y-%m-%d").date()
+                legacy_date_submitted=format_date(oldest_date),
+                last_requested=format_date(latest_date),
             )
-            for req_type, oldest_date, latest_date in zip(all_reqs1["item"], all_reqs1["Oldest "+DATE_SUBMITTED_FIELD], all_reqs1["Latest "+DATE_SUBMITTED_FIELD])
-                if req_type not in TYPES_TO_EXCLUDE
+            for req_type, oldest_date, latest_date in zip(
+                all_reqs1["item"],
+                all_reqs1["Legacy First "+DATE_SUBMITTED_FIELD],
+                all_reqs1["Legacy Last "+DATE_SUBMITTED_FIELD],
+            )
+            if req_type not in TYPES_TO_EXCLUDE
         ]
 
     # combine the list of requests (with geocode, and no other address information)
@@ -702,60 +855,100 @@ def create_requests_records(record: dict, household: Household):
         record.get("Bed Details", pd.DataFrame()),
     ], ignore_index=True)
     request_records2 = []
-    if(all_reqs2.shape[0] > 0):
+    if all_reqs2.shape[0] > 0:
         request_records2 = [
             Request(
                 household=household,
                 type=req_type,
                 status="Open",
-                legacy_date_submitted=datetime.strptime(oldest_date, "%Y-%m-%d").date(),
-                last_requested=datetime.strptime(latest_date, "%Y-%m-%d").date(),
-                geocode=record.get("Geocode", None)
+                legacy_date_submitted=format_date(oldest_date),
+                last_requested=format_date(latest_date),
+                geocode=record.get("Geocode"),
             )
-            for req_type, oldest_date, latest_date in zip(all_reqs2["item"], all_reqs2["Oldest "+DATE_SUBMITTED_FIELD], all_reqs2["Latest "+DATE_SUBMITTED_FIELD])
-                if req_type not in TYPES_TO_EXCLUDE
+            for req_type, oldest_date, latest_date in zip(
+                all_reqs2["item"],
+                all_reqs2["Legacy First "+DATE_SUBMITTED_FIELD],
+                all_reqs2["Legacy Last "+DATE_SUBMITTED_FIELD],
+            )
+            if req_type not in TYPES_TO_EXCLUDE
         ]
 
     request_records = request_records1 + request_records2
-    Request.batch_save(request_records)
+    if request_records:
+        Request.batch_save(request_records)
     return request_records
 
 
 @retry(attempts=5, wait=1, backoff=2)
 def create_ss_requests_records(record: dict, household: Household):
     """
-    Create a list of social service requests records from the transformed legacy assistance request record.
-    :param record: The legacy assistance request record
-    :return: A list of social service request IDs
+    Create Social Service Requests rows from the transformed legacy assistance request record.
+    :param record: The transformed household record
+    :param household: The saved Household instance
+    :return: List of SocialServiceRequest instances (empty if none to create)
     """
+    
+    TYPE_MAP = {
+        "Asistencia para niños discapacitados / Assistance for disabled children / 殘疾兒童協助": "Asistencia para niños con discapacidad / Assistance for disabled children / 殘疾兒童協助"
+    }
+
     ss_reqs = record.get("Social Service Requests", pd.DataFrame())
     ss_records = []
-    if(ss_reqs.shape[0] > 0):
-        for req_type, oldest_date, latest_date in zip(ss_reqs["item"], ss_reqs["Oldest "+DATE_SUBMITTED_FIELD], ss_reqs["Latest "+DATE_SUBMITTED_FIELD]):
-            ss_record = SocialServiceRequest(
+    if ss_reqs.shape[0] > 0:
+        ss_records = [
+            SocialServiceRequest(
                 household=household,
-                type=req_type,
+                type=TYPE_MAP.get(req_type, req_type),
                 status="Open",
-                legacy_date_submitted=datetime.strptime(oldest_date, "%Y-%m-%d").date(),
-                last_requested=datetime.strptime(latest_date, "%Y-%m-%d").date(),
+                legacy_date_submitted=format_date(oldest_date),
+                last_requested=format_date(latest_date),
             )
-            if (req_type == "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助"):
-                ss_record.bin = record.get("Building Identification Number", None)
-                ss_record.geocode = record.get("Geocode", None)
-                ss_record.cleaned_address = record.get("Address", None)
-                ss_record.address_accuracy = record.get("Address Accuracy", None)
-                ss_record.street_address = record.get("Street Address", None)
-                ss_record.city_and_state = record.get("City, State", None)
-                ss_record.zip_code = record.get("Zip Code", None)
-                ss_record.internet_access = record.get("Internet Access", [])
-                ss_record.roof_is_accessible = record.get("Roof Accessible?", False)
-                ss_record.has_los = record.get("MESH - Has LOS", False)
-                ss_record.mesh_status = record.get("MESH - Status", None)
+            for req_type, oldest_date, latest_date in zip(
+                ss_reqs["item"],
+                ss_reqs["Legacy First "+DATE_SUBMITTED_FIELD],
+                ss_reqs["Legacy Last "+DATE_SUBMITTED_FIELD],
+            )
+            if req_type != LOW_COST_INTERNET_AT_HOME_TYPE
+        ]
 
-            ss_records.append(ss_record)
-    
-    SocialServiceRequest.batch_save(ss_records)
+    if ss_records:
+        SocialServiceRequest.batch_save(ss_records)
     return ss_records
+
+
+@retry(attempts=5, wait=1, backoff=2)
+def create_mesh_requests_records(record: dict, household: Household):
+    """
+    Create Mesh Requests rows from the transformed legacy assistance request record.
+    :param record: The transformed household record
+    :param household: The saved Household instance
+    :return: List of MeshRequest instances (empty if none to create)
+    """
+    mesh_reqs = record.get("MESH Requests", [])
+    mesh_records = []
+    if mesh_reqs:
+        mesh_records = [
+            MeshRequest(
+                household=household,
+                status=r.get("Status"),
+                legacy_date_submitted=format_date(r.get("Legacy First "+DATE_SUBMITTED_FIELD)),
+                last_requested=format_date(r.get("Legacy Last "+DATE_SUBMITTED_FIELD)),
+                internet_access=r.get("Internet Access") or [],
+                roof_is_accessible=r.get("Roof Accessible?", False),
+                has_los=r.get("Has LOS?", False),
+                address_accuracy=r.get("Address Accuracy"),
+                address=r.get("Address"),
+                street_address=r.get("Street Address"),
+                city_and_state=r.get("City, State"),
+                zip_code=r.get("Zip Code"),
+                building_identification_number=r.get("Building Identification Number"),
+            )
+            for r in mesh_reqs
+        ]
+
+    if mesh_records:
+        MeshRequest.batch_save(mesh_records)
+    return mesh_records
 
 
 @retry(attempts=5, wait=1, backoff=2)
@@ -763,23 +956,24 @@ def create_household_record(record: dict):
     """
     Create a household record from the transformed legacy assistance request record.
     :param record: The legacy assistance request record
+    :return: The created Household instance
     """
     household = Household(
-        name=record['Name'],
-        phone_number=record[PHONE_FIELD],
-        phone_is_invalid=record['Invalid Phone Number?'],
-        phone_is_intl=record["Int'l Phone Number?"],
-        email=record['Email'],
-        email_error=record['Email Error'],
-        legacy_first_date_submitted=record['Legacy First Date Submitted'],
-        legacy_last_date_submitted=record['Legacy Last Date Submitted'],
-        languages=record['Languages'],
-        other_languages=record['Other Languages'],
-        notes=record['Notes'],
-        last_texted=record["Last Texted"],
+        name=record.get("Name"),
+        phone_number=record.get(PHONE_FIELD),
+        phone_is_invalid=record.get("Invalid Phone Number?"),
+        phone_is_intl=record.get("Int'l Phone Number?"),
+        email=record.get("Email"),
+        email_error=record.get("Email Error"),
+        legacy_first_date_submitted=format_date(record.get("Legacy First "+DATE_SUBMITTED_FIELD)),
+        legacy_last_date_submitted=format_date(record.get("Legacy Last "+DATE_SUBMITTED_FIELD)),
+        languages=record.get("Languages"),
+        other_languages=record.get("Other Languages"),
+        notes=record.get("Notes"),
+        last_texted=format_date(record.get("Last Texted")),
         last_called=None,
-        needs_delivery=record["Needs Delivery"],
-        needs_email_outreach=record["Needs Email Outreach"],
+        needs_delivery=record.get("Needs Delivery"),
+        needs_email_outreach=record.get("Needs Email Outreach"),
     )
     household.save()
     return household
@@ -795,6 +989,16 @@ def load_household(record: dict):
     household = create_household_record(record)
     create_requests_records(record, household)
     create_ss_requests_records(record, household)
+    create_mesh_requests_records(record, household)
+
+
+#######################################
+#   Helper Functions for Testing     #
+#######################################
+
+def _has_mesh_requests(record: dict):
+    mesh_reqs = record.get("MESH Requests", [])
+    return len(mesh_reqs) > 0
 
 
 #######################################
@@ -803,34 +1007,121 @@ def load_household(record: dict):
 
 
 def main():
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+
     parser = argparse.ArgumentParser(
         description="""
             Migrate requests from old base to new base. MAKE SURE YOU HAVE YOUR .env FILE SET UP CORRECTLY.
         """
     )
     parser.add_argument(
-        "--start-at",
-        type=int,
-        default=1,
-        help="Start at this record number (for debugging)",
+        "--transform_only",
+        action="store_true",
+        help="Transform records without migrating to new base",
+    )
+    parser.add_argument(
+        "--subset",
+        type=str,
+        default=None,
+        help="Selected phone numbers to migrate from the legacy requests",
+    )
+    parser.add_argument(
+        "--subset_func",
+        type=str,
+        default=None,
+        help="Function to select phone numbers to migrate from the legacy requests",
+    )
+    parser.add_argument(
+        "--output_dir",
+        type=str,
+        default=None,
+        help="Path to output directory",
     )
     args = parser.parse_args()
-    legacy_requests = extract_open_requests_per_household()
+
+    if args.output_dir:
+        if not os.path.exists(args.output_dir):
+            os.makedirs(args.output_dir)
+    
+    legacy_requests = extract_open_requests_per_household()  
+
+    n_numbers = len(legacy_requests)
+    if n_numbers == 0:
+        log.warning("Found no open legacy requests!")
+        return
+
+    log.info("Extracted %s legacy households!", n_numbers)
+
+    if args.output_dir:
+        output_path = os.path.join(args.output_dir, "legacy_households.txt")
+        with open(output_path, "w") as f:
+            for line_str in legacy_requests.keys():
+                f.write(f"{line_str}\n")
+
+    if args.subset:
+        with open(args.subset, "r") as f:
+            subset_str = [line_str.strip() for line_str in f.read().splitlines()]
+            selected_numbers = {num for num_str in subset_str if (num := format_phone_number(num_str))}
+            legacy_requests = {
+                num: requests
+                for num, requests in legacy_requests.items()
+                if num in selected_numbers
+            }
+            n_numbers = len(legacy_requests)
+            if n_numbers == 0:
+                log.warning("No records to transform after subsetting to '%s'", args.subset)
+                return
+            log.info("Subsetting to %s households from '%s'", n_numbers, args.subset)
+            n_missing = len(subset_str) - n_numbers
+            if n_missing > 0:
+                log.warning("Missing %s of provided phone numbers!", n_missing)
+
+    log.info("Starting transformation for %s phone numbers!", n_numbers)
     transformed_requests = transform_households(legacy_requests)
-    transformed_requests_subset = transformed_requests[args.start_at - 1 :]
-    print(f"Total records to migrate: {len(transformed_requests_subset)}")
-    for i, household_request in enumerate(
-        transformed_requests_subset, start=args.start_at
-    ):
+
+    n_records = len(transformed_requests)
+    if n_records == 0:
+        log.warning("No transformed requests to migrate!")
+        return
+    log.info("Transformed %s records!", n_records)
+
+    if args.subset_func:
+        subset_func = globals().get(args.subset_func)
+        if subset_func is not None and callable(subset_func):
+            transformed_requests = [r for r in transformed_requests if subset_func(r)]
+            n_records = len(transformed_requests)
+            if n_records == 0:
+                log.warning("No records to migrate after subsetting with %s", args.subset_func)
+                return
+            log.info("Selected %s households with %s", n_records, args.subset_func)
+        else:
+            log.error("Function %s not found or not callable!", args.subset_func)
+            return
+
+    if args.output_dir:
+        output_path = os.path.join(args.output_dir, "transformed_households.txt")
+        with open(output_path, "w") as f:
+            for r in transformed_requests:
+                line_str = r.get(PHONE_FIELD)
+                f.write(f"{line_str}\n")
+    
+    if args.transform_only:
+        log.info("Skipping migration!")
+        return
+
+    log.info("Starting migration of %s records.", n_records)
+    for i, household_request in enumerate(transformed_requests):
         if i % 100 == 0:
-            print(
-                f"Migrated {i} records. {len(transformed_requests_subset) - i} records left."
-            )
+            log.info("Migrated %s records. %s records left.", i, n_records - i)
         try:
             load_household(household_request)
-        except Exception as e:
-            print("Restart at:", i)
-            raise e
+            if i == n_records - 1:
+                log.info("Migrated %s records.", i + 1)
+        except Exception:
+            log.error("Failed at %s for %s", i + 1, household_request.get(PHONE_FIELD))
+            raise
+
+    log.info("Migration completed successfully!")
 
 
 if __name__ == "__main__":
