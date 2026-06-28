@@ -185,9 +185,6 @@ class MeshRequest(BaseRequest):
     table_name = 'Mesh Requests'
 
     internet_access = F.MultipleSelectField('Internet Access')
-    roof_is_accessible = F.CheckboxField('Roof Accessible?')
-    has_los = F.CheckboxField('Has LOS?')
-    
     address = F.TextField('Address')
     address_accuracy = F.SelectField('Address Accuracy')
     building_identification_number = F.NumberField('Building Identification Number')
@@ -203,8 +200,6 @@ class MeshRequest(BaseRequest):
             legacy_date_submitted: date | None,
             last_requested: date | None,
             internet_access: List[str] | None = None,
-            roof_is_accessible: bool = False,
-            has_los: bool = False,
             address: str | None = None,
             address_accuracy: str | None = None,
             building_identification_number: int | None = None,

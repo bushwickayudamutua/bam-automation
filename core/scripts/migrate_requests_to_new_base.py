@@ -500,24 +500,9 @@ def transform_mesh_requests(
             mesh_dates = transform_date_submitted(DATE_SUBMITTED_FIELD, DATE_SUBMITTED_FIELD, bin_records)
             mesh_address = transform_address(bin_records)
             internet_access = transform_internet_access("Internet Access", "Internet Access", bin_records)
-            
-            if mesh_status_rank in [7, 8, 9, 12]:
-                has_los = True
-            else:
-                has_los = any([(r.get("MESH - Has LOS") or False) for r in bin_records])
-
-            if mesh_status_rank in [6, 7, 8, 9, 12]:
-                roof_is_accessible = True
-            else:
-                field_name = "MESH - To confirm during outreach (before install)"
-                field_value = "Tengo acceso de mi techo / Roof access in my building"
-                roof_is_accessible = any([field_value in (r.get(field_name) or []) for r in bin_records])
-            
             mesh_requests.append({
                 "Status": mesh_status,
                 "Building Identification Number": convert_str_to_int(bin_val),
-                "Roof Accessible?": roof_is_accessible,
-                "Has LOS?": has_los,
                 **mesh_dates,
                 **mesh_address,
                 **internet_access,
@@ -612,21 +597,23 @@ def transform_open_requests(
 
     # exclude these items from migration
     EXCLUDE_ITEMS = [
-        "Asistencia legal de inquilinos / Tenant legal assistance / 租戶法律協助",
-        "Asistencia con servicios escolares / Assistance with in-school services / 學校服務協助",
-        "Asistencia asegurando vivienda/ Securing housing / 住房協助",
-        "Asistencia con seguro médico / Medical insurance support / 醫療保險協助",
-        "Asistencia de Negocios / Small Business Support / 小型企業協助",
-        "Asistencia con beneficios de comida / Assistance with food benefits / 食品福利協助（WIC, SNAP, P-EBT）",
-        "Asistencia con Transporte / Transportation Assistance / 交通運輸協助",
+    # NOT excluding these social service types for now.
+        # "Asistencia legal de inquilinos / Tenant legal assistance / 租戶法律協助",
+        # "Asistencia con servicios escolares / Assistance with in-school services / 學校服務協助",
+        # "Asistencia asegurando vivienda/ Securing housing / 住房協助",
+        # "Asistencia con seguro médico / Medical insurance support / 醫療保險協助",
+        # "Asistencia de Negocios / Small Business Support / 小型企業協助",
+        # "Asistencia con beneficios de comida / Assistance with food benefits / 食品福利協助（WIC, SNAP, P-EBT）",
+        # "Asistencia con Transporte / Transportation Assistance / 交通運輸協助",
+        # "Asistencia para mascotas / Pet Assistance / 寵物協助",
+    # Excluding these types from migration:
         "Asistencia legal de inmigración / Immigration legal assistance / 移民法律協助",
-        "Asistencia para mascotas / Pet Assistance / 寵物協助",
         "Comida de mascota / Pet Food / 寵物食品",
         "Alimentos / Groceries / 食品",
         "Comida caliente / Hot meals / 热食",
         "Otras / Other / 其他家具",
         "Otras / Other / 其他廚房用品",
-        LOW_COST_INTERNET_AT_HOME_TYPE, # MESH Requests are handled separately
+        LOW_COST_INTERNET_AT_HOME_TYPE, # MESH Requests handled separately
     ]
 
     all_items_df = [
@@ -945,8 +932,6 @@ def create_mesh_requests_records(record: dict, household: Household):
                 legacy_date_submitted=format_date(r.get("Legacy First "+DATE_SUBMITTED_FIELD)),
                 last_requested=format_date(r.get("Legacy Last "+DATE_SUBMITTED_FIELD)),
                 internet_access=r.get("Internet Access") or [],
-                roof_is_accessible=r.get("Roof Accessible?", False),
-                has_los=r.get("Has LOS?", False),
                 address_accuracy=r.get("Address Accuracy"),
                 address=r.get("Address"),
                 street_address=r.get("Street Address"),
