@@ -1,23 +1,14 @@
 #!/bin/bash
 set -e
 
-# Clean previous builds
-rm -rf virtualenv
-find core -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-find core -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
-
 # Create fresh virtualenv
 virtualenv virtualenv
 source virtualenv/bin/activate
 
 # Upgrade pip using python -m pip for reliability
-python -m pip install --upgrade pip
+python -m pip install --upgrade pip msal pyopenssl
 
 # Install bam-core with dependencies to target directory
-pip install --target ./virtualenv/lib/python3.11/site-packages ./core
+python -m pip install --target ./virtualenv/lib/python3.11/site-packages ../../../lib/core
 
-# Reinstall binary packages for Linux platform (this overwrites the macOS versions)
-pip install --platform manylinux2014_x86_64 --only-binary=:all: --target ./virtualenv/lib/python3.11/site-packages --upgrade --force-reinstall --no-deps \
-    pydantic pydantic-core==2.46.4 email-validator charset-normalizer cryptography cffi
-
-echo "Build complete for Linux x86_64"
+echo "Build complete"

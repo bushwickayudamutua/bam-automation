@@ -12,19 +12,15 @@ prepare-functions:
 
 cleanup-functions:
 
-	rm -rf functions/packages/*/*/virtualenv
-	rm -rf functions/packages/*/*/__deployer__.zip
-
-remove-core-from-functions:
-
-	rm -rf functions/packages/*/*/core
+	rm -rf functions/lib/core/
+	rm -f functions/packages/*/*/.ignore
+	rm -f functions/packages/*/*/build.sh
 
 deploy-functions:
 
-	make remove-core-from-functions
 	make prepare-functions
-	doctl serverless deploy functions --env ./.env --verbose --trace
-	make remove-core-from-functions
+	doctl serverless deploy functions --env ./.env --remote-build --verbose --verbose-build --trace
+	make cleanup-functions
 
 run-daily:
 
