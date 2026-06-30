@@ -10,7 +10,16 @@ const {
   cleanedAddressAccuracy,
   bin,
   plusCode,
+  formSubmittedAt,
 } = input.config()
+
+function submissionDateOnly(value) {
+  if (value == null || value === '') return null
+  return new Date(value).toISOString().slice(0, 10)
+}
+
+const lastRequested = submissionDateOnly(formSubmittedAt)
+const lastRequestedFields = lastRequested ? { 'Last Requested': lastRequested } : {}
 
 const requestTable = base.getTable('Requests')
 
@@ -29,9 +38,15 @@ const furnItemReqs = [
 output.set(
   'requestIds',
   await requestTable.createRecordsAsync([
-    nonFurnItemReqs.map((reqType) => ({ fields: { Type: { name: reqType } } })),
+    nonFurnItemReqs.map((reqType) => ({
+      fields: { Type: { name: reqType }, ...lastRequestedFields },
+    })),
     furnItemReqs.map((reqType) => ({
-      fields: { Type: { name: reqType }, Geocode: plusCode || '' },
+      fields: {
+        Type: { name: reqType },
+        Geocode: plusCode || '',
+        ...lastRequestedFields,
+      },
     })),
   ].flat())
 )
@@ -50,18 +65,25 @@ const ssRequestTable = base.getTable('Social Service Requests')
 output.set(
   'ssRequestIds',
   await ssRequestTable.createRecordsAsync(
-    ssReqs.map((reqType) => ({ fields: { Type: { name: reqType } } }))
+    ssReqs.map((reqType) => ({
+      fields: { Type: { name: reqType }, ...lastRequestedFields },
+    }))
   )
 )
 
 const meshRequestTable = base.getTable('Mesh Requests')
 
-output.set(
-  'meshRequestId',
-  await meshRequestTable.createRecordAsync({
-    'Internet Access': internetAccess.map((name) => ({ name })),
-    Address: cleanedAddress,
-    'Address Accuracy': { name: cleanedAddressAccuracy },
-    'Building Identification Number': Number(bin),
-  })
-)
+if (meshRequested) {
+  output.set(
+    'meshRequestId',
+    await meshRequestTable.createRecordAsync({
+      'Internet Access': internetAccess.map((name) => ({ name })),
+      Address: cleanedAddress,
+      'Address Accuracy': { name: cleanedAddressAccuracy },
+      'Building Identification Number': Number(bin),
+      ...lastRequestedFields,
+    })
+  )
+} else {
+  output.set('meshRequestId', null)
+}
