@@ -37,31 +37,42 @@ async function mergeReqs(tableName, recordIds, keyField, mergeFns) {
     for (let [, reqGroup] of requestGroups) {
         const [firstReq, ...rest] = reqGroup
 
-        const x = Object.fromEntries(Object.keys(mergeFns).map((field) => {
-                const fn = mergeFns[field]
-                const value = fn(reqGroup.map((req) => req.getCellValue(field)))
-                return [field, value]
-            }))
-        console.log(x)
+        const mergedFields = Object.fromEntries(Object.keys(mergeFns).map((field) => {
+            const fn = mergeFns[field]
+            const value = fn(reqGroup.map((req) => req.getCellValue(field)))
+            return [field, value]
+        }))
         await requestTable.updateRecordAsync(
-            firstReq, x
+            firstReq, mergedFields
         )
         await requestTable.deleteRecordsAsync(rest)
     }
 }
 
-const mergeNotes = (notes) => notes.filter((note) => note !== '').join('\n')
+const minDate = (dates) => {
+    const valid = dates.filter(Boolean)
+    if (!valid.length) return undefined
+    return valid.reduce((min, d) => (d < min ? d : min))
+}
 const getLast = (arr) => arr.pop()
 
 await mergeReqs('Requests', requestIds, 'Type', {
     'Last Requested': getLast,
     Geocode: getLast,
+    'Legacy Date Submitted': minDate,
 })
 await mergeReqs('Social Service Requests', ssRequestIds, 'Type', {
     'Last Requested': getLast,
+    'Legacy Date Submitted': minDate,
+    'Partner Org': (orgLists) => {
+        const allSelectionIds = orgLists.map((orgList) => orgList ?? []).flat().map(({ id }) => id)
+        const uniqIds = [...new Set(allSelectionIds)]
+        return uniqIds.map((id) => ({ id }))
+    },
 })
 await mergeReqs('Mesh Requests', meshRequestIds, 'Building Identification Number', {
     'Last Requested': getLast,
+    'Legacy Date Submitted': minDate,
     'Internet Access': (iaLists) => {
         const allSelectionIds = iaLists.map((iaList) => iaList ?? []).flat().map(({ id }) => id)
         const uniqIds = [...new Set(allSelectionIds)]
