@@ -46,6 +46,7 @@ const pickAppointmentFields = (households) => {
             break
         }
     }
+    if (!source) return {}
     return {
         'Appointment Date': maxApptDate,
         'Appointment Time': source.getCellValue('Appointment Time'),

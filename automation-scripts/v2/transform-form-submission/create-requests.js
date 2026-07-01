@@ -5,7 +5,6 @@ const {
   kitchenReqs,
   ssReqs,
   internetAccess,
-  roofAccessible,
   cleanedAddress,
   cleanedAddressAccuracy,
   bin,
@@ -74,17 +73,20 @@ output.set(
 const meshRequestTable = base.getTable('Mesh Requests')
 
 if (meshRequested) {
+  const binNumber = bin != null && bin !== '' ? Number(bin) : null
+  const meshFields = {
+    'Internet Access': internetAccess.map((name) => ({ name })),
+    Address: cleanedAddress,
+    'Address Accuracy': { name: cleanedAddressAccuracy || 'No result' },
+    ...lastRequestedFields,
+  }
+  if (binNumber != null && Number.isFinite(binNumber)) {
+    meshFields['Building Identification Number'] = binNumber
+  }
   output.set(
     'meshRequestId',
-    await meshRequestTable.createRecordAsync({
-      'Internet Access': internetAccess.map((name) => ({ name })),
-      Address: cleanedAddress,
-      'Address Accuracy': { name: cleanedAddressAccuracy || 'No result' },
-      'Building Identification Number': Number(bin),
-      ...lastRequestedFields,
-    })
+    await meshRequestTable.createRecordAsync(meshFields)
   )
 } else {
   output.set('meshRequestId', null)
 }
- 

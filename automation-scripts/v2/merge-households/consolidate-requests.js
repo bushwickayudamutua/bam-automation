@@ -1,6 +1,8 @@
 const { requestIds, ssRequestIds, meshRequestIds } = input.config()
 
 async function mergeReqs(tableName, recordIds, keyField, mergeFns) {
+    if (!recordIds?.length) return
+
     // Pull requests from table
     const requestTable = base.getTable(tableName)
     const requestsQuery = await requestTable.selectRecordsAsync({

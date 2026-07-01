@@ -8,6 +8,7 @@ const countTable = base.getTable('Fulfilled Request Count');
 
 const countCols = countTable.fields;
 let allCounts = null;
+const dateRecordPromises = new Map();
 
 async function getAllCounts() {
   if (allCounts === null) {
@@ -17,19 +18,29 @@ async function getAllCounts() {
 }
 
 async function findOrCreateCountRecord(date) {
-  const counts = await getAllCounts();
-  for (const count of counts) {
-    if (count.getCellValue('Date') === date) return count;
+  if (date == null) return null;
+
+  if (!dateRecordPromises.has(date)) {
+    dateRecordPromises.set(date, (async () => {
+      const counts = await getAllCounts();
+      for (const count of counts) {
+        if (count.getCellValue('Date') === date) return count;
+      }
+
+      const recId = await countTable.createRecordAsync({ 'Date': date });
+      const rec = await countTable.selectRecordAsync(recId, { fields: countCols });
+      if (rec === null) throw "Airtable is broken";
+      counts.push(rec);
+      return rec;
+    })());
   }
 
-  const recId = await countTable.createRecordAsync({ 'Date': date });
-  const rec = await countTable.selectRecordAsync(recId, { fields: countCols });
-  if (rec === null) throw "Airtable is broken";
-  counts.push(rec);
-  return rec;
+  return dateRecordPromises.get(date);
 }
 
 async function processRequests(table, reqIds, columnOverwrites) {
+  if (!reqIds?.length) return;
+
   const groups = {};
 
   const reqs = (await table.selectRecordsAsync({ recordIds: reqIds, fields: [
@@ -39,6 +50,7 @@ async function processRequests(table, reqIds, columnOverwrites) {
   ] })).records;
   for (const req of reqs) {
     const date = req.getCellValue('Status Last Updated At');
+    if (date == null) continue;
 
     groups[date] ??= [];
     groups[date].push(req);
@@ -51,19 +63,23 @@ async function processRequests(table, reqIds, columnOverwrites) {
   for (const [date, reqs] of Object.entries(groups)) {
     const fields = {};
     const countRec = await findOrCreateCountRecord(date);
+    if (countRec == null) continue;
 
     for (const req of reqs) {
       const reqStatus = req.getCellValue('Status').name;
       if (reqStatus === 'Delivered') {
         const reqType = req.getCellValue('Type').name;
         const countCol = getCountCol(reqType);
+        if (!countCol) continue;
 
         fields[countCol] ??= countRec.getCellValue(countCol);
         fields[countCol]++;
       }
     }
 
-    await countTable.updateRecordAsync(countRec, fields);
+    if (Object.keys(fields).length) {
+      await countTable.updateRecordAsync(countRec, fields);
+    }
 
     for (let idx = 0; idx < reqs.length; idx += 50) {
       await table.deleteRecordsAsync(reqs.slice(idx, idx + 50));
@@ -84,6 +100,7 @@ async function processMesh(table, reqIds) {
   ] })).records;
   for (const req of reqs) {
     const date = req.getCellValue('Status Last Updated At');
+    if (date == null) continue;
 
     groups[date] ??= [];
     groups[date].push(req);
@@ -92,6 +109,7 @@ async function processMesh(table, reqIds) {
   for (const [date, reqs] of Object.entries(groups)) {
     const fields = {};
     const countRec = await findOrCreateCountRecord(date);
+    if (countRec == null) continue;
     const countedPhones = new Set();
 
     for (const req of reqs) {
@@ -107,7 +125,9 @@ async function processMesh(table, reqIds) {
       fields[countCol]++;
     }
 
-    await countTable.updateRecordAsync(countRec, fields);
+    if (Object.keys(fields).length) {
+      await countTable.updateRecordAsync(countRec, fields);
+    }
 
     // Delete records in group in pages of 50
     for (let idx = 0; idx < reqs.length; idx += 50) {
