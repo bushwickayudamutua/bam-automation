@@ -834,7 +834,7 @@ def create_requests_records(record: dict, household: Household):
         request_records1 = [
             Request(
                 household=household,
-                type=req_type,
+                type=TYPE_MAP.get(req_type, req_type),
                 status="Open",
                 legacy_date_submitted=format_date(oldest_date),
                 last_requested=format_date(latest_date),
@@ -846,6 +846,11 @@ def create_requests_records(record: dict, household: Household):
             )
             if req_type not in TYPES_TO_EXCLUDE
         ]
+
+    TYPE_MAP = {
+        "Bastidor individual / Twin Bed Frame 單人床架" : "Bastidor individual / Twin Bed Frame / 單人床架",
+        "Asistencia asegurando vivienda/ Securing housing / 住房協助": "Asistencia asegurando vivienda / Securing housing / 住房協助",
+    }
 
     # combine the list of requests (with geocode, and no other address information)
     all_reqs2 = pd.concat([
