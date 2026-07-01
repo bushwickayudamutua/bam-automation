@@ -818,11 +818,16 @@ def create_requests_records(record: dict, household: Household):
     :param household: The saved Household instance
     :return: List of Request instances (empty if none to create)
     """
+    
     TYPES_TO_EXCLUDE = [
         "Muebles / Furniture / 家具",
         "Cosas de Cocina / Kitchen Supplies / 廚房用品",
         "Cama / Bed / 床",
     ]
+
+    TYPE_MAP = {
+        "Bastidor individual / Twin Bed Frame 單人床架" : "Bastidor individual / Twin Bed Frame / 單人床架",
+    }
 
     # combine the list of requests (no address information)
     all_reqs1 = pd.concat([
@@ -847,11 +852,6 @@ def create_requests_records(record: dict, household: Household):
             if req_type not in TYPES_TO_EXCLUDE
         ]
 
-    TYPE_MAP = {
-        "Bastidor individual / Twin Bed Frame 單人床架" : "Bastidor individual / Twin Bed Frame / 單人床架",
-        "Asistencia asegurando vivienda/ Securing housing / 住房協助": "Asistencia asegurando vivienda / Securing housing / 住房協助",
-    }
-
     # combine the list of requests (with geocode, and no other address information)
     all_reqs2 = pd.concat([
         record.get("Furniture Items", pd.DataFrame()),
@@ -862,7 +862,7 @@ def create_requests_records(record: dict, household: Household):
         request_records2 = [
             Request(
                 household=household,
-                type=req_type,
+                type=TYPE_MAP.get(req_type, req_type),
                 status="Open",
                 legacy_date_submitted=format_date(oldest_date),
                 last_requested=format_date(latest_date),
@@ -892,7 +892,8 @@ def create_ss_requests_records(record: dict, household: Household):
     """
     
     TYPE_MAP = {
-        "Asistencia para niños discapacitados / Assistance for disabled children / 殘疾兒童協助": "Asistencia para niños con discapacidad / Assistance for disabled children / 殘疾兒童協助"
+        "Asistencia para niños discapacitados / Assistance for disabled children / 殘疾兒童協助": "Asistencia para niños con discapacidad / Assistance for disabled children / 殘疾兒童協助",
+        "Asistencia asegurando vivienda/ Securing housing / 住房協助": "Asistencia asegurando vivienda / Securing housing / 住房協助",
     }
 
     ss_reqs = record.get("Social Service Requests", pd.DataFrame())
