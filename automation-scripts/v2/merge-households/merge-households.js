@@ -14,6 +14,46 @@ const otherOldHouseholds = await Promise.all(otherOldIds.map(getHousehold))
 
 const allHouseholds = [survivor, ...otherOldHouseholds, newHousehold]
 
+const minDate = (dates) => {
+    const valid = dates.filter(Boolean)
+    if (!valid.length) return undefined
+    return valid.reduce((min, d) => (d < min ? d : min))
+}
+
+const maxDate = (dates) => {
+    const valid = dates.filter(Boolean)
+    if (!valid.length) return undefined
+    return valid.reduce((max, d) => (d > max ? d : max))
+}
+
+const legacyFirstDate = minDate(
+    allHouseholds.map(h => h.getCellValue('Legacy First Date Submitted'))
+)
+const legacyLastDate = maxDate(
+    allHouseholds.map(h => h.getCellValue('Legacy Last Date Submitted'))
+)
+const lastTexted = maxDate(allHouseholds.map(h => h.getCellValue('Last Texted')))
+const lastCalled = maxDate(allHouseholds.map(h => h.getCellValue('Last Called')))
+
+const pickAppointmentFields = (households) => {
+    const maxApptDate = maxDate(households.map(h => h.getCellValue('Appointment Date')))
+    if (!maxApptDate) return {}
+    let source = null
+    for (let i = households.length - 1; i >= 0; i--) {
+        const d = households[i].getCellValue('Appointment Date')
+        if (d && d.getTime() === maxApptDate.getTime()) {
+            source = households[i]
+            break
+        }
+    }
+    return {
+        'Appointment Date': maxApptDate,
+        'Appointment Time': source.getCellValue('Appointment Time'),
+        'Appointment Status': source.getCellValue('Appointment Status'),
+    }
+}
+const appointmentFields = pickAppointmentFields(allHouseholds)
+
 // Helper to dedupe and extract {id} from linked records or multi-select
 const dedupeById = (items) => {
     const seen = new Set()
@@ -92,6 +132,11 @@ await householdTable.updateRecordAsync(survivor, {
     'Mesh Requests': meshRequests,
     'Needs Delivery': allHouseholds.some(h => h.getCellValue('Needs Delivery')),
     'Needs Email Outreach': allHouseholds.some(h => h.getCellValue('Needs Email Outreach')),
+    ...(legacyFirstDate != null && { 'Legacy First Date Submitted': legacyFirstDate }),
+    ...(legacyLastDate != null && { 'Legacy Last Date Submitted': legacyLastDate }),
+    ...(lastTexted != null && { 'Last Texted': lastTexted }),
+    ...(lastCalled != null && { 'Last Called': lastCalled }),
+    ...appointmentFields,
 })
 
 const recordsToDelete = [newHousehold, ...otherOldHouseholds]
