@@ -79,7 +79,7 @@ if (meshRequested) {
     await meshRequestTable.createRecordAsync({
       'Internet Access': internetAccess.map((name) => ({ name })),
       Address: cleanedAddress,
-      'Address Accuracy': { name: cleanedAddressAccuracy },
+      'Address Accuracy': { name: cleanedAddressAccuracy || 'No result' },
       'Building Identification Number': Number(bin),
       ...lastRequestedFields,
     })
@@ -87,3 +87,4 @@ if (meshRequested) {
 } else {
   output.set('meshRequestId', null)
 }
+ 
