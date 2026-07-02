@@ -18,6 +18,6 @@ pip install --target ./virtualenv/lib/python3.11/site-packages ./core
 
 # Reinstall binary packages for Linux platform (this overwrites the macOS versions)
 pip install --platform manylinux2014_x86_64 --only-binary=:all: --target ./virtualenv/lib/python3.11/site-packages --upgrade --force-reinstall --no-deps \
-    pydantic pydantic-core==2.46.4 email-validator charset-normalizer cryptography cffi
+    pydantic pydantic-core==2.46.4 email-validator charset-normalizer cryptography cffi pyopenssl
 
 echo "Build complete for Linux x86_64"
