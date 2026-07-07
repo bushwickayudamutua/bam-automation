@@ -28,9 +28,14 @@ async function mergeReqs(tableName, recordIds, keyField, mergeFns) {
         })
         .forEach((req) => {
             const rawKey = req.getCellValue(keyField)
-            const key = typeof rawKey === 'object'
+            let key = (typeof rawKey === 'object' && rawKey !== null)
                 ? rawKey.id
                 : rawKey
+            // A missing/blank key (e.g. a Mesh Request with no Building
+            // Identification Number) does not imply these records belong
+            // together. Give each such record a unique key so it stays in
+            // its own singleton group and is never merged with others.
+            if (key == null || key === '') key = Symbol('unkeyed')
             if (!requestGroups.has(key)) requestGroups.set(key, [])
             requestGroups.get(key).push(req)
         })
@@ -39,17 +44,24 @@ async function mergeReqs(tableName, recordIds, keyField, mergeFns) {
     for (let [, reqGroup] of requestGroups) {
         const [firstReq, ...rest] = reqGroup
 
-        const mergedFields = Object.fromEntries(Object.keys(mergeFns).map((field) => {
-            const fn = mergeFns[field]
-            const value = fn(
-                reqGroup.map((req) => req.getCellValue(field)),
-                reqGroup,
+        const mergedFields = Object.fromEntries(Object.keys(mergeFns)
+            .map((field) => {
+                const fn = mergeFns[field]
+                const value = fn(
+                    reqGroup.map((req) => req.getCellValue(field)),
+                    reqGroup,
+                )
+                return [field, value]
+            })
+            // Airtable rejects `undefined` field values; a merge fn returns
+            // undefined when it has nothing to write (e.g. minDate over all
+            // blank dates). Drop those so we leave the field untouched.
+            .filter(([, value]) => value !== undefined))
+        if (Object.keys(mergedFields).length) {
+            await requestTable.updateRecordAsync(
+                firstReq, mergedFields
             )
-            return [field, value]
-        }))
-        await requestTable.updateRecordAsync(
-            firstReq, mergedFields
-        )
+        }
         await requestTable.deleteRecordsAsync(rest)
     }
 }

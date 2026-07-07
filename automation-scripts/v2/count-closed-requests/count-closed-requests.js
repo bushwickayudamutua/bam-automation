@@ -10,6 +10,16 @@ const countCols = countTable.fields;
 let allCounts = null;
 const dateRecordPromises = new Map();
 
+// Normalize an Airtable date/dateTime cell value (string or Date) to a
+// stable date-only `YYYY-MM-DD` key. This keeps grouping and the count
+// table's Date lookup consistent, avoiding both time-of-day bucket splits
+// and comparisons that never match across value types.
+function toDateKey(value) {
+  if (value == null) return null;
+  const iso = typeof value === 'string' ? value : value.toISOString();
+  return iso.slice(0, 10);
+}
+
 async function getAllCounts() {
   if (allCounts === null) {
     allCounts = (await countTable.selectRecordsAsync({ fields: countCols })).records;
@@ -24,7 +34,7 @@ async function findOrCreateCountRecord(date) {
     dateRecordPromises.set(date, (async () => {
       const counts = await getAllCounts();
       for (const count of counts) {
-        if (count.getCellValue('Date') === date) return count;
+        if (toDateKey(count.getCellValue('Date')) === date) return count;
       }
 
       const recId = await countTable.createRecordAsync({ 'Date': date });
@@ -49,7 +59,7 @@ async function processRequests(table, reqIds, columnOverwrites) {
     'Type',
   ] })).records;
   for (const req of reqs) {
-    const date = req.getCellValue('Status Last Updated At');
+    const date = toDateKey(req.getCellValue('Status Last Updated At'));
     if (date == null) continue;
 
     groups[date] ??= [];
@@ -99,7 +109,7 @@ async function processMesh(table, reqIds) {
     'Phone Number (from Household)',
   ] })).records;
   for (const req of reqs) {
-    const date = req.getCellValue('Status Last Updated At');
+    const date = toDateKey(req.getCellValue('Status Last Updated At'));
     if (date == null) continue;
 
     groups[date] ??= [];
