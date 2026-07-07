@@ -150,6 +150,22 @@ class Request(BaseRequest):
     table_name = 'Requests'
 
     type = F.SelectField('Type')
+
+    if TYPE_CHECKING:
+        def __init__(
+            self, *,
+            household: Household,
+            type: str,
+            status: str = "Open",
+            legacy_date_submitted: date | None,
+            last_requested: date | None,
+        ): ...
+
+
+class FurnitureRequest(BaseRequest):
+    table_name = 'Furniture Requests'
+
+    type = F.SelectField('Type')
     geocode = F.TextField('Geocode')
 
     if TYPE_CHECKING:
@@ -162,6 +178,7 @@ class Request(BaseRequest):
             last_requested: date | None,
             geocode: str | None = None
         ): ...
+
 
 class SocialServiceRequest(BaseRequest):
     table_name = 'Social Service Requests'

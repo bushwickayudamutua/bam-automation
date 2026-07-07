@@ -19,6 +19,7 @@ from bam_core.lib.airtable_v2 import (
     Household,
     MeshRequest,
     Request,
+    FurnitureRequest,
     SocialServiceRequest,
 )
 from bam_core.utils.phone import (
@@ -811,7 +812,7 @@ def transform_households(households: dict[str, list[dict]]) -> list[dict]:
 #######################################
 
 @retry(attempts=5, wait=1, backoff=2)
-def create_requests_records(record: dict, household: Household):
+def create_eg_requests_records(record: dict, household: Household):
     """
     Create Requests rows from the transformed legacy assistance request record.
     :param record: The transformed household record
@@ -825,42 +826,62 @@ def create_requests_records(record: dict, household: Household):
         "Cama / Bed / 床",
     ]
 
-    TYPE_MAP = {
-        "Bastidor individual / Twin Bed Frame 單人床架" : "Bastidor individual / Twin Bed Frame / 單人床架",
-    }
-
     # combine the list of requests (no address information)
-    all_reqs1 = pd.concat([
+    all_reqs = pd.concat([
         record.get("Request Types", pd.DataFrame()),
         record.get("Kitchen Items", pd.DataFrame()),
     ], ignore_index=True)
-    request_records1 = []
-    if all_reqs1.shape[0] > 0:
-        request_records1 = [
+    request_records = []
+    if all_reqs.shape[0] > 0:
+        request_records = [
             Request(
                 household=household,
-                type=TYPE_MAP.get(req_type, req_type),
+                type=req_type,
                 status="Open",
                 legacy_date_submitted=format_date(oldest_date),
                 last_requested=format_date(latest_date),
             )
             for req_type, oldest_date, latest_date in zip(
-                all_reqs1["item"],
-                all_reqs1["Legacy First "+DATE_SUBMITTED_FIELD],
-                all_reqs1["Legacy Last "+DATE_SUBMITTED_FIELD],
+                all_reqs["item"],
+                all_reqs["Legacy First "+DATE_SUBMITTED_FIELD],
+                all_reqs["Legacy Last "+DATE_SUBMITTED_FIELD],
             )
             if req_type not in TYPES_TO_EXCLUDE
         ]
 
+    if request_records:
+        Request.batch_save(request_records)
+    return request_records
+
+
+@retry(attempts=5, wait=1, backoff=2)
+def create_furniture_requests_records(record: dict, household: Household):
+    """
+    Create Furniture Requests rows from the transformed legacy assistance request record.
+    :param record: The transformed household record
+    :param household: The saved Household instance
+    :return: List of Furniture Request instances (empty if none to create)
+    """
+    
+    TYPES_TO_EXCLUDE = [
+        "Muebles / Furniture / 家具",
+        "Cosas de Cocina / Kitchen Supplies / 廚房用品",
+        "Cama / Bed / 床",
+    ]
+
+    TYPE_MAP = {
+        "Bastidor individual / Twin Bed Frame 單人床架" : "Bastidor individual / Twin Bed Frame / 單人床架",
+    }
+
     # combine the list of requests (with geocode, and no other address information)
-    all_reqs2 = pd.concat([
+    all_reqs = pd.concat([
         record.get("Furniture Items", pd.DataFrame()),
         record.get("Bed Details", pd.DataFrame()),
     ], ignore_index=True)
-    request_records2 = []
-    if all_reqs2.shape[0] > 0:
-        request_records2 = [
-            Request(
+    request_records = []
+    if all_reqs.shape[0] > 0:
+        request_records = [
+            FurnitureRequest(
                 household=household,
                 type=TYPE_MAP.get(req_type, req_type),
                 status="Open",
@@ -869,16 +890,15 @@ def create_requests_records(record: dict, household: Household):
                 geocode=record.get("Geocode"),
             )
             for req_type, oldest_date, latest_date in zip(
-                all_reqs2["item"],
-                all_reqs2["Legacy First "+DATE_SUBMITTED_FIELD],
-                all_reqs2["Legacy Last "+DATE_SUBMITTED_FIELD],
+                all_reqs["item"],
+                all_reqs["Legacy First "+DATE_SUBMITTED_FIELD],
+                all_reqs["Legacy Last "+DATE_SUBMITTED_FIELD],
             )
             if req_type not in TYPES_TO_EXCLUDE
         ]
 
-    request_records = request_records1 + request_records2
     if request_records:
-        Request.batch_save(request_records)
+        FurnitureRequest.batch_save(request_records)
     return request_records
 
 
@@ -989,18 +1009,10 @@ def load_household(record: dict):
     :return: None
     """
     household = create_household_record(record)
-    create_requests_records(record, household)
+    create_eg_requests_records(record, household)
+    create_furniture_requests_records(record, household)
     create_ss_requests_records(record, household)
     create_mesh_requests_records(record, household)
-
-
-#######################################
-#   Helper Functions for Testing     #
-#######################################
-
-def _has_mesh_requests(record: dict):
-    mesh_reqs = record.get("MESH Requests", [])
-    return len(mesh_reqs) > 0
 
 
 #######################################
