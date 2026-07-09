@@ -1,7 +1,8 @@
-const { requestIds, ssRequestIds, meshRequestIds } = input.config();
+const { requestIds, furnRequestIds, ssRequestIds, meshRequestIds } = input.config();
 
 // Retrieve tables
 const reqTable = base.getTable('Requests');
+const furnReqTable = base.getTable('Furniture Requests');
 const ssReqTable = base.getTable('Social Service Requests');
 const meshTable = base.getTable('Mesh Requests');
 const countTable = base.getTable('Fulfilled Request Count');
@@ -138,6 +139,7 @@ async function processMesh(table, reqIds) {
 
 await Promise.all([
   processRequests(reqTable, requestIds, { }),
+  processRequests(furnReqTable, furnRequestIds, { }),
   processRequests(ssReqTable, ssRequestIds, { }),
   processMesh(meshTable, meshRequestIds),
 ]);
