@@ -24,25 +24,47 @@ const clean = async (email, phone, address, city_state, zipcode) => {
     }
 }
 
-// clean data
+const passThroughAddress = [address, city, zipCode].join(' ') || ''
+
+const setOutputs = (fields, success) => {
+    output.set('phone', fields.phone || '')
+    output.set('phone_is_invalid', fields.phone_is_invalid || false)
+    output.set('phone_is_intl', fields.phone_is_intl || false)
+    output.set('email', fields.email || '')
+    output.set('email_error', fields.email_error || '')
+    output.set('cleaned_address', fields.cleaned_address || '')
+    output.set('cleaned_address_accuracy', fields.cleaned_address_accuracy || '')
+    output.set('bin', fields.bin || '')
+    output.set('plus_code', fields.plus_code || '')
+    output.set('success', success)
+}
+
+// clean data; on API failure pass through raw form fields so intake always proceeds
 const apiResponse = await clean(email, phone, address, city, zipCode)
 
-// default to passing through input data
 if (apiResponse) {
-    output.set('phone', apiResponse.phone || phone || '')
-    output.set('phone_is_invalid', apiResponse.phone_is_invalid || false)
-    output.set('phone_is_intl', apiResponse.phone_is_intl || false)
-    output.set('email', apiResponse.email || email || '')
-    output.set('email_error', apiResponse.email_error || '')
-    output.set(
-        'cleaned_address',
-        apiResponse.cleaned_address || [address, city, zipCode].join(' ') || ''
+    setOutputs(
+        {
+            phone: apiResponse.phone || phone,
+            phone_is_invalid: apiResponse.phone_is_invalid,
+            phone_is_intl: apiResponse.phone_is_intl,
+            email: apiResponse.email || email,
+            email_error: apiResponse.email_error,
+            cleaned_address: apiResponse.cleaned_address || passThroughAddress,
+            cleaned_address_accuracy: apiResponse.cleaned_address_accuracy,
+            bin: apiResponse.bin,
+            plus_code: apiResponse.plus_code,
+        },
+        true
     )
-    output.set('cleaned_address_accuracy', apiResponse.cleaned_address_accuracy || '')
-    output.set('bin', apiResponse.bin || '')
-    output.set('plus_code', apiResponse.plus_code || '')
-    output.set('success', true)
 } else {
-    output.set('success', false)
+    setOutputs(
+        {
+            phone,
+            email,
+            cleaned_address: passThroughAddress,
+        },
+        false
+    )
 }
 
