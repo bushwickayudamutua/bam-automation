@@ -78,6 +78,10 @@ const requests = dedupeById(
     allHouseholds.map(h => h.getCellValue('Requests'))
 )
 
+const furnitureRequests = dedupeById(
+    allHouseholds.map(h => h.getCellValue('Furniture Requests'))
+)
+
 const socialServiceRequests = dedupeById(
     allHouseholds.map(h => h.getCellValue('Social Service Requests'))
 )
@@ -129,6 +133,7 @@ await householdTable.updateRecordAsync(survivor, {
     "Other Languages": otherLanguages,
     Notes: notes,
     Requests: requests,
+    'Furniture Requests': furnitureRequests,
     'Social Service Requests': socialServiceRequests,
     'Mesh Requests': meshRequests,
     'Needs Delivery': allHouseholds.some(h => h.getCellValue('Needs Delivery')),

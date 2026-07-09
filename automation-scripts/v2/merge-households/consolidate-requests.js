@@ -1,4 +1,4 @@
-const { requestIds, ssRequestIds, meshRequestIds } = input.config()
+const { requestIds, furnRequestIds, ssRequestIds, meshRequestIds } = input.config()
 
 async function mergeReqs(tableName, recordIds, keyField, mergeFns) {
     if (!recordIds?.length) return
@@ -64,21 +64,17 @@ const trimText = (value) => (value || '').trim()
 
 const MESH_STATUS_RANK = {
     'Open': 0,
-    'Texted about Mesh': 1,
-    'Step 1 - Interested in Mesh': 2,
+    'Contacted about Mesh': 1,
+    'Interested in Mesh': 2,
     'Needs Panorama': 3,
     'Roof Access In Process': 4,
     'Confirming Permission with Landlord': 5,
     'Roof Access Confirmed': 6,
-    'Step 2 - LOS Confirmed': 7,
-    'Step 3 - Scheduling IN-PROGRESS': 8,
+    'LOS Confirmed': 7,
+    'Scheduling IN-PROGRESS': 8,
     'Install Scheduled': 9,
-    'YAY! MESH INSTALLED!': 10,
-    'Not Interested': 11,
-    'Cannot Install - Does not have LOS': 11,
-    'NYCHA - Currently Does Not Qualify': 11,
-    'Cannot Install - No Roof Access': 11,
-    'Cannot Install - Other Reason': 11,
+    'Cannot Install': 10,
+    'YAY! MESH INSTALLED!': 11,
     'INSTALL PENDING ELDERT REPAIR': 12,
 }
 
@@ -164,6 +160,10 @@ const fromAddressBundle = (field) => (_, reqGroup) => {
 }
 
 await mergeReqs('Requests', requestIds, 'Type', {
+    'Last Requested': getLast,
+    'Legacy Date Submitted': minDate,
+})
+await mergeReqs('Furniture Requests', furnRequestIds, 'Type', {
     'Last Requested': getLast,
     Geocode: getLast,
     'Legacy Date Submitted': minDate,
