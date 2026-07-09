@@ -21,6 +21,7 @@ const lastRequested = submissionDateOnly(formSubmittedAt)
 const lastRequestedFields = lastRequested ? { 'Last Requested': lastRequested } : {}
 
 const requestTable = base.getTable('Requests')
+const furnRequestTable = base.getTable('Furniture Requests')
 
 const nonFurnItemReqs = [
   egReqs.filter((egType) =>
@@ -36,18 +37,28 @@ const furnItemReqs = [
 
 output.set(
   'requestIds',
-  await requestTable.createRecordsAsync([
-    nonFurnItemReqs.map((reqType) => ({
-      fields: { Type: { name: reqType }, ...lastRequestedFields },
-    })),
-    furnItemReqs.map((reqType) => ({
-      fields: {
-        Type: { name: reqType },
-        Geocode: plusCode || '',
-        ...lastRequestedFields,
-      },
-    })),
-  ].flat())
+  nonFurnItemReqs.length
+    ? await requestTable.createRecordsAsync(
+        nonFurnItemReqs.map((reqType) => ({
+          fields: { Type: { name: reqType }, ...lastRequestedFields },
+        }))
+      )
+    : []
+)
+
+output.set(
+  'furnRequestIds',
+  furnItemReqs.length
+    ? await furnRequestTable.createRecordsAsync(
+        furnItemReqs.map((reqType) => ({
+          fields: {
+            Type: { name: reqType },
+            Geocode: plusCode || '',
+            ...lastRequestedFields,
+          },
+        }))
+      )
+    : []
 )
 
 let meshRequested = false
@@ -63,11 +74,13 @@ const ssRequestTable = base.getTable('Social Service Requests')
 
 output.set(
   'ssRequestIds',
-  await ssRequestTable.createRecordsAsync(
-    ssReqs.map((reqType) => ({
-      fields: { Type: { name: reqType }, ...lastRequestedFields },
-    }))
-  )
+  ssReqs.length
+    ? await ssRequestTable.createRecordsAsync(
+        ssReqs.map((reqType) => ({
+          fields: { Type: { name: reqType }, ...lastRequestedFields },
+        }))
+      )
+    : []
 )
 
 const meshRequestTable = base.getTable('Mesh Requests')
