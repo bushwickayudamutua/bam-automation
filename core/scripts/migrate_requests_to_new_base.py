@@ -386,8 +386,10 @@ def get_best_mesh_status(mesh_records: list[dict]) -> tuple[str | None, int | No
         
         # In-progress (open):
         "Texted about Mesh": 1,
+        "Contacted about Mesh": 1,
 
         "Step 1 - Interested in Mesh": 2,
+        "Interested in Mesh": 2,
 
         "Needs Panorama": 3,
         "Step 2.5 (optional) - Needs Panorama": 3,
@@ -405,29 +407,33 @@ def get_best_mesh_status(mesh_records: list[dict]) -> tuple[str | None, int | No
         "LOS confirmed - Update this": 7,
         "LOS Tool Confirmed": 7,
         "Step 3 - LOS Confirmed": 7,
+        "Step 2 - LOS Confirmed": 7,
+        "LOS Confirmed": 7,
 
         "Step 3 - Scheduling IN-PROGRESS": 8,
+        "Scheduling IN-PROGRESS": 8,
         "Install in-progress": 8,
         "Install in-progress 2022": 8,
         "Step 5 - Install in-progress": 8,
 
         "Install Scheduled": 9,
 
-        # Delivered:
-        "YAY! MESH INSTALLED!": 10,
-        "Mesh installed": 10,
-        "Step 6 - Mesh installed": 10,
+        # Timed-out / ignore:
+        "NYCHA - Currently Does Not Qualify": 10,
+        "Cannot Install - Other Reason": 10,
+        ">> MESH Cannot Install": 10,
+        "Cannot Install - Does not have LOS": 10,
+        "Does not have LOS": 10,
+        "No LOS confirmed": 10,
+        "Cannot Install - No Roof Access": 10,
+        "No Roof Access": 10,
+        "Not Interested": 10,
+        "Cannot Install": 10,
 
-        # Closed / ignore:
-        "NYCHA - Currently Does Not Qualify": 11,
-        "Cannot Install - Other Reason": 11,
-        ">> MESH Cannot Install": 11,
-        "Cannot Install - Does not have LOS": 11,
-        "Does not have LOS": 11,
-        "No LOS confirmed": 11,
-        "Cannot Install - No Roof Access": 11,
-        "No Roof Access": 11,
-        "Not Interested": 11,
+        # Delivered:
+        "YAY! MESH INSTALLED!": 11,
+        "Mesh installed": 11,
+        "Step 6 - Mesh installed": 11,
         
         # Needs repair (open):
         "INSTALL PENDING ELDERT REPAIR": 12,
@@ -439,6 +445,10 @@ def get_best_mesh_status(mesh_records: list[dict]) -> tuple[str | None, int | No
         "Node Building": "Open",
         "Step 2.6 (optional) Node Building": "Open",
 
+        "Texted about Mesh": "Contacted about Mesh",
+
+        "Step 1 - Interested in Mesh":  "Interested in Mesh",
+
         "Needs Panorama": "Needs Panorama",
         "Step 2.5 (optional) - Needs Panorama": "Needs Panorama",
 
@@ -446,24 +456,31 @@ def get_best_mesh_status(mesh_records: list[dict]) -> tuple[str | None, int | No
 
         "Step 4 - Roof Access Confirmed": "Roof Access Confirmed",
 
-        "Step 2- LOS Confirmed": "Step 2 - LOS Confirmed",
-        "Step 2 - LOS Tool Confirmed": "Step 2 - LOS Confirmed",
-        "LOS confirmed": "Step 2 - LOS Confirmed",
-        "LOS confirmed - Update this": "Step 2 - LOS Confirmed",
-        "LOS Tool Confirmed": "Step 2 - LOS Confirmed",
-        "Step 3 - LOS Confirmed": "Step 2 - LOS Confirmed",
-        
-        "Install in-progress": "Step 3 - Scheduling IN-PROGRESS",
-        "Install in-progress 2022": "Step 3 - Scheduling IN-PROGRESS",
-        "Step 5 - Install in-progress": "Step 3 - Scheduling IN-PROGRESS",
-        
+        "Step 2- LOS Confirmed": "LOS Confirmed",
+        "Step 2 - LOS Tool Confirmed": "LOS Confirmed",
+        "LOS confirmed": "LOS Confirmed",
+        "LOS confirmed - Update this": "LOS Confirmed",
+        "LOS Tool Confirmed": "LOS Confirmed",
+        "Step 3 - LOS Confirmed": "LOS Confirmed",
+        "Step 2 - LOS Confirmed": "LOS Confirmed",
+
+        "Install in-progress": "Scheduling IN-PROGRESS",
+        "Install in-progress 2022": "Scheduling IN-PROGRESS",
+        "Step 5 - Install in-progress": "Scheduling IN-PROGRESS",
+        "Step 3 - Scheduling IN-PROGRESS": "Scheduling IN-PROGRESS",
+
         "Mesh installed": "YAY! MESH INSTALLED!",
         "Step 6 - Mesh installed": "YAY! MESH INSTALLED!",
-        
-        "Does not have LOS": "Cannot Install - Does not have LOS",
-        "No LOS confirmed": "Cannot Install - Does not have LOS",
-        "No Roof Access": "Cannot Install - No Roof Access",
-        ">> MESH Cannot Install": "Cannot Install - Other Reason",
+
+        "NYCHA - Currently Does Not Qualify": "Cannot Install",
+        "Cannot Install - Other Reason": "Cannot Install",
+        ">> MESH Cannot Install": "Cannot Install",
+        "Cannot Install - Does not have LOS": "Cannot Install",
+        "Does not have LOS": "Cannot Install",
+        "No LOS confirmed": "Cannot Install",
+        "Cannot Install - No Roof Access": "Cannot Install",
+        "No Roof Access": "Cannot Install",
+        "Not Interested": "Cannot Install",
     }
     
     # pick the best non-closed MESH status:
