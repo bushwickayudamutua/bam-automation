@@ -39,17 +39,21 @@ async function mergeReqs(tableName, recordIds, keyField, mergeFns) {
     for (let [, reqGroup] of requestGroups) {
         const [firstReq, ...rest] = reqGroup
 
-        const mergedFields = Object.fromEntries(Object.keys(mergeFns).map((field) => {
-            const fn = mergeFns[field]
-            const value = fn(
-                reqGroup.map((req) => req.getCellValue(field)),
-                reqGroup,
-            )
-            return [field, value]
-        }))
-        await requestTable.updateRecordAsync(
-            firstReq, mergedFields
+        const mergedFields = Object.fromEntries(
+            Object.keys(mergeFns)
+                .map((field) => {
+                    const fn = mergeFns[field]
+                    const value = fn(
+                        reqGroup.map((req) => req.getCellValue(field)),
+                        reqGroup,
+                    )
+                    return [field, value]
+                })
+                .filter(([, value]) => value != null && !(Array.isArray(value) && value.length === 0))
         )
+        if (Object.keys(mergedFields).length) {
+            await requestTable.updateRecordAsync(firstReq, mergedFields)
+        }
         await requestTable.deleteRecordsAsync(rest)
     }
 }
