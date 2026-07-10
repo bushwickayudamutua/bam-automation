@@ -11,6 +11,20 @@ const countCols = countTable.fields;
 let allCounts = null;
 const dateRecordPromises = new Map();
 
+function dateKey(value) {
+  if (value == null) return null;
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+  const text = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(text)) {
+    return text.slice(0, 10);
+  }
+  const parsed = new Date(text);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString().slice(0, 10);
+}
+
 async function getAllCounts() {
   if (allCounts === null) {
     allCounts = (await countTable.selectRecordsAsync({ fields: countCols })).records;
@@ -19,16 +33,17 @@ async function getAllCounts() {
 }
 
 async function findOrCreateCountRecord(date) {
-  if (date == null) return null;
+  const key = dateKey(date);
+  if (key == null) return null;
 
-  if (!dateRecordPromises.has(date)) {
-    dateRecordPromises.set(date, (async () => {
+  if (!dateRecordPromises.has(key)) {
+    dateRecordPromises.set(key, (async () => {
       const counts = await getAllCounts();
       for (const count of counts) {
-        if (count.getCellValue('Date') === date) return count;
+        if (dateKey(count.getCellValue('Date')) === key) return count;
       }
 
-      const recId = await countTable.createRecordAsync({ 'Date': date });
+      const recId = await countTable.createRecordAsync({ Date: key });
       const rec = await countTable.selectRecordAsync(recId, { fields: countCols });
       if (rec === null) throw "Airtable is broken";
       counts.push(rec);
@@ -36,7 +51,7 @@ async function findOrCreateCountRecord(date) {
     })());
   }
 
-  return dateRecordPromises.get(date);
+  return dateRecordPromises.get(key);
 }
 
 async function processRequests(table, reqIds, columnOverwrites) {
@@ -50,7 +65,7 @@ async function processRequests(table, reqIds, columnOverwrites) {
     'Type',
   ] })).records;
   for (const req of reqs) {
-    const date = req.getCellValue('Status Last Updated At');
+    const date = dateKey(req.getCellValue('Status Last Updated At'));
     if (date == null) continue;
 
     groups[date] ??= [];
@@ -100,7 +115,7 @@ async function processMesh(table, reqIds) {
     'Phone Number (from Household)',
   ] })).records;
   for (const req of reqs) {
-    const date = req.getCellValue('Status Last Updated At');
+    const date = dateKey(req.getCellValue('Status Last Updated At'));
     if (date == null) continue;
 
     groups[date] ??= [];
