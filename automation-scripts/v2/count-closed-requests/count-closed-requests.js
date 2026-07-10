@@ -13,8 +13,14 @@ const dateRecordPromises = new Map();
 
 function dateKey(value) {
   if (value == null) return null;
+  const toLocalDay = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
   if (value instanceof Date) {
-    return value.toISOString().slice(0, 10);
+    return toLocalDay(value);
   }
   const text = String(value).trim();
   if (/^\d{4}-\d{2}-\d{2}/.test(text)) {
@@ -22,7 +28,7 @@ function dateKey(value) {
   }
   const parsed = new Date(text);
   if (Number.isNaN(parsed.getTime())) return null;
-  return parsed.toISOString().slice(0, 10);
+  return toLocalDay(parsed);
 }
 
 async function getAllCounts() {
