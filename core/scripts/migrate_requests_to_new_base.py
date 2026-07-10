@@ -251,26 +251,27 @@ def transform_languages(
     Also apply a mapping to the languages to map from the old names to the new names.
     """
 
+    OTHER_LANGUAGE = "Otro / Other / 其他語言"
     LANGUAGE_MAPPING = {
         "Chino Toishanese / Toishanese / 台山话": "Chino Toishanés / Toishanese / 台山话",
         "Chino Cantonese / Cantonese / 广东话": "Chino Cantonés / Cantonese / 广东话",
         "Arabic / 阿拉伯語": "Árabe / Arabic / 阿拉伯語",
         "Portuguese / 葡萄牙語": "Portugués / Portuguese / 葡萄牙語",
         "Portuguese": "Portugués / Portuguese / 葡萄牙語",
-        "Otro / Other / 别的方言": "Otro / Other / 其他語言",
         "Haitian Creole / French Creole / 法屬歸融語": "Criollo Haitiano / Haitian Creole / 法屬歸融語",
+        "Otro / Other / 别的方言": OTHER_LANGUAGE,
     }
 
     output = transform_lists(old_field_name, new_field_name, records)
     # apply language mapping and deduplicate
-    output[new_field_name] = list(
-        set(
-            [
-                LANGUAGE_MAPPING.get(item, item)
-                for item in output[new_field_name]
-            ]
-        )
-    )
+    languages = list(set([
+        LANGUAGE_MAPPING.get(item, item)
+        for item in output[new_field_name]
+    ]))
+    if OTHER_LANGUAGE in languages:
+        languages.remove(OTHER_LANGUAGE)
+        languages.append(OTHER_LANGUAGE)
+    output[new_field_name] = languages
     return output
 
 

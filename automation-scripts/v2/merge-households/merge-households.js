@@ -70,9 +70,13 @@ const dedupeById = (items) => {
     return uniqueItems.length ? uniqueItems : undefined
 }
 
-const languages = dedupeById(
-    allHouseholds.map(h => h.getCellValue('Languages'))
-)
+const languageItems = allHouseholds.map(h => h.getCellValue('Languages'))
+const languages = dedupeById(languageItems)
+if (languages) {
+    const otherId = languageItems.flat().find(item => item?.name === 'Otro / Other / 其他語言')?.id
+    const idx = otherId ? languages.findIndex(item => item.id === otherId) : -1
+    if (idx !== -1) languages.push(languages.splice(idx, 1)[0])
+}
 
 const requests = dedupeById(
     allHouseholds.map(h => h.getCellValue('Requests'))
