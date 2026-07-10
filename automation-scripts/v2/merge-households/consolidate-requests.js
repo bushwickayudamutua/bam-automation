@@ -28,9 +28,14 @@ async function mergeReqs(tableName, recordIds, keyField, mergeFns) {
         })
         .forEach((req) => {
             const rawKey = req.getCellValue(keyField)
-            const key = typeof rawKey === 'object'
+            let key = (rawKey !== null && typeof rawKey === 'object')
                 ? rawKey.id
                 : rawKey
+            // A missing/blank key (e.g. a Mesh Request with no Building
+            // Identification Number) does not mean these records are the same
+            // household. Give each unkeyed record a unique key so it stays in
+            // its own group and is never merged with unrelated records.
+            if (key == null || key === '') key = Symbol('unkeyed')
             if (!requestGroups.has(key)) requestGroups.set(key, [])
             requestGroups.get(key).push(req)
         })
