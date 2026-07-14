@@ -203,8 +203,8 @@ def dedupe_view(view: View, dry_run: bool, logger: FunctionLogger) -> None:
 
 class DedupeAirtableViews(Function):
     """
-    Dedupe a list of Airtable views by marking all but the earliest
-    open records for a phone number as "timed out".
+    Scans configured Airtable views for duplicate records sharing the same phone number and marks all but the earliest submission with a dupe flag.
+    Supports a special deduplication mode for the MESH view that respects records already in outreach.
     """
 
     params = Params(
@@ -212,7 +212,7 @@ class DedupeAirtableViews(Function):
             name="dry_run",
             type="bool",
             default=True,
-            description="If true, data will not be written to the  Google Sheet.",
+            description="If true, no records will be updated in Airtable.",
         )
     )
 

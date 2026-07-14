@@ -43,5 +43,5 @@ You should now have a version of the API running at <http://localhost:3030>
 After following the installation instructions above, run the following:
 
 ```shell
-uvicorn bam_app.main:app --reload --port 3030 --host 0.0.0.0
+uvicorn bam_app.main:app --reload --port 3030 --host 0.0.0.0 --log-level debug
 ```
