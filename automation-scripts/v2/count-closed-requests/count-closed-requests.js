@@ -8,7 +8,7 @@ const meshTable = base.getTable('Mesh Requests');
 const countTable = base.getTable('Fulfilled Request Count');
 
 const countCols = countTable.fields;
-let allCounts = null;
+const allCounts = (await countTable.selectRecordsAsync({ fields: countCols })).records;
 const dateRecordPromises = new Map();
 
 function dateKey(value) {
@@ -31,28 +31,19 @@ function dateKey(value) {
   return toLocalDay(parsed);
 }
 
-async function getAllCounts() {
-  if (allCounts === null) {
-    allCounts = (await countTable.selectRecordsAsync({ fields: countCols })).records;
-  }
-  return allCounts;
-}
-
 async function findOrCreateCountRecord(date) {
   const key = dateKey(date);
-  if (key == null) return null;
 
   if (!dateRecordPromises.has(key)) {
     dateRecordPromises.set(key, (async () => {
-      const counts = await getAllCounts();
-      for (const count of counts) {
+      for (const count of allCounts) {
         if (dateKey(count.getCellValue('Date')) === key) return count;
       }
 
       const recId = await countTable.createRecordAsync({ Date: key });
       const rec = await countTable.selectRecordAsync(recId, { fields: countCols });
       if (rec === null) throw "Airtable is broken";
-      counts.push(rec);
+      allCounts.push(rec);
       return rec;
     })());
   }
@@ -72,7 +63,6 @@ async function processRequests(table, reqIds, columnOverwrites) {
   ] })).records;
   for (const req of reqs) {
     const date = dateKey(req.getCellValue('Status Last Updated At'));
-    if (date == null) continue;
 
     groups[date] ??= [];
     groups[date].push(req);
@@ -85,7 +75,6 @@ async function processRequests(table, reqIds, columnOverwrites) {
   for (const [date, reqs] of Object.entries(groups)) {
     const fields = {};
     const countRec = await findOrCreateCountRecord(date);
-    if (countRec == null) continue;
 
     for (const req of reqs) {
       const reqStatus = req.getCellValue('Status').name;
@@ -122,7 +111,6 @@ async function processMesh(table, reqIds) {
   ] })).records;
   for (const req of reqs) {
     const date = dateKey(req.getCellValue('Status Last Updated At'));
-    if (date == null) continue;
 
     groups[date] ??= [];
     groups[date].push(req);
@@ -131,7 +119,6 @@ async function processMesh(table, reqIds) {
   for (const [date, reqs] of Object.entries(groups)) {
     const fields = {};
     const countRec = await findOrCreateCountRecord(date);
-    if (countRec == null) continue;
     const countedPhones = new Set();
 
     for (const req of reqs) {
