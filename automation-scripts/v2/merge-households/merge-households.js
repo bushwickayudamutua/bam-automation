@@ -37,8 +37,16 @@ const requests = dedupeById(
     allHouseholds.map(h => h.getCellValue('Requests'))
 )
 
+const furnitureRequests = dedupeById(
+    allHouseholds.map(h => h.getCellValue('Furniture Requests'))
+)
+
 const socialServiceRequests = dedupeById(
     allHouseholds.map(h => h.getCellValue('Social Service Requests'))
+)
+
+const meshRequests = dedupeById(
+    allHouseholds.map(h => h.getCellValue('Mesh Requests'))
 )
 
 // Merges text fields without deduping — trims each entry, filters blanks, joins with newline
@@ -84,9 +92,11 @@ await householdTable.updateRecordAsync(survivor, {
     "Other Languages": otherLanguages,
     Notes: notes,
     Requests: requests,
+    'Furniture Requests': furnitureRequests,
     'Social Service Requests': socialServiceRequests,
-    'Needs Delivery': allHouseholds.some(h => h.getCellValue('Needs Delivery')) || null,
-    'Needs Email Outreach': allHouseholds.some(h => h.getCellValue('Needs Email Outreach')) || null,
+    'Mesh Requests': meshRequests,
+    'Needs Delivery': allHouseholds.some(h => h.getCellValue('Needs Delivery')),
+    'Needs Email Outreach': allHouseholds.some(h => h.getCellValue('Needs Email Outreach')),
 })
 
 const recordsToDelete = [newHousehold, ...otherOldHouseholds]

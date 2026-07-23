@@ -1,14 +1,12 @@
 const AUTOMATION_CLEAN_RECORD_ENDPOINT = 'https://api.baml.ink/clean-record'
-const AUTOMATION_APIKEY = '***'
-const { email, phone, address, city, zipCode } = input.config()
+const { email, phone, address, city, zipCode, apiKey } = input.config()
 
 const clean = async (email, phone, address, city_state, zipcode) => {
-    // @ts-ignore
     const params = new URLSearchParams({
         email,
         phone,
-        apikey: AUTOMATION_APIKEY,
-        dns_check: true,
+        apikey: apiKey,
+        dns_check: true.toString(),
         address,
         city_state,
         zipcode,
@@ -24,25 +22,33 @@ const clean = async (email, phone, address, city_state, zipcode) => {
     }
 }
 
-// clean data
+const NO_EMAIL_ERROR = 'No email address provided'
+const NO_ADDRESS_ACCURACY = 'No result'
+
+// clean data; on API failure pass through raw form fields so intake always proceeds
 const apiResponse = await clean(email, phone, address, city, zipCode)
 
-// default to passing through input data
-if (apiResponse) {
-    output.set('phone', apiResponse.phone || phone || '')
-    output.set('phone_is_invalid', apiResponse.phone_is_invalid || false)
-    output.set('phone_is_intl', apiResponse.phone_is_intl || false)
-    output.set('email', apiResponse.email || email || '')
-    output.set('email_error', apiResponse.email_error || '')
-    output.set(
-        'cleaned_address',
-        apiResponse.cleaned_address || [address, city, zipCode].join(' ') || ''
-    )
-    output.set('cleaned_address_accuracy', apiResponse.cleaned_address_accuracy || '')
-    output.set('bin', apiResponse.bin || '')
-    output.set('plus_code', apiResponse.plus_code || '')
-    output.set('success', true)
-} else {
-    output.set('success', false)
-}
+const cleanedPhone = apiResponse?.phone || phone || ''
+output.set('phone', cleanedPhone)
+output.set('phone_is_invalid', cleanedPhone.trim()
+    ? apiResponse?.phone_is_invalid || false
+    : true
+)
+output.set('phone_is_intl', apiResponse?.phone_is_intl || false)
 
+const cleanedEmail = apiResponse?.email || email || ''
+output.set('email', cleanedEmail)
+output.set('email_error', cleanedEmail.trim()
+    ? apiResponse?.email_error || ''
+    : NO_EMAIL_ERROR
+)
+
+const cleanedAddress = apiResponse?.cleaned_address || [address, city, zipCode].join(' ') || ''
+output.set('cleaned_address', cleanedAddress)
+output.set('cleaned_address_accuracy', cleanedAddress.trim()
+    ? apiResponse?.cleaned_address_accuracy || ''
+    : NO_ADDRESS_ACCURACY
+)
+output.set('bin', apiResponse?.bin || '')
+output.set('plus_code', apiResponse?.plus_code || '')
+output.set('success', Boolean(apiResponse)

@@ -1,11 +1,13 @@
-const { requestIds, ssRequestIds } = input.config();
+const { requestIds, furnRequestIds, ssRequestIds, meshRequestIds } = input.config();
 
 // Retrieve tables
 const reqTable = base.getTable('Requests');
+const furnReqTable = base.getTable('Furniture Requests');
 const ssReqTable = base.getTable('Social Service Requests');
+const meshTable = base.getTable('Mesh Requests');
 const countTable = base.getTable('Fulfilled Request Count');
 
-async function processRequests(table, reqIds, columnOverwrites) {
+async function processRequests(table, reqIds, getCountCol, deliveredStatus) {
   // Step 1: pull all count records, define find-or-create util
   const countCols = countTable.fields;
   const allCounts = (await countTable.selectRecordsAsync({ fields: countCols })).records;
@@ -24,11 +26,10 @@ async function processRequests(table, reqIds, columnOverwrites) {
   // Step 2: group requests by date and type
   const groups = {};
 
-  const reqs = (await table.selectRecordsAsync({ recordIds: reqIds, fields: [
-    'Status',
-    'Status Last Updated At',
-    'Type',
-  ] })).records;
+  const reqs = (await table.selectRecordsAsync({
+    recordIds: reqIds,
+    fields: table.fields,
+  })).records;
   for (const req of reqs) {
     const date = req.getCellValue('Status Last Updated At');
 
@@ -36,22 +37,16 @@ async function processRequests(table, reqIds, columnOverwrites) {
     groups[date].push(req);
   }
 
-  // Step 3: process each group 
-
-  // Helper function to convert request type to counter column
-  function getCountCol(reqType) {
-    return columnOverwrites[reqType] ?? reqType.split(' / ')[1];
-  }
-
+  // Step 3: process each group
   for (const [date, reqs] of Object.entries(groups)) {
     const fields = {};
     const countRec = await findOrCreateCountRecord(date);
 
     for (const req of reqs) {
       const reqStatus = req.getCellValue('Status').name;
-      if (reqStatus === 'Delivered') {
-        const reqType = req.getCellValue('Type').name;
-        const countCol = getCountCol(reqType);
+      if (reqStatus === deliveredStatus) {
+        const countCol = getCountCol(req);
+        if (!countCol) continue;
 
         fields[countCol] ??= countRec.getCellValue(countCol);
         fields[countCol]++;
@@ -68,28 +63,13 @@ async function processRequests(table, reqIds, columnOverwrites) {
   }
 }
 
-await Promise.all([
-  processRequests(reqTable, requestIds, {
-    "Bastidor individual / Twin Bed Frame 單人床架": "Twin Bed Frame",
-    "Comida caliente / Hot meals / 热食": "Hot Meals",
-  }),
-  processRequests(ssReqTable, ssRequestIds, {
-    "Asistencia legal de inquilinos / Tenant legal assistance / 租戶法律協助":
-      "Tenant Legal Assistance",
-    "Asistencia con servicios escolares / Assistance with in-school services / 學校服務協助":
-      "Assistance with In-School Services",
-    "Tutoría estudiantil / Tutoring for students / 學生輔導":
-      "Tutoring for Students",
-    "Asistencia asegurando vivienda/ Securing housing / 住房協助":
-      "Assistance Securing Housing",
-    "Asistencia con seguro médico / Medical insurance support / 醫療保險協助":
-      "Medical Insurance Support",
-    "Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助":
-      "Low-Cost Home Internet",
-    "Asistencia con beneficios de comida / Assistance with food benefits / 食品福利協助 (WIC, SNAP, P-EBT)":
-      "Assistance with Food Benefits",
-    "Asistencia para niños discapacitados / Assistance for disabled children / 殘疾兒童協助":
-      "Assistance for Disabled Children",
-  }),
-]);
+function getCountColFromType(req) {
+  return req.getCellValue('Type').name.split(' / ')[1];
+}
 
+const DELIVERED_TAG = 'Delivered'
+
+await processRequests(reqTable, requestIds, getCountColFromType, DELIVERED_TAG);
+await processRequests(furnReqTable, furnRequestIds, getCountColFromType, DELIVERED_TAG);
+await processRequests(ssReqTable, ssRequestIds, getCountColFromType, DELIVERED_TAG);
+await processRequests(meshTable, meshRequestIds, () => 'Low-Cost Home Internet', 'YAY! MESH INSTALLED!');
