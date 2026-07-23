@@ -12,7 +12,11 @@ const {
   formSubmittedAt,
 } = input.config()
 
+// Retrieve tables
 const requestTable = base.getTable('Requests')
+const furnRequestTable = base.getTable('Furniture Requests')
+const ssRequestTable = base.getTable('Social Service Requests')
+const meshRequestTable = base.getTable('Mesh Requests')
 
 const nonFurnItemReqs = [
   egReqs.filter((egType) =>
@@ -57,8 +61,6 @@ for (let i = 0; i < ssReqs.length; i++) {
   }
 }
 
-const ssRequestTable = base.getTable('Social Service Requests')
-
 output.set(
   'ssRequestIds',
   await ssRequestTable.createRecordsAsync(
@@ -69,8 +71,6 @@ output.set(
 )
 
 if (meshRequested) {
-  const meshRequestTable = base.getTable('Mesh Requests')
-
   const binNumber = bin ? Number(bin) : undefined
   output.set(
     'meshRequestId',

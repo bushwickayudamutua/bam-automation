@@ -8,23 +8,26 @@ const meshTable = base.getTable('Mesh Requests');
 const countTable = base.getTable('Fulfilled Request Count');
 
 async function processRequests(table, reqIds, getCountCol, deliveredStatus) {
+  if (!reqIds.length) return;
+
   // Step 1: pull all count records, define find-or-create util
-  const countCols = countTable.fields;
-  const allCounts = (await countTable.selectRecordsAsync({ fields: countCols })).records;
+  const allCounts = (await countTable.selectRecordsAsync({
+    fields: countTable.fields,
+  })).records;
 
   async function findOrCreateCountRecord(date) {
     for (const count of allCounts) {
       if (count.getCellValue('Date') === date) return count;
     }
-  
-    const recId = await countTable.createRecordAsync({ 'Date': date });
-    const rec = await countTable.selectRecordAsync(recId, { fields: countCols });
+
+    const recId = await countTable.createRecordAsync({ Date: date });
+    const rec = await countTable.selectRecordAsync(recId, { fields: countTable.fields });
     if (rec === null) throw "Airtable is broken";
     return rec;
   }
 
-  // Step 2: group requests by date and type
-  const groups = {};
+  // Step 2: group requests by date
+  const requestGroups = new Map();
 
   const reqs = (await table.selectRecordsAsync({
     recordIds: reqIds,
@@ -33,12 +36,12 @@ async function processRequests(table, reqIds, getCountCol, deliveredStatus) {
   for (const req of reqs) {
     const date = req.getCellValue('Status Last Updated At');
 
-    groups[date] ??= [];
-    groups[date].push(req);
+    if (!requestGroups.has(date)) requestGroups.set(date, []);
+    requestGroups.get(date).push(req);
   }
 
   // Step 3: process each group
-  for (const [date, reqs] of Object.entries(groups)) {
+  for (const [date, reqs] of requestGroups) {
     const fields = {};
     const countRec = await findOrCreateCountRecord(date);
 
@@ -56,7 +59,7 @@ async function processRequests(table, reqIds, getCountCol, deliveredStatus) {
     // Update counter
     await countTable.updateRecordAsync(countRec, fields);
 
-    // Delete records in group in pages of 50
+    // Delete group in pages of 50
     for (let idx = 0; idx < reqs.length; idx += 50) {
       await table.deleteRecordsAsync(reqs.slice(idx, idx + 50));
     }

@@ -7,11 +7,14 @@ const ssReqTable = base.getTable('Social Service Requests');
 const meshTable = base.getTable('Mesh Requests');
 const countTable = base.getTable('Fulfilled Request Count');
 
-async function mergeRequests(table, recordIds, getKey, mergeFns) {
+async function mergeRequests(table, reqIds, getKey, mergeFns) {
+    if (!reqIds.length) return
+
+    // Step 1: group requests by key, sorted from oldest to newest
     const requestGroups = new Map()
 
     const reqs = (await table.selectRecordsAsync({
-        recordIds,
+        recordIds: reqIds,
         fields: table.fields,
         sorts: [{ field: 'Request Opened At', direction: 'asc' }]
     })).records
@@ -22,8 +25,8 @@ async function mergeRequests(table, recordIds, getKey, mergeFns) {
         requestGroups.get(key).push(req)
     }
 
-    // Merge fields according to callbacks, delete repeat requests
-    for (let [, reqGroup] of requestGroups) {
+    // Step 2: merge fields according to callbacks, delete repeat requests
+    for (const [, reqGroup] of requestGroups) {
         const [firstReq, ...rest] = reqGroup
 
         const mergedFields = {}
