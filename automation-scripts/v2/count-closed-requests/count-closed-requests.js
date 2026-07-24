@@ -7,6 +7,8 @@ const ssReqTable = base.getTable('Social Service Requests');
 const meshTable = base.getTable('Mesh Requests');
 const countTable = base.getTable('Fulfilled Request Count');
 
+const invalidCountCols = new Set();
+
 async function processRequests(table, reqIds, getCountCol, deliveredStatus) {
   if (!reqIds.length) return;
 
@@ -49,7 +51,10 @@ async function processRequests(table, reqIds, getCountCol, deliveredStatus) {
       const reqStatus = req.getCellValue('Status').name;
       if (reqStatus === deliveredStatus) {
         const countCol = getCountCol(req);
-        if (!countCol) continue;
+        if (!countTable.fields.includes(countCol)) {
+          invalidCountCols.add(countCol);
+          continue;
+        }
 
         fields[countCol] ??= countRec.getCellValue(countCol);
         fields[countCol]++;
@@ -76,3 +81,5 @@ await processRequests(reqTable, requestIds, getCountColFromType, DELIVERED_TAG);
 await processRequests(furnReqTable, furnRequestIds, getCountColFromType, DELIVERED_TAG);
 await processRequests(ssReqTable, ssRequestIds, getCountColFromType, DELIVERED_TAG);
 await processRequests(meshTable, meshRequestIds, () => 'Low-Cost Home Internet', 'YAY! MESH INSTALLED!');
+
+output.set('invalidCountCols', [...invalidCountCols]);
