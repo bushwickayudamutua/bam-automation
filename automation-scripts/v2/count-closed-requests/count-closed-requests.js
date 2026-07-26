@@ -47,26 +47,32 @@ async function processRequests(table, reqIds, getCountCol, deliveredStatus) {
     const fields = {};
     const countRec = await findOrCreateCountRecord(date);
 
+    const reqsToDelete = [];
     for (const req of reqs) {
+      // Validate counter column
+      const countCol = getCountCol(req);
+      if (!countTable.fields.find((field) => (field.name === countCol))) {
+        invalidCountCols.add(countCol);
+        continue;
+      }
+
+      // Bump counter if delivered
       const reqStatus = req.getCellValue('Status').name;
       if (reqStatus === deliveredStatus) {
-        const countCol = getCountCol(req);
-        if (!countTable.fields.includes(countCol)) {
-          invalidCountCols.add(countCol);
-          continue;
-        }
-
         fields[countCol] ??= countRec.getCellValue(countCol);
         fields[countCol]++;
       }
+
+      // Mark request for deletion
+      reqsToDelete.push(req)
     }
 
     // Update counter
     await countTable.updateRecordAsync(countRec, fields);
 
-    // Delete group in pages of 50
-    for (let idx = 0; idx < reqs.length; idx += 50) {
-      await table.deleteRecordsAsync(reqs.slice(idx, idx + 50));
+    // Delete marked requests in pages of 50
+    for (let idx = 0; idx < reqsToDelete.length; idx += 50) {
+      await table.deleteRecordsAsync(reqsToDelete.slice(idx, idx + 50));
     }
   }
 }
