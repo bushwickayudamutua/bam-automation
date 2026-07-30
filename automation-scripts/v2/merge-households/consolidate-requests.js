@@ -5,7 +5,6 @@ const reqTable = base.getTable('Requests');
 const furnReqTable = base.getTable('Furniture Requests');
 const ssReqTable = base.getTable('Social Service Requests');
 const meshTable = base.getTable('Mesh Requests');
-const countTable = base.getTable('Fulfilled Request Count');
 
 async function mergeRequests(table, reqIds, getKey, mergeFns) {
     if (!reqIds.length) return

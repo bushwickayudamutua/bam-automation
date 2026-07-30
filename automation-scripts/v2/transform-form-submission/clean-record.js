@@ -1,7 +1,7 @@
 const AUTOMATION_CLEAN_RECORD_ENDPOINT = 'https://api.baml.ink/clean-record'
 const { email, phone, address, city, zipCode, apiKey } = input.config()
 
-const clean = async (email, phone, address, city_state, zipcode) => {
+const clean = async (email, phone, address, city_state, zip_code) => {
     const params = new URLSearchParams({
         email,
         phone,
@@ -9,7 +9,7 @@ const clean = async (email, phone, address, city_state, zipcode) => {
         dns_check: true.toString(),
         address,
         city_state,
-        zipcode,
+        zip_code,
     })
     const url = `${AUTOMATION_CLEAN_RECORD_ENDPOINT}?${params}`
     const response = await fetch(url)
