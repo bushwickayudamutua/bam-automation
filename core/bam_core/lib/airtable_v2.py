@@ -150,6 +150,22 @@ class Request(BaseRequest):
     table_name = 'Requests'
 
     type = F.SelectField('Type')
+
+    if TYPE_CHECKING:
+        def __init__(
+            self, *,
+            household: Household,
+            type: str,
+            status: str = "Open",
+            legacy_date_submitted: date | None,
+            last_requested: date | None,
+        ): ...
+
+
+class FurnitureRequest(BaseRequest):
+    table_name = 'Furniture Requests'
+
+    type = F.SelectField('Type')
     geocode = F.TextField('Geocode')
 
     if TYPE_CHECKING:
@@ -162,6 +178,7 @@ class Request(BaseRequest):
             last_requested: date | None,
             geocode: str | None = None
         ): ...
+
 
 class SocialServiceRequest(BaseRequest):
     table_name = 'Social Service Requests'
@@ -185,9 +202,6 @@ class MeshRequest(BaseRequest):
     table_name = 'Mesh Requests'
 
     internet_access = F.MultipleSelectField('Internet Access')
-    roof_is_accessible = F.CheckboxField('Roof Accessible?')
-    has_los = F.CheckboxField('Has LOS?')
-    
     address = F.TextField('Address')
     address_accuracy = F.SelectField('Address Accuracy')
     building_identification_number = F.NumberField('Building Identification Number')
@@ -203,8 +217,6 @@ class MeshRequest(BaseRequest):
             legacy_date_submitted: date | None,
             last_requested: date | None,
             internet_access: List[str] | None = None,
-            roof_is_accessible: bool = False,
-            has_los: bool = False,
             address: str | None = None,
             address_accuracy: str | None = None,
             building_identification_number: int | None = None,
