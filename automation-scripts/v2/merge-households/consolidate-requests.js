@@ -5,10 +5,9 @@ const reqTable = base.getTable('Requests');
 const furnReqTable = base.getTable('Furniture Requests');
 const ssReqTable = base.getTable('Social Service Requests');
 const meshTable = base.getTable('Mesh Requests');
-const countTable = base.getTable('Fulfilled Request Count');
 
 async function mergeRequests(table, reqIds, getKey, mergeFns) {
-    if (!reqIds.length) return
+    if (!reqIds?.length) return
 
     // Step 1: group requests by key, sorted from oldest to newest
     const requestGroups = new Map()
@@ -29,11 +28,18 @@ async function mergeRequests(table, reqIds, getKey, mergeFns) {
     for (const [, reqGroup] of requestGroups) {
         const [firstReq, ...rest] = reqGroup
 
+        // Skip null/empty merge results so a sparse duplicate can't clear
+        // populated fields on the survivor
         const mergedFields = {}
         for (const [field, fn] of Object.entries(mergeFns)) {
-            mergedFields[field] = fn(reqGroup)
+            const value = fn(reqGroup)
+            if (value == null || value === '' ||
+                (Array.isArray(value) && !value.length)) continue
+            mergedFields[field] = value
         }
-        await table.updateRecordAsync(firstReq, mergedFields)
+        if (Object.keys(mergedFields).length) {
+            await table.updateRecordAsync(firstReq, mergedFields)
+        }
         await table.deleteRecordsAsync(rest)
     }
 }
@@ -45,6 +51,8 @@ const union = (field) => (reqs) => {
     const uniqIds = [...new Set(allSelectionIds)]
     return uniqIds.map((id) => ({ id }))
 }
+const anyChecked = (field) => (reqs) =>
+    reqs.some((req) => req.getCellValue(field)) || null
 
 const MESH_STATUS_RANK = {
     'Open': 0,
@@ -62,19 +70,28 @@ const MESH_STATUS_RANK = {
     'INSTALL PENDING ELDERT REPAIR': 12,
 }
 
+const unknownMeshStatuses = new Set()
+
 const maxMeshStatus = (reqs) => {
-    const statuses = reqs.map((req) => req.getCellValue('Status'))
-    let bestStatus
+    let bestStatus = null
     let bestRank = -1
-    for (const status of statuses) {
+    for (const req of reqs) {
+        const status = req.getCellValue('Status')
+        if (!status) continue
         const rank = MESH_STATUS_RANK[status.name]
+        if (rank === undefined) {
+            unknownMeshStatuses.add(status.name)
+            continue
+        }
         if (rank > bestRank) {
             bestRank = rank
             bestStatus = status
         }
     }
 
-    return bestStatus
+    // null (not undefined) so an unrankable group leaves the survivor's
+    // Status untouched via the null-skip in mergeRequests
+    return bestStatus ? { id: bestStatus.id } : null
 }
 
 const ADDRESS_ACCURACY_RANK = {
@@ -93,7 +110,8 @@ const pickAddressBundleIndex = (reqs) => {
     let bestRank = -2
     for (let i = 0; i < reqs.length; i++) {
         const accuracy = reqs[i].getCellValue('Address Accuracy')
-        const rank = ADDRESS_ACCURACY_RANK[accuracy?.name ?? ''] ?? -2
+        // Unknown accuracy names rank like 'No result', not below 'Invalid'
+        const rank = ADDRESS_ACCURACY_RANK[accuracy?.name ?? ''] ?? 0
         if (rank >= bestRank) {
             bestRank = rank
             bestIdx = i
@@ -142,6 +160,8 @@ await mergeRequests(
         'Last Requested': getLast('Last Requested'),
         Status: maxMeshStatus,
         'Internet Access': union('Internet Access'),
+        'Roof Accessible?': anyChecked('Roof Accessible?'),
+        'Has LOS?': anyChecked('Has LOS?'),
         'Street Address': fromAddressBundle('Street Address'),
         'City, State': fromAddressBundle('City, State'),
         'Zip Code': fromAddressBundle('Zip Code'),
@@ -152,3 +172,6 @@ await mergeRequests(
         'Address Accuracy': fromAddressBundle('Address Accuracy'),
     },
 )
+
+// Surface status names missing from MESH_STATUS_RANK so map drift is visible
+output.set('unknownMeshStatuses', [...unknownMeshStatuses])

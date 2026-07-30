@@ -2,22 +2,27 @@ const AUTOMATION_CLEAN_RECORD_ENDPOINT = 'https://api.baml.ink/clean-record'
 const { email, phone, address, city, zipCode, apiKey } = input.config()
 
 const clean = async (email, phone, address, city_state, zipcode) => {
-    const params = new URLSearchParams({
-        email,
-        phone,
-        apikey: apiKey,
-        dns_check: true.toString(),
-        address,
-        city_state,
-        zipcode,
-    })
-    const url = `${AUTOMATION_CLEAN_RECORD_ENDPOINT}?${params}`
-    const response = await fetch(url)
-    const data = await response.json()
-    if (response.status === 200) {
-        return data
-    } else {
-        console.log(`API request failed with status: ${response.status} and response:\n${JSON.stringify(data)}`)
+    try {
+        const params = new URLSearchParams({
+            email,
+            phone,
+            apikey: apiKey,
+            dns_check: true.toString(),
+            address,
+            city_state,
+            zip_code: zipcode,
+        })
+        const url = `${AUTOMATION_CLEAN_RECORD_ENDPOINT}?${params}`
+        const response = await fetch(url)
+        if (!response.ok) {
+            console.log(`API request failed with status: ${response.status} and response:\n${await response.text()}`)
+            return undefined
+        }
+        return await response.json()
+    } catch (error) {
+        // Network errors and malformed bodies must not kill the script —
+        // intake falls back to the raw form fields below
+        console.log(`API request failed: ${error}`)
         return undefined
     }
 }
@@ -43,7 +48,8 @@ output.set('email_error', cleanedEmail.trim()
     : NO_EMAIL_ERROR
 )
 
-const cleanedAddress = apiResponse?.cleaned_address || [address, city, zipCode].join(' ') || ''
+const cleanedAddress = apiResponse?.cleaned_address ||
+    [address, city, zipCode].map((part) => (part ?? '').trim()).filter(Boolean).join(' ')
 output.set('cleaned_address', cleanedAddress)
 output.set('cleaned_address_accuracy', cleanedAddress.trim()
     ? apiResponse?.cleaned_address_accuracy || ''
