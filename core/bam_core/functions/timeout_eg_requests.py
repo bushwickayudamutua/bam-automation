@@ -8,13 +8,9 @@ from bam_core.functions.params import Params, Param
 from bam_core.utils.etc import to_list
 from bam_core.constants import (
     EG_REQUESTS_SCHEMA,
-    EG_REQUESTS_FIELD,
-    EG_STATUS_FIELD,
-    PHONE_FIELD,
     KITCHEN_REQUESTS_SCHEMA,
     FURNITURE_REQUESTS_SCHEMA,
-    KITCHEN_REQUESTS_FIELD,
-    FURNITURE_REQUESTS_FIELD,
+    PHONE_FIELD,
 )
 
 # handling for request field parameter
@@ -53,7 +49,7 @@ class TimeoutEssentialGoodsRequests(Function):
         Param(
             name="dry_run",
             type="bool",
-            default=False,
+            default=True,
             description="If true, view which timeouts would be added without actually adding them.",
         ),
     )
@@ -76,8 +72,8 @@ class TimeoutEssentialGoodsRequests(Function):
         request_field: str,
         timeout_tags: List[str],
         delivered_tags: List[str],
-        status_field: str = EG_STATUS_FIELD,
-        dry_run: bool = False,
+        status_field: str,
+        dry_run: bool,
     ) -> Counter:
         """
         For phone numbers which have at least one fulfilled request,
@@ -91,9 +87,7 @@ class TimeoutEssentialGoodsRequests(Function):
             f"Fetching records for '{request_field}' = '{request_value}'"
         )
         request_records = self.airtable.get_phone_number_to_requests_lookup(
-            formula=formulas.FIND(
-                formulas.STR_VALUE(request_value),
-                formulas.FIELD(request_field),
+            formula=formulas.FIND(request_value, formulas.Field(request_field),
             ),
             fields=[PHONE_FIELD, request_field, status_field],
         )
