@@ -318,16 +318,19 @@ def transform_internet_access(
 def transform_address(records: list[dict]):
 
     ADDRESS_PIPELINE_RANK = {
-        "Apartment": 3,
-        "Building": 2,
-        "Address Outside NY": 1,
+        "Apartment": 4,
+        "Building": 3,
+        "Address Outside NY": 2,
+        "Invalid Address Provided": 1,
         "No result": 0,
         "": 0,
-        "Invalid Address Provided": -1,
+    }
+    ADDRESS_ACCURACY_MAP = {
+        "": "No result"
     }
 
     best_idx_rank = np.argmax([
-        ADDRESS_PIPELINE_RANK.get(r.get("Cleaned Address Accuracy", ""), -2)
+        ADDRESS_PIPELINE_RANK.get(r.get("Cleaned Address Accuracy", ""), -1)
         for r in records
     ])
     best_idx = best_idx_rank
@@ -366,7 +369,7 @@ def transform_address(records: list[dict]):
     zip_code = convert_str_to_int(zip_code, num_digits=5)
 
     return {
-        "Address Accuracy": best_accuracy,
+        "Address Accuracy": ADDRESS_ACCURACY_MAP.get(best_accuracy, best_accuracy),
         "Address": address,
         "Street Address": street_address,
         "City, State": city_state,
