@@ -10,6 +10,7 @@ from bam_core.constants import (
     EG_REQUESTS_SCHEMA,
     KITCHEN_REQUESTS_SCHEMA,
     FURNITURE_REQUESTS_SCHEMA,
+    SOCIAL_SERVICES_REQUESTS_SCHEMA,
     PHONE_FIELD,
 )
 
@@ -18,6 +19,7 @@ REQUEST_SCHEMA_MAP = {
     "eg": EG_REQUESTS_SCHEMA,
     "kitchen": KITCHEN_REQUESTS_SCHEMA,
     "furniture": FURNITURE_REQUESTS_SCHEMA,
+    "ss": SOCIAL_SERVICES_REQUESTS_SCHEMA,
 }
 
 
@@ -25,7 +27,7 @@ class TimeoutEssentialGoodsRequests(Function):
     """
     Given:
         * a `REQUEST_FIELD`
-            - (Either `eg`, `kitchen`, `furniture`)
+            - (Either `eg`, `kitchen`, `furniture`, `ss`)
         * a `REQUEST_VALUE` item
             - (eg `Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品`)
 
@@ -38,7 +40,7 @@ class TimeoutEssentialGoodsRequests(Function):
             name="request_field",
             type="string",
             default="eg",
-            description="The field to consider for timing out. Either 'eg', 'kitchen', or 'furniture'",
+            description="The field to consider for timing out. Either 'eg', 'kitchen', 'furniture', or 'ss'",
         ),
         Param(
             name="request_value",
