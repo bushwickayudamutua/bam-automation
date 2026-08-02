@@ -71,40 +71,40 @@ python -m bam_core.functions.consolidate_eg_requests \
 # echo 'timing out Clothes'
 # echo '**************************'
 
-# python -m bam_core.functions.timeout_eg_requests \
+# python -m bam_core.functions.timeout_requests \
 #     -r 'Ropa / Clothing / 服装协助' 
 
 # echo '**************************'
 # echo 'timing out Pads'
 # echo '**************************'
 
-# python -m bam_core.functions.timeout_eg_requests \
+# python -m bam_core.functions.timeout_requests \
 #     -r 'Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾' 
 
 # echo '**************************'
 # echo 'timing out Soap'
 # echo '**************************'
 
-# python -m bam_core.functions.timeout_eg_requests \
+# python -m bam_core.functions.timeout_requests \
 #     -r 'Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品' 
 
 # echo '**************************'
 # echo 'timing out School Supplies'
 # echo '**************************'
 
-# python -m bam_core.functions.timeout_eg_requests \
+# python -m bam_core.functions.timeout_requests \
 #     -r 'Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品' 
 
 # echo '**************************'
 # echo 'timing out Baby Diapers'
 # echo '**************************'
 
-# python -m bam_core.functions.timeout_eg_requests \
+# python -m bam_core.functions.timeout_requests \
 #     -r 'Pañales / Baby Diapers / 婴儿纸尿裤' 
 
 # echo '**************************'
 # echo 'timing out Adult Diapers'
 # echo '**************************'
 
-# python -m bam_core.functions.timeout_eg_requests \
+# python -m bam_core.functions.timeout_requests \
 #     -r 'Pañales de adultos / Adult Diapers / 成人紙尿褲' 
