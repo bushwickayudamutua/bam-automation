@@ -122,14 +122,14 @@ class TimeoutEssentialGoodsRequests(Function):
                             or created_at > latest_delivered_request_created_time
                         ):
                             latest_delivered_request_created_time = created_at
-                    elif any([t not in statuses for t in timeout_tags]):
+                    elif not any([t in statuses for t in timeout_tags]):
                         # build up list of unfulfilled requests to timeout
                         unfulfilled_requests.append(record)
             else:
                 latest_delivered_request_created_time = cutoffs.get(phone_number)
                 for record in records:
                     statuses = record.get(status_field, [])
-                    if any([t not in statuses for t in delivered_tags + timeout_tags]):
+                    if not any([t in statuses for t in delivered_tags + timeout_tags]):
                         # build up list of unfulfilled requests to timeout
                         unfulfilled_requests.append(record)
 
