@@ -12,13 +12,15 @@ const clean = async (email, phone, address, city_state, zip_code) => {
         zip_code,
     })
     const url = `${AUTOMATION_CLEAN_RECORD_ENDPOINT}?${params}`
-    const response = await fetch(url)
-    const data = await response.json()
-    if (response.status === 200) {
-        return data
-    } else {
-        console.log(`API request failed with status: ${response.status} and response:\n${JSON.stringify(data)}`)
-        return undefined
+    try {
+      const response = await fetch(url)
+      if (response.ok) {
+        return await response.json()
+      }
+      const body = await response.text()
+      console.log(`API request failed with status: ${response.status} and response:\n${body}`)
+    } catch(error) {
+      console.log(`Unexpected error: ${error}`)
     }
 }
 
