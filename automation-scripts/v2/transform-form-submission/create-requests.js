@@ -5,11 +5,12 @@ const {
   kitchenReqs,
   ssReqs,
   internetAccess,
-  cleanedAddress,
-  cleanedAddressAccuracy,
+  formSubmittedAt,
+  isClean,
+  address,
+  addressAccuracy,
   bin,
   plusCode,
-  formSubmittedAt,
 } = input.config()
 
 // Retrieve tables
@@ -45,7 +46,7 @@ output.set(
     furnItemReqs.map((reqType) => ({
       fields: {
         Type: { name: reqType },
-        Geocode: plusCode || '',
+        Geocode: plusCode,
         'Last Requested': formSubmittedAt,
       },
     }))
@@ -71,14 +72,13 @@ output.set(
 )
 
 if (meshRequested) {
-  const binNumber = bin ? Number(bin) : undefined
   output.set(
     'meshRequestId',
     await meshRequestTable.createRecordAsync({
-      'Building Identification Number': Number.isFinite(binNumber) ? binNumber : undefined,
+      'Building Identification Number': isClean ? Number(bin) : undefined,
       'Internet Access': internetAccess.map((name) => ({ name })),
-      Address: cleanedAddress,
-      'Address Accuracy': { name: cleanedAddressAccuracy },
+      Address: address,
+      'Address Accuracy': isClean ? { name: addressAccuracy } : undefined,
       'Last Requested': formSubmittedAt,
     })
   )
