@@ -354,7 +354,7 @@ def transform_address(records: list[dict]):
             else:
                 best_idx = best_idx_rank
     
-    best_accuracy = records[best_idx].get("Cleaned Address Accuracy")
+    best_accuracy = records[best_idx].get("Cleaned Address Accuracy", "")
 
     address = records[best_idx].get("Cleaned Address", "").strip()
     street_address = records[best_idx].get("Current Address", "").strip()
@@ -369,7 +369,7 @@ def transform_address(records: list[dict]):
     zip_code = convert_str_to_int(zip_code, num_digits=5)
 
     return {
-        "Address Accuracy": ADDRESS_ACCURACY_MAP.get(best_accuracy, best_accuracy),
+        "Address Accuracy": "No result" if best_accuracy == "" else best_accuracy,
         "Address": address,
         "Street Address": street_address,
         "City, State": city_state,
