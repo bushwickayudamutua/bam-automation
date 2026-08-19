@@ -1,66 +1,153 @@
-const { requestIds, ssRequestIds } = input.config()
+const { requestIds, furnRequestIds, ssRequestIds, meshRequestIds } = input.config()
 
-async function mergeReqs(tableName, recordIds, mergeFns) {
-    // Pull requests from table
-    const requestTable = base.getTable(tableName)
-    const requestsQuery = await requestTable.selectRecordsAsync({
-        recordIds,
-        fields: [
-            'Type',
-            'Request Opened At',
-            ...Object.keys(mergeFns),
-        ]
-    })
-    const requests = [...requestsQuery.records]
+// Retrieve tables
+const reqTable = base.getTable('Requests');
+const furnReqTable = base.getTable('Furniture Requests');
+const ssReqTable = base.getTable('Social Service Requests');
+const meshTable = base.getTable('Mesh Requests');
 
-    // Group requests by type, sorted from oldest to newest
+async function mergeRequests(table, reqIds, getKey, mergeFns) {
+    if (!reqIds.length) return
+
+    // Step 1: group requests by key, sorted from oldest to newest
     const requestGroups = new Map()
 
-    requests
-        .sort((r1, r2) => {
-            const r1OpenedAt = r1.getCellValue('Request Opened At')
-            const r2OpenedAt = r2.getCellValue('Request Opened At')
-            if (r1OpenedAt < r2OpenedAt) return -1
-            if (r1OpenedAt > r2OpenedAt) return 1
-            return 0
-        })
-        .forEach((req) => {
-            const type = req.getCellValue('Type').id
-            if (!requestGroups.has(type)) requestGroups.set(type, [])
-            requestGroups.get(type).push(req)
-        })
+    const reqs = (await table.selectRecordsAsync({
+        recordIds: reqIds,
+        fields: table.fields,
+        sorts: [{ field: 'Request Opened At', direction: 'asc' }]
+    })).records
+    for (const req of reqs) {
+        const key = getKey(req)
 
-    // Merge fields according to callbacks, delete repeat requests
-    for (let [, reqGroup] of requestGroups) {
+        if (!requestGroups.has(key)) requestGroups.set(key, [])
+        requestGroups.get(key).push(req)
+    }
+
+    // Step 2: merge fields according to callbacks, delete repeat requests
+    for (const [, reqGroup] of requestGroups) {
         const [firstReq, ...rest] = reqGroup
 
-        await requestTable.updateRecordAsync(
-            firstReq,
-            Object.fromEntries(Object.keys(mergeFns).map((field) => {
-                const fn = mergeFns[field]
-                const value = fn(reqGroup.map((req) => req.getCellValue(field)))
-                return [field, value]
-            }))
-        )
-        await requestTable.deleteRecordsAsync(rest)
+        const mergedFields = {}
+        for (const [field, fn] of Object.entries(mergeFns)) {
+            mergedFields[field] = fn(reqGroup)
+        }
+        await table.updateRecordAsync(firstReq, mergedFields)
+        await table.deleteRecordsAsync(rest)
     }
 }
 
-const mergeNotes = (notes) => notes.filter((note) => note !== '').join('\n')
-const getLast = (arr) => arr.pop()
+const getLast = (field) => (arr) => arr[arr.length - 1].getCellValue(field)
+const union = (field) => (reqs) => {
+    const lists = reqs.map((req) => req.getCellValue(field))
+    const allSelectionIds = lists.map((list) => list ?? []).flat().map(({ id }) => id)
+    const uniqIds = [...new Set(allSelectionIds)]
+    return uniqIds.map((id) => ({ id }))
+}
 
-await mergeReqs('Requests', requestIds, {
-    'Last Requested': getLast,
-    Geocode: getLast,
-})
-await mergeReqs('Social Service Requests', ssRequestIds, {
-    'Last Requested': getLast,
-    'Internet Access': (iaLists) =>
-        [...new Set(iaLists.map((iaList) => iaList ?? []).flat())],
-    'Roof Accessible?': getLast,
-    'Street Address': getLast,
-    'City, State': getLast,
-    'Zip Code': getLast,
-    Geocode: getLast,
-})
+const MESH_STATUS_RANK = {
+    'Open': 0,
+    'Contacted about Mesh': 1,
+    'Interested in Mesh': 2,
+    'Needs Panorama': 3,
+    'Roof Access In Process': 4,
+    'Confirming Permission with Landlord': 5,
+    'Roof Access Confirmed': 6,
+    'LOS Confirmed': 7,
+    'Scheduling IN-PROGRESS': 8,
+    'Install Scheduled': 9,
+    'Cannot Install': 10,
+    'YAY! MESH INSTALLED!': 11,
+    'INSTALL PENDING ELDERT REPAIR': 12,
+}
 
+const maxMeshStatus = (reqs) => {
+    const statuses = reqs.map((req) => req.getCellValue('Status'))
+    let bestStatus
+    let bestRank = -1
+    for (const status of statuses) {
+        const rank = MESH_STATUS_RANK[status.name]
+        if (rank > bestRank) {
+            bestRank = rank
+            bestStatus = status
+        }
+    }
+
+    return bestStatus
+}
+
+const ADDRESS_ACCURACY_RANK = {
+    'Apartment': 3,
+    'Building': 2,
+    'Address Outside NY': 1,
+    'No result': 0,
+    '': 0,
+    'Invalid Address Provided': -1,
+}
+
+const trimText = (value) => (value ?? '').trim()
+
+const pickAddressBundleIndex = (reqs) => {
+    let bestIdx = 0
+    let bestRank = -2
+    for (let i = 0; i < reqs.length; i++) {
+        const accuracy = reqs[i].getCellValue('Address Accuracy')
+        const rank = ADDRESS_ACCURACY_RANK[accuracy?.name ?? ''] ?? -2
+        if (rank >= bestRank) {
+            bestRank = rank
+            bestIdx = i
+        }
+    }
+
+    if (!(trimText(reqs[bestIdx].getCellValue('Address')) ||
+        trimText(reqs[bestIdx].getCellValue('Street Address')))) {
+        for (let i = reqs.length - 1; i >= 0; i--) {
+            if (trimText(reqs[i].getCellValue('Address'))) return i
+        }
+
+        for (let i = reqs.length - 1; i >= 0; i--) {
+            if (trimText(reqs[i].getCellValue('Street Address'))) return i
+        }
+    }
+
+    return bestIdx
+}
+
+const fromAddressBundle = (field) => (reqs) => {
+    const idx = pickAddressBundleIndex(reqs)
+    return reqs[idx].getCellValue(field)
+}
+
+function getType(req) {
+    return req.getCellValue('Type').id
+}
+
+await mergeRequests(reqTable, requestIds, getType, {
+    'Last Requested': getLast('Last Requested'),
+})
+await mergeRequests(furnReqTable, furnRequestIds, getType, {
+    'Last Requested': getLast('Last Requested'),
+    Geocode: getLast('Geocode'),
+})
+await mergeRequests(ssReqTable, ssRequestIds, getType, {
+    'Last Requested': getLast('Last Requested'),
+    'Partner Org': union('Partner Org'),
+})
+await mergeRequests(
+    meshTable,
+    meshRequestIds,
+    (req) => req.getCellValue('Building Identification Number'),
+    {
+        'Last Requested': getLast('Last Requested'),
+        Status: maxMeshStatus,
+        'Internet Access': union('Internet Access'),
+        'Street Address': fromAddressBundle('Street Address'),
+        'City, State': fromAddressBundle('City, State'),
+        'Zip Code': fromAddressBundle('Zip Code'),
+        Address: (reqs) => {
+          const rawAddress = fromAddressBundle('Address')(reqs)
+          return trimText(rawAddress)
+        },
+        'Address Accuracy': fromAddressBundle('Address Accuracy'),
+    },
+)

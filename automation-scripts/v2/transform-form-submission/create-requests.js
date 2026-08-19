@@ -5,14 +5,19 @@ const {
   kitchenReqs,
   ssReqs,
   internetAccess,
-  roofAccessible,
-  cleanedAddress,
-  cleanedAddressAccuracy,
+  formSubmittedAt,
+  isClean,
+  address,
+  addressAccuracy,
   bin,
   plusCode,
 } = input.config()
 
+// Retrieve tables
 const requestTable = base.getTable('Requests')
+const furnRequestTable = base.getTable('Furniture Requests')
+const ssRequestTable = base.getTable('Social Service Requests')
+const meshRequestTable = base.getTable('Mesh Requests')
 
 const nonFurnItemReqs = [
   egReqs.filter((egType) =>
@@ -28,29 +33,55 @@ const furnItemReqs = [
 
 output.set(
   'requestIds',
-  await requestTable.createRecordsAsync([
-    nonFurnItemReqs.map((reqType) => ({ fields: { Type: { name: reqType } } })),
-    furnItemReqs.map((reqType) => ({
-      fields: { Type: { name: reqType }, Geocode: plusCode || '' },
-    })),
-  ].flat())
+  await requestTable.createRecordsAsync(
+    nonFurnItemReqs.map((reqType) => ({
+      fields: { Type: { name: reqType }, 'Last Requested': formSubmittedAt },
+    }))
+  )
 )
 
-const ssRequestTable = base.getTable('Social Service Requests')
+output.set(
+  'furnRequestIds',
+  await furnRequestTable.createRecordsAsync(
+    furnItemReqs.map((reqType) => ({
+      fields: {
+        Type: { name: reqType },
+        Geocode: plusCode,
+        'Last Requested': formSubmittedAt,
+      },
+    }))
+  )
+)
+
+let meshRequested = false
+for (let i = 0; i < ssReqs.length; i++) {
+  if (ssReqs[i] === 'Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助') {
+    meshRequested = true
+    ssReqs.splice(i, 1)
+    break
+  }
+}
 
 output.set(
   'ssRequestIds',
   await ssRequestTable.createRecordsAsync(
-    ssReqs.map((reqType) => {
-      const fields = { Type: { name: reqType } }
-      if (reqType === 'Internet de bajo costo en casa / Low-Cost Internet at home / 網絡連結協助') {
-        fields['Internet Access'] = internetAccess.map((name) => ({ name }))
-        fields['Roof Accessible?'] = roofAccessible
-        fields['Address'] = cleanedAddress
-        fields['Address Accuracy'] = { name: cleanedAddressAccuracy }
-        fields['Building Identification Number'] = Number(bin)
-      }
-      return { fields }
-    })
+    ssReqs.map((reqType) => ({
+      fields: { Type: { name: reqType }, 'Last Requested': formSubmittedAt },
+    }))
   )
 )
+
+if (meshRequested) {
+  output.set(
+    'meshRequestId',
+    await meshRequestTable.createRecordAsync({
+      'Building Identification Number': isClean ? Number(bin) : undefined,
+      'Internet Access': internetAccess.map((name) => ({ name })),
+      Address: address,
+      'Address Accuracy': isClean ? { name: addressAccuracy } : undefined,
+      'Last Requested': formSubmittedAt,
+    })
+  )
+} else {
+  output.set('meshRequestId', null)
+}
