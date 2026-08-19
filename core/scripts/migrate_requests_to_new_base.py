@@ -318,19 +318,19 @@ def transform_internet_access(
 def transform_address(records: list[dict]):
 
     ADDRESS_PIPELINE_RANK = {
-        "Apartment": 4,
-        "Building": 3,
-        "Address Outside NY": 2,
-        "Invalid Address Provided": 1,
+        "Apartment": 2,
+        "Building": 1,
         "No result": 0,
         "": 0,
+        "Address Outside NY": -1,
+        "Invalid Address Provided": -1,
     }
     ADDRESS_ACCURACY_MAP = {
         "": "No result"
     }
 
     best_idx_rank = np.argmax([
-        ADDRESS_PIPELINE_RANK.get(r.get("Cleaned Address Accuracy", ""), -1)
+        ADDRESS_PIPELINE_RANK.get(r.get("Cleaned Address Accuracy", ""), -2)
         for r in records
     ])
     best_idx = best_idx_rank
@@ -443,63 +443,21 @@ def get_best_mesh_status(mesh_records: list[dict]) -> tuple[str | None, int | No
         "INSTALL PENDING ELDERT REPAIR": 12,
     }
     OPEN_RANKS = list(range(10)) + [12]
-    MESH_STATUS_OLD_TO_NEW = {
-        "": "Open",
-        "Duplicate": "Open",
-        "Node Building": "Open",
-        "Step 2.6 (optional) Node Building": "Open",
-
-        "Texted about Mesh": "Contacted about Mesh",
-
-        "Step 1 - Interested in Mesh":  "Interested in Mesh",
-
-        "Needs Panorama": "Needs Panorama",
-        "Step 2.5 (optional) - Needs Panorama": "Needs Panorama",
-
-        "Confirming Premission with Landlord": "Confirming Permission with Landlord",
-
-        "Step 4 - Roof Access Confirmed": "Roof Access Confirmed",
-
-        "Step 2- LOS Confirmed": "LOS Confirmed",
-        "Step 2 - LOS Tool Confirmed": "LOS Confirmed",
-        "LOS confirmed": "LOS Confirmed",
-        "LOS confirmed - Update this": "LOS Confirmed",
-        "LOS Tool Confirmed": "LOS Confirmed",
-        "Step 3 - LOS Confirmed": "LOS Confirmed",
-        "Step 2 - LOS Confirmed": "LOS Confirmed",
-
-        "Install in-progress": "Scheduling IN-PROGRESS",
-        "Install in-progress 2022": "Scheduling IN-PROGRESS",
-        "Step 5 - Install in-progress": "Scheduling IN-PROGRESS",
-        "Step 3 - Scheduling IN-PROGRESS": "Scheduling IN-PROGRESS",
-
-        "Mesh installed": "YAY! MESH INSTALLED!",
-        "Step 6 - Mesh installed": "YAY! MESH INSTALLED!",
-
-        "NYCHA - Currently Does Not Qualify": "Cannot Install",
-        "Cannot Install - Other Reason": "Cannot Install",
-        ">> MESH Cannot Install": "Cannot Install",
-        "Cannot Install - Does not have LOS": "Cannot Install",
-        "Does not have LOS": "Cannot Install",
-        "No LOS confirmed": "Cannot Install",
-        "Cannot Install - No Roof Access": "Cannot Install",
-        "No Roof Access": "Cannot Install",
-        "Not Interested": "Cannot Install",
-    }
     
     # pick the best non-closed MESH status:
-    best_stat = None
     best_rank = -1
+    mesh_history = ""
     for record in mesh_records:
         stat = record.get("MESH - Status", "")
         rank = MESH_PIPELINE_RANK.get(stat, -1)
         log.debug("MESH Status: '%s', Rank: %s", stat, rank)
+        date_submitted = record.get(DATE_SUBMITTED_FIELD)
+        mesh_history += f"- {date_submitted[0:10]}: {stat}\n"
         if rank > best_rank:
-            best_stat = MESH_STATUS_OLD_TO_NEW.get(stat, stat)
             best_rank = rank
             log.debug("Best MESH Status: '%s', Best Rank: %s", best_stat, best_rank)
 
-    return (best_stat, best_rank) if best_rank in OPEN_RANKS else (None, None)
+    return (mesh_history, best_rank) if best_rank in OPEN_RANKS else (None, None)
 
 
 def transform_mesh_requests(
@@ -517,13 +475,14 @@ def transform_mesh_requests(
     mesh_requests = []
     for bin_val, bin_records in mesh_per_bin.items():
         log.debug("BIN: '%s', Phone: '%s'", bin_val, bin_records[0].get(PHONE_FIELD))
-        mesh_status, mesh_status_rank = get_best_mesh_status(bin_records)
-        if mesh_status:
+        mesh_history, mesh_status_rank = get_best_mesh_status(bin_records)
+        if mesh_status_rank:
             mesh_dates = transform_date_submitted(DATE_SUBMITTED_FIELD, DATE_SUBMITTED_FIELD, bin_records)
             mesh_address = transform_address(bin_records)
             internet_access = transform_internet_access("Internet Access", "Internet Access", bin_records)
             mesh_requests.append({
-                "Status": mesh_status,
+                "Status": "Open",
+                "MESH History": mesh_history,
                 "Building Identification Number": convert_str_to_int(bin_val),
                 **mesh_dates,
                 **mesh_address,
@@ -976,6 +935,7 @@ def create_mesh_requests_records(record: dict, household: Household):
             MeshRequest(
                 household=household,
                 status=r.get("Status"),
+                mesh_history=r.get("Mesh History"),
                 legacy_date_submitted=format_date(r.get("Legacy First "+DATE_SUBMITTED_FIELD)),
                 last_requested=format_date(r.get("Legacy Last "+DATE_SUBMITTED_FIELD)),
                 internet_access=r.get("Internet Access") or [],

@@ -138,12 +138,10 @@ class Household(BamModel):
 
 class BaseRequest(BamModel):
     household = F.SingleLinkField('Household', Household)
-
+    status = F.SelectField('Status')
     last_requested = F.DateField('Last Requested')
     legacy_date_submitted = F.DateField('Legacy Date Submitted')
     request_opened_at = F.DateField('Request Opened At', readonly=True)
-
-    status = F.SelectField('Status')
 
 
 class Request(BaseRequest):
@@ -201,6 +199,7 @@ class MeshRequest(BaseRequest):
 
     table_name = 'Mesh Requests'
 
+    mesh_history = F.MultilineTextField('MESH History')
     internet_access = F.MultipleSelectField('Internet Access')
     address = F.TextField('Address')
     address_accuracy = F.SelectField('Address Accuracy')
@@ -214,6 +213,7 @@ class MeshRequest(BaseRequest):
             self, *,
             household: Household,
             status: str = "Open",
+            mesh_history: str | None = None,
             legacy_date_submitted: date | None,
             last_requested: date | None,
             internet_access: List[str] | None = None,
