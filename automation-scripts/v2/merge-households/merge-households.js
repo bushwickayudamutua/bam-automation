@@ -1,18 +1,14 @@
-const { newHouseholdId, oldHouseholdIds } = input.config()
-const [ survivorId, ...otherOldIds ] = oldHouseholdIds
+const { householdIds } = input.config()
 
 const householdTable = base.getTable('Households')
-const getHousehold = async (householdId) => {
-    const household = await householdTable.selectRecordAsync(householdId)
-    if (household === null) throw `Household ${householdId} does not exist`
-    return household
-}
 
-const newHousehold = await getHousehold(newHouseholdId)
-const survivor = await getHousehold(survivorId)
-const otherOldHouseholds = await Promise.all(otherOldIds.map(getHousehold))
-
-const allHouseholds = [survivor, ...otherOldHouseholds, newHousehold]
+const households = (await householdTable.selectRecordsAsync({
+    recordIds: householdIds,
+    fields: householdTable.fields,
+    sorts: [{ field: 'Created At', direction: 'asc' }],
+})).records
+const [survivor, ...others] = households
+const latest = households[households.length - 1]
 
 // Helper to dedupe and extract {id} from linked records or multi-select
 const dedupeById = (items) => {
@@ -30,23 +26,23 @@ const dedupeById = (items) => {
 }
 
 const languages = dedupeById(
-    allHouseholds.map(h => h.getCellValue('Languages'))
+    households.map(h => h.getCellValue('Languages'))
 )
 
 const requests = dedupeById(
-    allHouseholds.map(h => h.getCellValue('Requests'))
+    households.map(h => h.getCellValue('Requests'))
 )
 
 const furnitureRequests = dedupeById(
-    allHouseholds.map(h => h.getCellValue('Furniture Requests'))
+    households.map(h => h.getCellValue('Furniture Requests'))
 )
 
 const socialServiceRequests = dedupeById(
-    allHouseholds.map(h => h.getCellValue('Social Service Requests'))
+    households.map(h => h.getCellValue('Social Service Requests'))
 )
 
 const meshRequests = dedupeById(
-    allHouseholds.map(h => h.getCellValue('Mesh Requests'))
+    households.map(h => h.getCellValue('Mesh Requests'))
 )
 
 // Merges text fields without deduping — trims each entry, filters blanks, joins with newline
@@ -72,18 +68,18 @@ const mergeTextDeduped = (texts) => {
         .join('\n')
 }
 
+const notes = mergeText(households.map(h => h.getCellValue('Notes')))
+
 const otherLanguages = mergeTextDeduped(
-    allHouseholds.map(h => h.getCellValue('Other Languages'))
+    households.map(h => h.getCellValue('Other Languages'))
 )
 
-const notes = mergeText(allHouseholds.map(h => h.getCellValue('Notes')))
-
 await householdTable.updateRecordAsync(survivor, {
-    Name: newHousehold.getCellValue('Name'),
-    "Int'l Phone Number?": newHousehold.getCellValue("Int'l Phone Number?"),
-    'Invalid Phone Number?': newHousehold.getCellValue("Invalid Phone Number?"),
-    Email: newHousehold.getCellValue('Email'),
-    'Email Error': newHousehold.getCellValue('Email Error'),
+    Name: latest.getCellValue('Name'),
+    "Int'l Phone Number?": latest.getCellValue("Int'l Phone Number?"),
+    'Invalid Phone Number?': latest.getCellValue("Invalid Phone Number?"),
+    Email: latest.getCellValue('Email'),
+    'Email Error': latest.getCellValue('Email Error'),
     Languages: languages,
     "Other Languages": otherLanguages,
     Notes: notes,
@@ -91,11 +87,12 @@ await householdTable.updateRecordAsync(survivor, {
     'Furniture Requests': furnitureRequests,
     'Social Service Requests': socialServiceRequests,
     'Mesh Requests': meshRequests,
-    'Needs Delivery': allHouseholds.some(h => h.getCellValue('Needs Delivery')),
-    'Needs Email Outreach': allHouseholds.some(h => h.getCellValue('Needs Email Outreach')),
+    'Needs Delivery': households.some(h => h.getCellValue('Needs Delivery')),
+    'Needs Email Outreach': households.some(h => h.getCellValue('Needs Email Outreach')),
 })
 
-const recordsToDelete = [newHousehold, ...otherOldHouseholds]
-for (const record of recordsToDelete) {
+for (const record of others) {
     await householdTable.deleteRecordAsync(record)
 }
+
+output.set('householdId', survivor.id)
