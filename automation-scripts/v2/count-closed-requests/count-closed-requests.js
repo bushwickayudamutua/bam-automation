@@ -1,5 +1,7 @@
 const { requestIds, furnRequestIds, ssRequestIds, meshRequestIds } = input.config();
 
+const DELIVERED_TAG = 'Delivered'
+
 // Retrieve tables
 const reqTable = base.getTable('Requests');
 const furnReqTable = base.getTable('Furniture Requests');
@@ -9,7 +11,7 @@ const countTable = base.getTable('Fulfilled Request Count');
 
 const invalidCountCols = new Set();
 
-async function processRequests(table, reqIds, getCountCol, deliveredStatus) {
+async function processRequests(table, reqIds, getCountCol) {
   if (!reqIds.length) return;
 
   // Step 1: pull all count records, define find-or-create util
@@ -58,7 +60,7 @@ async function processRequests(table, reqIds, getCountCol, deliveredStatus) {
 
       // Bump counter if delivered
       const reqStatus = req.getCellValue('Status').name;
-      if (reqStatus === deliveredStatus) {
+      if (reqStatus === DELIVERED_TAG) {
         fields[countCol] ??= countRec.getCellValue(countCol);
         fields[countCol]++;
       }
@@ -81,11 +83,9 @@ function getCountColFromType(req) {
   return req.getCellValue('Type').name.split(' / ')[1];
 }
 
-const DELIVERED_TAG = 'Delivered'
-
-await processRequests(reqTable, requestIds, getCountColFromType, DELIVERED_TAG);
-await processRequests(furnReqTable, furnRequestIds, getCountColFromType, DELIVERED_TAG);
-await processRequests(ssReqTable, ssRequestIds, getCountColFromType, DELIVERED_TAG);
-await processRequests(meshTable, meshRequestIds, () => 'Low-Cost Home Internet', 'YAY! MESH INSTALLED!');
+await processRequests(reqTable, requestIds, getCountColFromType);
+await processRequests(furnReqTable, furnRequestIds, getCountColFromType);
+await processRequests(ssReqTable, ssRequestIds, getCountColFromType);
+await processRequests(meshTable, meshRequestIds, () => 'Low-Cost Home Internet');
 
 output.set('invalidCountCols', [...invalidCountCols]);
