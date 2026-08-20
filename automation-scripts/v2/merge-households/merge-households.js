@@ -54,6 +54,7 @@ const mergeText = (texts) =>
     texts
         .map(t => t?.trim())
         .filter(Boolean)
+        .reverse()
         .join('\n')
 
 // Merges text fields with deduping — trim happens before filter so empty-after-trim strings are dropped cleanly
@@ -62,6 +63,7 @@ const mergeTextDeduped = (texts) => {
     return texts
         .map(t => t?.trim())
         .filter(Boolean)
+        .reverse()
         .filter(text => {
             if (seen.has(text)) return false
             seen.add(text)
@@ -71,16 +73,10 @@ const mergeTextDeduped = (texts) => {
 }
 
 const otherLanguages = mergeTextDeduped(
-    [...allHouseholds]
-        .reverse()
-        .map(h => h.getCellValue('Other Languages'))
+    allHouseholds.map(h => h.getCellValue('Other Languages'))
 )
 
-const notes = mergeText(
-    [...allHouseholds]
-        .reverse()
-        .map(h => h.getCellValue('Notes'))
-)
+const notes = mergeText(allHouseholds.map(h => h.getCellValue('Notes')))
 
 await householdTable.updateRecordAsync(survivor, {
     Name: newHousehold.getCellValue('Name'),

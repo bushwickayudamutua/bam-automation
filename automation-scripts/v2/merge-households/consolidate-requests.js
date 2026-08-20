@@ -44,37 +44,12 @@ const union = (field) => (reqs) => {
     const uniqIds = [...new Set(allSelectionIds)]
     return uniqIds.map((id) => ({ id }))
 }
-
-const MESH_STATUS_RANK = {
-    'Open': 0,
-    'Contacted about Mesh': 1,
-    'Interested in Mesh': 2,
-    'Needs Panorama': 3,
-    'Roof Access In Process': 4,
-    'Confirming Permission with Landlord': 5,
-    'Roof Access Confirmed': 6,
-    'LOS Confirmed': 7,
-    'Scheduling IN-PROGRESS': 8,
-    'Install Scheduled': 9,
-    'Cannot Install': 10,
-    'YAY! MESH INSTALLED!': 11,
-    'INSTALL PENDING ELDERT REPAIR': 12,
-}
-
-const maxMeshStatus = (reqs) => {
-    const statuses = reqs.map((req) => req.getCellValue('Status'))
-    let bestStatus
-    let bestRank = -1
-    for (const status of statuses) {
-        const rank = MESH_STATUS_RANK[status.name]
-        if (rank > bestRank) {
-            bestRank = rank
-            bestStatus = status
-        }
-    }
-
-    return bestStatus
-}
+const mergeText = (texts) =>
+    texts
+        .map(t => t?.trim())
+        .filter(Boolean)
+        .reverse()
+        .join('\n')
 
 const ADDRESS_ACCURACY_RANK = {
     'Apartment': 3,
@@ -139,7 +114,8 @@ await mergeRequests(
     (req) => req.getCellValue('Building Identification Number'),
     {
         'Last Requested': getLast('Last Requested'),
-        Status: maxMeshStatus,
+        'MESH History': (reqs) =>
+            mergeText(reqs.map(r => r.getCellValue('MESH History')))
         'Internet Access': union('Internet Access'),
         'Street Address': fromAddressBundle('Street Address'),
         'City, State': fromAddressBundle('City, State'),
