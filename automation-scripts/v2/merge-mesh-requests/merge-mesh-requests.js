@@ -40,11 +40,11 @@ const mergeText = (texts) =>
 const meshHistory = mergeText(requests.map(h => h.getCellValue('MESH History')))
 
 const ADDRESS_ACCURACY_RANK = {
-    'Apartment': 3,
-    'Building': 2,
-    'Address Outside NY': 1,
+    'Apartment': 2,
+    'Building': 1,
     'No result': 0,
     '': 0,
+    'Address Outside NY': -1,
     'Invalid Address Provided': -1,
 }
 
