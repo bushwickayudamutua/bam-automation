@@ -5,7 +5,7 @@ const meshRequestTable = base.getTable('Mesh Requests')
 const requests = (await meshRequestTable.selectRecordsAsync({
     recordIds: requestIds,
     fields: meshRequestTable.fields,
-    sorts: [{ field: 'Created At', direction: 'asc' }],
+    sorts: [{ field: 'Request Opened At', direction: 'asc' }],
 })).records
 const [survivor, ...others] = requests
 const latest = requests[requests.length - 1]

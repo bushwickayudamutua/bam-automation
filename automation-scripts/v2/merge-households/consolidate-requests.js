@@ -102,7 +102,7 @@ await mergeRequests(
     {
         'Last Requested': getLast('Last Requested'),
         'MESH History': (reqs) =>
-            mergeText(reqs.map(r => r.getCellValue('MESH History')))
+            mergeText(reqs.map(r => r.getCellValue('MESH History'))),
         'Internet Access': union('Internet Access'),
         'Street Address': fromAddressBundle('Street Address'),
         'City, State': fromAddressBundle('City, State'),
