@@ -34,7 +34,7 @@ output.set('email', apiResponse?.email || email || '')
 output.set('email_error', apiResponse?.email_error || '')
 output.set(
     'cleaned_address',
-    apiResponse?.cleaned_address || [address, city, zipCode].join(' ') || ''
+    apiResponse?.cleaned_address || [address, city, zipCode].join(' ').trim() || ''
 )
 output.set('cleaned_address_accuracy',apiResponse?.cleaned_address_accuracy || '')
 output.set('bin', apiResponse?.bin || '')

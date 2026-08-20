@@ -60,8 +60,6 @@ const ADDRESS_ACCURACY_RANK = {
     'Invalid Address Provided': -1,
 }
 
-const trimText = (value) => (value ?? '').trim()
-
 const pickAddressBundleIndex = (reqs) => {
     let bestIdx = 0
     let bestRank = -2
@@ -71,17 +69,6 @@ const pickAddressBundleIndex = (reqs) => {
         if (rank >= bestRank) {
             bestRank = rank
             bestIdx = i
-        }
-    }
-
-    if (!(trimText(reqs[bestIdx].getCellValue('Address')) ||
-        trimText(reqs[bestIdx].getCellValue('Street Address')))) {
-        for (let i = reqs.length - 1; i >= 0; i--) {
-            if (trimText(reqs[i].getCellValue('Address'))) return i
-        }
-
-        for (let i = reqs.length - 1; i >= 0; i--) {
-            if (trimText(reqs[i].getCellValue('Street Address'))) return i
         }
     }
 
@@ -120,10 +107,7 @@ await mergeRequests(
         'Street Address': fromAddressBundle('Street Address'),
         'City, State': fromAddressBundle('City, State'),
         'Zip Code': fromAddressBundle('Zip Code'),
-        Address: (reqs) => {
-          const rawAddress = fromAddressBundle('Address')(reqs)
-          return trimText(rawAddress)
-        },
+        Address: fromAddressBundle('Address'),
         'Address Accuracy': fromAddressBundle('Address Accuracy'),
     },
 )
