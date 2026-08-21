@@ -597,6 +597,12 @@ def transform_open_requests(
         LOW_COST_INTERNET_AT_HOME_TYPE, # MESH Requests handled separately
     ]
 
+    # Map item labels:
+    MAP_ITEMS = {
+        "Platos / Plates / 盤子": "Platos o Tazas / Plates or Cups / 盘子或杯子",
+        "Tazas / Cups / 杯子": "Platos o Tazas / Plates or Cups / 盘子或杯子",
+    }
+
     all_items_df = [
         pd.DataFrame({
             "item": [item],
@@ -654,6 +660,7 @@ def transform_open_requests(
     output = {
         name: (
             item_df
+            .replace({"item": MAP_ITEMS})
             .groupby("item")[DATE_SUBMITTED_FIELD]
             .agg(["min", "max"])
             .reset_index()
