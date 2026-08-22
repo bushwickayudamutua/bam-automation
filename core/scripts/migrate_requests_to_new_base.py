@@ -513,14 +513,16 @@ def transform_case_notes(
     for r in records:
         date_submitted = r.get(DATE_SUBMITTED_FIELD)
         link = at_og.get_assistance_request_link(r["id"])
+        case_notes += f"- [{date_submitted[0:10]}]({link})\n"
         notes = r.get(old_field_name)
         if notes:
             note_lines = "\n".join(
                 [f"    - {n.strip()}" for n in notes.split("\n") if n.strip()]
             )
-            case_notes += f"- [{date_submitted[0:10]}]({link})\n"
             case_notes += note_lines
-            case_notes += "\n\n"
+            case_notes += "\n"
+        case_notes += "\n"
+    
     return {
         new_field_name: case_notes,
     }
