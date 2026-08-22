@@ -90,6 +90,7 @@ class FormSubmission(BamModel):
 
 class Household(BamModel):
     table_name = 'Households'
+    table_id = settings.AIRTABLE_V2_HOUSEHOLDS_TABLE_ID
 
     bam_id = F.AutoNumberField('ID')
     name = F.TextField('Name')
@@ -134,6 +135,12 @@ class Household(BamModel):
             needs_delivery: bool = False,
             needs_email_outreach: bool = False
         ): ...
+
+    def get_household_link(self) -> str:
+        """
+        Get a link to an Household table record
+        """
+        return f"https://airtable.com/{self.meta.base_id}/{self.table_id}/{self.id}"
 
 
 class BaseRequest(BamModel):
