@@ -1077,7 +1077,7 @@ def main():
                 log.warning("No records to transform after subsetting to '%s'", args.subset)
                 return
             log.info("Subsetting to %s households from '%s'", n_numbers, args.subset)
-            n_missing = len(subset_str) - n_numbers
+            n_missing = len(selected_numbers) - n_numbers
             if n_missing > 0:
                 log.warning("Missing %s of provided phone numbers!", n_missing)
 
