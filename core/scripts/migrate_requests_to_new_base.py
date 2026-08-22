@@ -8,9 +8,7 @@ import numpy as np
 import os
 import sys
 
-# Allow running as `python migrate_requests_to_new_base.py` without `pip install -e ./core`
-# _CORE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-_CORE_DIR = "/Users/zakieh/git/bam-automation/core/"
+_CORE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _CORE_DIR not in sys.path:
     sys.path.insert(0, _CORE_DIR)
 
