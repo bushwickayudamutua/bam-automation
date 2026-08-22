@@ -8,7 +8,7 @@ import numpy as np
 import os
 import sys
 
-# Allow running as `python scripts/migrate_requests_to_new_base.py` without `pip install -e ./core`
+# Allow running as `python migrate_requests_to_new_base.py` without `pip install -e ./core`
 _CORE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _CORE_DIR not in sys.path:
     sys.path.insert(0, _CORE_DIR)
@@ -446,16 +446,19 @@ def get_best_mesh_status(mesh_records: list[dict]) -> tuple[str | None, int | No
     
     # pick the best non-closed MESH status:
     best_rank = -1
+    unique_stats = set()
     mesh_history = ""
     for record in mesh_records:
         stat = record.get("MESH - Status", "")
         rank = MESH_PIPELINE_RANK.get(stat, -1)
         log.debug("MESH Status: '%s', Rank: %s", stat, rank)
         date_submitted = record.get(DATE_SUBMITTED_FIELD)
-        mesh_history += f"- {date_submitted[0:10]}: {stat}\n"
+        if (stat not in ["", "Duplicate"]) and (stat not in unique_stats):
+            unique_stats.add(stat)
+            mesh_history += f"- {date_submitted[0:10]}: {stat}\n"
         if rank > best_rank:
             best_rank = rank
-            log.debug("Best MESH Status: '%s', Best Rank: %s", best_stat, best_rank)
+            log.debug("Best MESH Status: '%s', Best Rank: %s", stat, rank)
 
     return (mesh_history, best_rank) if best_rank in OPEN_RANKS else (None, None)
 
@@ -476,7 +479,7 @@ def transform_mesh_requests(
     for bin_val, bin_records in mesh_per_bin.items():
         log.debug("BIN: '%s', Phone: '%s'", bin_val, bin_records[0].get(PHONE_FIELD))
         mesh_history, mesh_status_rank = get_best_mesh_status(bin_records)
-        if mesh_status_rank:
+        if mesh_status_rank is not None:
             mesh_dates = transform_date_submitted(DATE_SUBMITTED_FIELD, DATE_SUBMITTED_FIELD, bin_records)
             mesh_address = transform_address(bin_records)
             internet_access = transform_internet_access("Internet Access", "Internet Access", bin_records)
@@ -942,7 +945,7 @@ def create_mesh_requests_records(record: dict, household: Household):
             MeshRequest(
                 household=household,
                 status=r.get("Status"),
-                mesh_history=r.get("Mesh History"),
+                mesh_history=r.get("MESH History"),
                 legacy_date_submitted=format_date(r.get("Legacy First "+DATE_SUBMITTED_FIELD)),
                 last_requested=format_date(r.get("Legacy Last "+DATE_SUBMITTED_FIELD)),
                 internet_access=r.get("Internet Access") or [],
