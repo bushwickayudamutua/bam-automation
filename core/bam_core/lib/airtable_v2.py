@@ -138,16 +138,30 @@ class Household(BamModel):
 
 class BaseRequest(BamModel):
     household = F.SingleLinkField('Household', Household)
-
+    status = F.SelectField('Status')
     last_requested = F.DateField('Last Requested')
     legacy_date_submitted = F.DateField('Legacy Date Submitted')
     request_opened_at = F.DateField('Request Opened At', readonly=True)
 
-    status = F.SelectField('Status')
-
 
 class Request(BaseRequest):
     table_name = 'Requests'
+
+    type = F.SelectField('Type')
+
+    if TYPE_CHECKING:
+        def __init__(
+            self, *,
+            household: Household,
+            type: str,
+            status: str = "Open",
+            legacy_date_submitted: date | None,
+            last_requested: date | None,
+        ): ...
+
+
+class FurnitureRequest(BaseRequest):
+    table_name = 'Furniture Requests'
 
     type = F.SelectField('Type')
     geocode = F.TextField('Geocode')
@@ -162,6 +176,7 @@ class Request(BaseRequest):
             last_requested: date | None,
             geocode: str | None = None
         ): ...
+
 
 class SocialServiceRequest(BaseRequest):
     table_name = 'Social Service Requests'
@@ -184,10 +199,8 @@ class MeshRequest(BaseRequest):
 
     table_name = 'Mesh Requests'
 
+    mesh_history = F.MultilineTextField('MESH History')
     internet_access = F.MultipleSelectField('Internet Access')
-    roof_is_accessible = F.CheckboxField('Roof Accessible?')
-    has_los = F.CheckboxField('Has LOS?')
-    
     address = F.TextField('Address')
     address_accuracy = F.SelectField('Address Accuracy')
     building_identification_number = F.NumberField('Building Identification Number')
@@ -200,11 +213,10 @@ class MeshRequest(BaseRequest):
             self, *,
             household: Household,
             status: str = "Open",
+            mesh_history: str | None = None,
             legacy_date_submitted: date | None,
             last_requested: date | None,
             internet_access: List[str] | None = None,
-            roof_is_accessible: bool = False,
-            has_los: bool = False,
             address: str | None = None,
             address_accuracy: str | None = None,
             building_identification_number: int | None = None,
