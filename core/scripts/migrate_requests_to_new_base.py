@@ -1048,11 +1048,12 @@ def load_household(record: dict):
     :return: None
     """
     household = create_household_record(record)
-    create_eg_requests_records(record, household)
-    create_furniture_requests_records(record, household)
-    create_ss_requests_records(record, household)
-    create_mesh_requests_records(record, household)
-    update_migration_fields(record, household)
+    if household:
+        create_eg_requests_records(record, household)
+        create_furniture_requests_records(record, household)
+        create_ss_requests_records(record, household)
+        create_mesh_requests_records(record, household)
+        update_migration_fields(record, household)
 
 
 #######################################
