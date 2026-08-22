@@ -1029,9 +1029,9 @@ def create_household_record(record: dict):
 
 
 def update_migration_fields(record: dict, household: Household):
-    curr_date_time = datetime.now().strftime("%m/%d/%Y %H:%M")
-    household_link = f"[{household.name}]({household.get_household_link()})"
     try:
+        curr_date_time = datetime.now().strftime("%m/%d/%Y %H:%M")
+        household_link = f"[{household.name}]({household.get_household_link()})"
         legacy_table.batch_update([
             {"id": lid, "fields": {"Migration Date": curr_date_time, "New Household": household_link}}
             for lid in record.get("legacy_record_id", [])
