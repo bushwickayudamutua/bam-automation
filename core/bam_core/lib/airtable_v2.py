@@ -136,12 +136,6 @@ class Household(BamModel):
             needs_email_outreach: bool = False
         ): ...
 
-    def get_household_link(self) -> str:
-        """
-        Get a link to an Household table record
-        """
-        return f"https://airtable.com/{self.meta.base_id}/{self.table_id}/{self.id}"
-
 
 class BaseRequest(BamModel):
     household = F.SingleLinkField('Household', Household)
