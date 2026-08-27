@@ -185,7 +185,7 @@ class Param:
     def to_dict(self) -> Dict[str, Any]:
         return {
             "name": self.name,
-            "type": self.type.name,
+            "type": self.type_class.name,
             "default": self.default,
             "description": self.description,
             "required": self.required,

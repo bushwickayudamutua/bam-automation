@@ -27,14 +27,8 @@ REQUEST_SCHEMA_MAP = {
 
 class TimeoutEssentialGoodsRequests(Function):
     """
-    Given:
-        * a `REQUEST_FIELD`
-            - (Either `eg`, `kitchen`, `furniture`)
-        * a `REQUEST_VALUE` item
-            - (eg `Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品`)
-
-    For all records that have an `REQUEST_VALUE` in the `REQUEST_FIELD`, add an associated "timeout" status to any
-    unfulfilled records for phone numbers which have at least one later fulfilled request.
+    Finds all unfulfilled assistance request records for a given item (e.g. soap, pads) where the same phone number has a later fulfilled request, then marks those stale records with a timeout status.
+    Helps keep Airtable views clean by closing out requests that have been superseded by a more recent fulfillment.
     """
 
     params = Params(

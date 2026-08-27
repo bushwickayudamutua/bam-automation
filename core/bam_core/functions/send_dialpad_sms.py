@@ -7,7 +7,8 @@ from bam_core.constants import PHONE_FIELD
 
 class SendDialpadSMS(Function):
     """
-    Given a list of Airtable views, send SMS messages to phone numbers in the view via Dialpad.
+    Fetches phone numbers from one or more Airtable views and sends each a personalized SMS via Dialpad.
+    Supports deduplication across views to avoid sending multiple messages to the same number, and an optional cap on the total number of messages sent.
     """
 
     params = Params(

@@ -6,7 +6,7 @@ import json
 import base64
 
 # load .env file
-dotenv.load_dotenv()
+dotenv.load_dotenv(dotenv.find_dotenv(usecwd=True))
 
 AIRTABLE_TOKEN = os.getenv("BAM_AIRTABLE_TOKEN", None)
 AIRTABLE_BASE_ID = os.getenv("BAM_AIRTABLE_BASE_ID", None)

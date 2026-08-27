@@ -8,7 +8,8 @@ from bam_core.functions.params import Params, Param
 
 class UpdateAirtableFieldValue(Function):
     """
-    Update a field in the Assistance Requests table for a list of phone numbers
+    Extracts phone numbers from a block of text, then updates a specified field to a new value for all matching records in the Assistance Requests table.
+    Supports an optional view filter to scope which records are updated.
     """
 
     params = Params(

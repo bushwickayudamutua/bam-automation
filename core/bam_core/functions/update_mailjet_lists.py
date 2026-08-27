@@ -6,7 +6,8 @@ from bam_core.functions.params import Params, Param
 
 class UpdateMailjetLists(Function):
     """
-    Sync contacts from Airtable to Mailjet
+    Syncs contacts from the Airtable Volunteers and Assistance Requests tables to their corresponding Mailjet subscriber lists.
+    Only new contacts with valid email addresses are added; existing subscribers and contacts with email errors are skipped.
     """
 
     CONFIG = [

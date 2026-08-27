@@ -12,7 +12,8 @@ from bam_core.constants import AIRTABLE_DATETIME_FORMAT
 
 class SnapshotAirtableViews(Function):
     """
-    Fetch modified records from Airtable and upload to Digital Ocean Space
+    Fetches recently modified records from the Assistance Requests, Volunteers, and Essential Goods Donations tables in Airtable and uploads them as JSON snapshots to Digital Ocean Space.
+    Records are filtered to only those modified within the specified number of days.
     """
 
     CONFIG = [
