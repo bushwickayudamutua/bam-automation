@@ -12,7 +12,7 @@ _CORE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _CORE_DIR not in sys.path:
     sys.path.insert(0, _CORE_DIR)
 
-from bam_core.settings import AIRTABLE_BASE_ID, AIRTABLE_TOKEN
+from bam_core.settings import AIRTABLE_BASE_ID, AIRTABLE_TOKEN, AIRTABLE_V2_BASE_ID
 from bam_core.lib.airtable import Airtable
 from bam_core.lib.airtable_v2 import (
     Household,
@@ -1018,10 +1018,11 @@ def create_household_record(record: dict):
         return None
 
 
+HOUSEHOLD_URL_PREFIX = f"https://airtable.com/{AIRTABLE_V2_BASE_ID}/{Household.meta.table.id}"
 def update_migration_fields(record: dict, household: Household):
     try:
         curr_date_time = datetime.now().strftime("%m/%d/%Y %H:%M")
-        household_link = f"[{household.name}](https://airtable.com/{household.meta.base_id}/{household.table_id}/{household.id})"
+        household_link = f"[{household.name}]({HOUSEHOLD_URL_PREFIX}/{household.id})"
         legacy_table.batch_update([
             {"id": lid, "fields": {"Migration Date": curr_date_time, "New Household": household_link}}
             for lid in record.get("legacy_record_id", [])

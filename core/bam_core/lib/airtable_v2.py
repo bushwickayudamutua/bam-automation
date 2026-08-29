@@ -90,7 +90,6 @@ class FormSubmission(BamModel):
 
 class Household(BamModel):
     table_name = 'Households'
-    table_id = settings.AIRTABLE_V2_HOUSEHOLDS_TABLE_ID
 
     bam_id = F.AutoNumberField('ID')
     name = F.TextField('Name')
