@@ -105,7 +105,7 @@ packages:
           logs: 256
           memory: 1024
 
-      - name: timeout_eg_requests
+      - name: timeout_requests
         binary: false
         main: ""
         runtime: "python:3.11"

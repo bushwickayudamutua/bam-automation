@@ -8,13 +8,10 @@ from bam_core.functions.params import Params, Param
 from bam_core.utils.etc import to_list
 from bam_core.constants import (
     EG_REQUESTS_SCHEMA,
-    EG_REQUESTS_FIELD,
-    EG_STATUS_FIELD,
-    PHONE_FIELD,
     KITCHEN_REQUESTS_SCHEMA,
     FURNITURE_REQUESTS_SCHEMA,
-    KITCHEN_REQUESTS_FIELD,
-    FURNITURE_REQUESTS_FIELD,
+    SOCIAL_SERVICES_REQUESTS_SCHEMA,
+    PHONE_FIELD,
 )
 
 # handling for request field parameter
@@ -22,6 +19,7 @@ REQUEST_SCHEMA_MAP = {
     "eg": EG_REQUESTS_SCHEMA,
     "kitchen": KITCHEN_REQUESTS_SCHEMA,
     "furniture": FURNITURE_REQUESTS_SCHEMA,
+    "ss": SOCIAL_SERVICES_REQUESTS_SCHEMA,
 }
 
 
@@ -29,7 +27,7 @@ class TimeoutEssentialGoodsRequests(Function):
     """
     Given:
         * a `REQUEST_FIELD`
-            - (Either `eg`, `kitchen`, `furniture`)
+            - (Either `eg`, `kitchen`, `furniture`, `ss`)
         * a `REQUEST_VALUE` item
             - (eg `Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品`)
 
@@ -39,10 +37,15 @@ class TimeoutEssentialGoodsRequests(Function):
 
     params = Params(
         Param(
+            name="view_name",
+            type="string",
+            description="If included, only requests from phone numbers in this view will be timed out. Later requests will not be closed.",
+        ),
+        Param(
             name="request_field",
             type="string",
             default="eg",
-            description="The field to consider for timing out. Either 'eg', 'kitchen', or 'furniture'",
+            description="The field to consider for timing out. Either 'eg', 'kitchen', 'furniture', or 'ss'",
         ),
         Param(
             name="request_value",
@@ -53,7 +56,7 @@ class TimeoutEssentialGoodsRequests(Function):
         Param(
             name="dry_run",
             type="bool",
-            default=False,
+            default=True,
             description="If true, view which timeouts would be added without actually adding them.",
         ),
     )
@@ -72,12 +75,13 @@ class TimeoutEssentialGoodsRequests(Function):
 
     def timeout_requests(
         self,
+        view_name: str | None,
         request_value: str,
         request_field: str,
         timeout_tags: List[str],
         delivered_tags: List[str],
-        status_field: str = EG_STATUS_FIELD,
-        dry_run: bool = False,
+        status_field: str,
+        dry_run: bool,
     ) -> Counter:
         """
         For phone numbers which have at least one fulfilled request,
@@ -85,39 +89,49 @@ class TimeoutEssentialGoodsRequests(Function):
         fulfilled request.
         """
 
+        cutoffs = None
+        if view_name is not None:
+            view_records = self.airtable.get_phone_number_to_requests_lookup(view=view_name)
+
+            cutoffs = {
+                phone_number: max([rec["createdTime"] for rec in records])
+                for phone_number, records in view_records.items()
+            }
+
         # get matching requests
         self.log.info("=" * 60)
         self.log.info(
             f"Fetching records for '{request_field}' = '{request_value}'"
         )
         request_records = self.airtable.get_phone_number_to_requests_lookup(
-            formula=formulas.FIND(
-                formulas.STR_VALUE(request_value),
-                formulas.FIELD(request_field),
+            formula=formulas.FIND(request_value, formulas.Field(request_field),
             ),
             fields=[PHONE_FIELD, request_field, status_field],
         )
         stats = Counter()
         for phone_number, records in request_records.items():
-            if len(records) == 1:
-                # skip phone numbers with only one record
-                stats["single_requests"] += 1
-                continue
-
             latest_delivered_request_created_time = None
             unfulfilled_requests = []
-            for record in records:
-                created_at = record["createdTime"]
-                statuses = record.get(status_field, [])
-                if any([d in statuses for d in delivered_tags]):
-                    if (
-                        latest_delivered_request_created_time is None
-                        or created_at > latest_delivered_request_created_time
-                    ):
-                        latest_delivered_request_created_time = created_at
-                elif any([t not in statuses for t in timeout_tags]):
-                    # build up list of unfulfilled requests to timeout
-                    unfulfilled_requests.append(record)
+            if cutoffs is None:
+                for record in records:
+                    created_at = record["createdTime"]
+                    statuses = record.get(status_field, [])
+                    if any([d in statuses for d in delivered_tags]):
+                        if (
+                            latest_delivered_request_created_time is None
+                            or created_at > latest_delivered_request_created_time
+                        ):
+                            latest_delivered_request_created_time = created_at
+                    elif not any([t in statuses for t in timeout_tags]):
+                        # build up list of unfulfilled requests to timeout
+                        unfulfilled_requests.append(record)
+            else:
+                latest_delivered_request_created_time = cutoffs.get(phone_number)
+                for record in records:
+                    statuses = record.get(status_field, [])
+                    if not any([t in statuses for t in delivered_tags + timeout_tags]):
+                        # build up list of unfulfilled requests to timeout
+                        unfulfilled_requests.append(record)
 
             if latest_delivered_request_created_time is None or not len(
                 unfulfilled_requests
@@ -130,7 +144,7 @@ class TimeoutEssentialGoodsRequests(Function):
                 record_id = record["id"]
                 created_at = record["createdTime"]
                 phone_number = record["Phone Number"]
-                if created_at < latest_delivered_request_created_time:
+                if created_at <= latest_delivered_request_created_time:
                     statuses = list(
                         set(record.get(status_field, []) + timeout_tags)
                     )
@@ -147,6 +161,9 @@ class TimeoutEssentialGoodsRequests(Function):
         return dict(stats)
 
     def run(self, params, context):
+        # parse view name param
+        view_name = params.get("view_name")
+
         # validate input request field
         request_field_shorthand = params["request_field"].strip()
         if request_field_shorthand not in REQUEST_SCHEMA_MAP:
@@ -190,6 +207,7 @@ class TimeoutEssentialGoodsRequests(Function):
 
         # run the timeout process
         timeout_stats = self.timeout_requests(
+            view_name=view_name,
             request_value=request_value,
             request_field=request_field,
             timeout_tags=timeout_tags,

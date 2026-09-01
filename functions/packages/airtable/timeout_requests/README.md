@@ -7,7 +7,7 @@ This function accomplishes the following task:
 ### To Run
 ##### Via DigitalOcean Console
 1) If you don't already have access to BAM DigitalOcean account, request access in the BAM Tech signal chat
-2) In the DigitalOcean dashboard: Click on Manage > Functions on the lefthand navigation bar, then select the `airtable/timeout_eg_requests` function
+2) In the DigitalOcean dashboard: Click on Manage > Functions on the lefthand navigation bar, then select the `airtable/timeout_requests` function
 ![](./assets/images/function_nav.png)
 
 3) Click on `Parameters`
