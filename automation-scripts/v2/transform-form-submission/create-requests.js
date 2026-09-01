@@ -2,7 +2,6 @@ const {
   egReqs,
   furnReqs,
   bedReqs,
-  kitchenReqs,
   ssReqs,
   streetAddress,
   cityState,
@@ -22,12 +21,7 @@ const furnRequestTable = base.getTable('Furniture Requests')
 const ssRequestTable = base.getTable('Social Service Requests')
 const meshRequestTable = base.getTable('Mesh Requests')
 
-const nonFurnItemReqs = [
-  egReqs.filter((egType) =>
-    !['Muebles / Furniture / 家具', 'Cosas de Cocina / Kitchen Supplies / 廚房用品'].includes(egType)
-  ),
-  kitchenReqs,
-].flat()
+const nonFurnItemReqs = egReqs.filter((egType) => egType !== 'Muebles / Furniture / 家具')
 
 const furnItemReqs = [
   furnReqs.filter((furnType) => furnType !== 'Cama / Bed / 床'),

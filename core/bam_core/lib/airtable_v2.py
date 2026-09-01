@@ -57,8 +57,6 @@ class FormSubmission(BamModel):
     furniture_items = F.MultipleSelectField('Furniture Items')
     bed_details = F.MultipleSelectField('Bed Details')
 
-    kitchen_items = F.MultipleSelectField('Kitchen Items')
-
     # social service requests
     ss_request_types = F.MultipleSelectField('Social Service Requests')
 
