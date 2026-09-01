@@ -7,33 +7,16 @@ from pyairtable.orm.fields import Field
 from bam_core import settings
 
 
-class BamModelMeta(type):
-    @property
-    def Meta(cls):
-        return {
-            'base_id': settings.AIRTABLE_V2_BASE_ID,
-            'api_key': settings.AIRTABLE_V2_TOKEN,
-            'table_name': cls.table_name,
-        }
-
-    def __new__(mcs, name, bases, namespace, **kwargs):
-        # pyairtable Model.__init__ only accepts kwargs in cls.__dict__, not inherited
-        # fields; copy Field descriptors from bases so BaseRequest fields work on subclasses.
-        for base in bases:
-            for key, value in base.__dict__.items():
-                if isinstance(value, Field) and key not in namespace:
-                    namespace[key] = value
-        return super().__new__(mcs, name, bases, namespace)
+def make_meta(table_name: str):
+    return {
+        'base_id': settings.AIRTABLE_V2_BASE_ID,
+        'api_key': settings.AIRTABLE_V2_TOKEN,
+        'table_name': table_name,
+    }
 
 
-class BamModel(Model, metaclass=BamModelMeta):
-    table_name = 'Table'
-
-
-class FormSubmission(BamModel):
-    """Staging table for form intake — one row per submit, deleted after Write automation."""
-
-    table_name = 'Assistance Request Form Submissions'
+class FormSubmission(Model):
+    Meta = make_meta('Assistance Request Form Submissions')
 
     bam_id = F.AutoNumberField('ID')
 
@@ -86,8 +69,8 @@ class FormSubmission(BamModel):
         ): ...
 
 
-class Household(BamModel):
-    table_name = 'Households'
+class Household(Model):
+    Meta = make_meta('Households')
 
     bam_id = F.AutoNumberField('ID')
     name = F.TextField('Name')
@@ -134,16 +117,14 @@ class Household(BamModel):
         ): ...
 
 
-class BaseRequest(BamModel):
+class Request(Model):
+    Meta = make_meta('Requests')
+
     household = F.SingleLinkField('Household', Household)
     status = F.SelectField('Status')
-    last_requested = F.DateField('Last Requested')
+    last_requested = F.DatetimeField('Last Requested')
     legacy_date_submitted = F.DateField('Legacy Date Submitted')
     request_opened_at = F.DateField('Request Opened At', readonly=True)
-
-
-class Request(BaseRequest):
-    table_name = 'Requests'
 
     type = F.SelectField('Type')
 
@@ -158,8 +139,14 @@ class Request(BaseRequest):
         ): ...
 
 
-class FurnitureRequest(BaseRequest):
-    table_name = 'Furniture Requests'
+class FurnitureRequest(Model):
+    Meta = make_meta('Furniture Requests')
+
+    household = F.SingleLinkField('Household', Household)
+    status = F.SelectField('Status')
+    last_requested = F.DatetimeField('Last Requested')
+    legacy_date_submitted = F.DateField('Legacy Date Submitted')
+    request_opened_at = F.DateField('Request Opened At', readonly=True)
 
     type = F.SelectField('Type')
     geocode = F.TextField('Geocode')
@@ -176,8 +163,14 @@ class FurnitureRequest(BaseRequest):
         ): ...
 
 
-class SocialServiceRequest(BaseRequest):
-    table_name = 'Social Service Requests'
+class SocialServiceRequest(Model):
+    Meta = make_meta('Social Service Requests')
+
+    household = F.SingleLinkField('Household', Household)
+    status = F.SelectField('Status')
+    last_requested = F.DatetimeField('Last Requested')
+    legacy_date_submitted = F.DateField('Legacy Date Submitted')
+    request_opened_at = F.DateField('Request Opened At', readonly=True)
 
     type = F.SelectField('Type')
 
@@ -192,10 +185,14 @@ class SocialServiceRequest(BaseRequest):
         ): ...
 
 
-class MeshRequest(BaseRequest):
-    """Aligned to live `Mesh Requests` table (schema.bases:read). See `.cursor/skills/bam-airtable/schema-mesh.md`."""
+class MeshRequest(Model):
+    Meta = make_meta('Mesh Requests')
 
-    table_name = 'Mesh Requests'
+    household = F.SingleLinkField('Household', Household)
+    status = F.SelectField('Status')
+    last_requested = F.DatetimeField('Last Requested')
+    legacy_date_submitted = F.DateField('Legacy Date Submitted')
+    request_opened_at = F.DateField('Request Opened At', readonly=True)
 
     mesh_history = F.MultilineTextField('MESH History')
     internet_access = F.MultipleSelectField('Internet Access')
