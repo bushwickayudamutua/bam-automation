@@ -43,8 +43,8 @@ from bam_core.constants import (
     LOW_COST_INTERNET_AT_HOME_TYPE,
 )
 
+logging.basicConfig(level=logging.DEBUG, force=True)
 log = logging.getLogger(__name__)
-
 
 ########################################
 #  Setup Reference To OG Airtable Base #
@@ -106,7 +106,15 @@ def extract_open_requests_per_household():
 def format_date(date_str: str) -> date | None:
     if not date_str or date_str == "":
         return None
+    date_str = date_str.split("T")[0]
     return datetime.strptime(date_str, "%Y-%m-%d").date()
+
+
+def format_datetime(datetime_str: str) -> datetime | None:
+    if not datetime_str or datetime_str == "":
+        return None
+    datetime_str = datetime_str.split(".")[0]
+    return datetime.strptime(datetime_str, "%Y-%m-%dT%H:%M:%S")
 
 
 def select_first(
@@ -170,8 +178,8 @@ def transform_date_submitted(
     
     dates = [r.get(old_field_name) for r in records]
     dates = [d for d in dates if d and d != ""]
-    first_date = min(dates).split("T")[0] if dates else None
-    last_date = max(dates).split("T")[0] if dates else None
+    first_date = min(dates) if dates else None
+    last_date = max(dates) if dates else None
 
     return {
         f"Legacy First {new_field_name}": first_date,
@@ -223,6 +231,12 @@ def transform_email(
                 }
 
     return {new_field_name: email, "Email Error": email_error}
+
+
+def transform_simple_lists(
+    old_field_name: str, new_field_name: str, records: list[dict], return_set: bool=False
+):
+    return {new_field_name: [r.get(old_field_name) for r in records]}
 
 
 def transform_lists(
@@ -450,14 +464,12 @@ def get_best_mesh_status(mesh_records: list[dict]) -> tuple[str | None, int | No
     for record in mesh_records:
         stat = record.get("MESH - Status", "")
         rank = MESH_PIPELINE_RANK.get(stat, -1)
-        log.debug("MESH Status: '%s', Rank: %s", stat, rank)
         date_submitted = record.get(DATE_SUBMITTED_FIELD)
         if (stat not in ["", "Duplicate"]) and (stat not in unique_stats):
             unique_stats.add(stat)
-            mesh_history += f"- {date_submitted[0:10]}: {stat}\n"
+            mesh_history += f"{date_submitted[0:10]}: {stat}\n"
         if rank > best_rank:
             best_rank = rank
-            log.debug("Best MESH Status: '%s', Best Rank: %s", stat, rank)
 
     return (mesh_history, best_rank) if best_rank in OPEN_RANKS else (None, None)
 
@@ -476,7 +488,6 @@ def transform_mesh_requests(
 
     mesh_requests = []
     for bin_val, bin_records in mesh_per_bin.items():
-        log.debug("BIN: '%s', Phone: '%s'", bin_val, bin_records[0].get(PHONE_FIELD))
         mesh_history, mesh_status_rank = get_best_mesh_status(bin_records)
         if mesh_status_rank is not None:
             mesh_dates = transform_date_submitted(DATE_SUBMITTED_FIELD, DATE_SUBMITTED_FIELD, bin_records)
@@ -505,11 +516,11 @@ def transform_case_notes(
     for r in records:
         date_submitted = r.get(DATE_SUBMITTED_FIELD)
         link = at_og.get_assistance_request_link(r["id"])
-        case_notes += f"- [{date_submitted[0:10]}]({link})\n"
+        case_notes += f"[{date_submitted[0:10]}]({link})\n"
         notes = r.get(old_field_name)
         if notes:
             note_lines = "\n".join(
-                [f"    - {n.strip()}" for n in notes.split("\n") if n.strip()]
+                [f"- {n.strip()}" for n in notes.split("\n") if n.strip()]
             )
             case_notes += note_lines
             case_notes += "\n"
@@ -610,7 +621,7 @@ def transform_open_requests(
     all_items_df = [
         pd.DataFrame({
             "item": [item],
-            DATE_SUBMITTED_FIELD: [(r.get(DATE_SUBMITTED_FIELD) or "").split("T")[0]],
+            DATE_SUBMITTED_FIELD: [(r.get(DATE_SUBMITTED_FIELD) or "")],
         })
         for r in records for item in (r.get(old_field_name) or [])
     ]
@@ -695,6 +706,10 @@ def transform_household_records(household_records: list[dict]) -> dict:
     """
     # og schema:new schema
     FIELD_MAPPING = {
+        "id": {
+            "new_field": "legacy_record_id",
+            "transform_fx": transform_simple_lists,
+        },
         "First Name": {
             "new_field": "Name",
             "transform_fx": select_first_non_null,
@@ -831,7 +846,7 @@ def create_eg_requests_records(record: dict, household: Household):
                     type=req_type,
                     status="Open",
                     legacy_date_submitted=format_date(oldest_date),
-                    last_requested=format_date(latest_date),
+                    last_requested=format_datetime(latest_date),
                 )
                 for req_type, oldest_date, latest_date in zip(
                     all_reqs["item"],
@@ -845,8 +860,9 @@ def create_eg_requests_records(record: dict, household: Household):
             Request.batch_save(request_records)
         return request_records
     
-    except Exception:
+    except Exception as e:
         log.error(f"Failed to create Requests record(s) for {household.phone_number}.")
+        log.debug(f"Error: {e}")
         return None
 
 
@@ -883,7 +899,7 @@ def create_furniture_requests_records(record: dict, household: Household):
                     type=TYPE_MAP.get(req_type, req_type),
                     status="Open",
                     legacy_date_submitted=format_date(oldest_date),
-                    last_requested=format_date(latest_date),
+                    last_requested=format_datetime(latest_date),
                     geocode=record.get("Geocode"),
                 )
                 for req_type, oldest_date, latest_date in zip(
@@ -898,8 +914,9 @@ def create_furniture_requests_records(record: dict, household: Household):
             FurnitureRequest.batch_save(request_records)
         return request_records
     
-    except Exception:
+    except Exception as e:
         log.error(f"Failed to create Furniture Requests record(s) for {household.phone_number}.")
+        log.debug(f"Error: {e}")
         return None
 
 
@@ -927,7 +944,7 @@ def create_ss_requests_records(record: dict, household: Household):
                     type=TYPE_MAP.get(req_type, req_type),
                     status="Open",
                     legacy_date_submitted=format_date(oldest_date),
-                    last_requested=format_date(latest_date),
+                    last_requested=format_datetime(latest_date),
                 )
                 for req_type, oldest_date, latest_date in zip(
                     ss_reqs["item"],
@@ -941,8 +958,9 @@ def create_ss_requests_records(record: dict, household: Household):
             SocialServiceRequest.batch_save(ss_records)
         return ss_records
     
-    except Exception:
+    except Exception as e:
         log.error(f"Failed to create Social Service Requests record(s) for {household.phone_number}.")
+        log.debug(f"Error: {e}")
         return None
 
 
@@ -964,7 +982,7 @@ def create_mesh_requests_records(record: dict, household: Household):
                     status=r.get("Status"),
                     mesh_history=r.get("MESH History"),
                     legacy_date_submitted=format_date(r.get("Legacy First "+DATE_SUBMITTED_FIELD)),
-                    last_requested=format_date(r.get("Legacy Last "+DATE_SUBMITTED_FIELD)),
+                    last_requested=format_datetime(r.get("Legacy Last "+DATE_SUBMITTED_FIELD)),
                     internet_access=r.get("Internet Access") or [],
                     address_accuracy=r.get("Address Accuracy"),
                     address=r.get("Address"),
@@ -980,8 +998,9 @@ def create_mesh_requests_records(record: dict, household: Household):
             MeshRequest.batch_save(mesh_records)
         return mesh_records
     
-    except Exception:
+    except Exception as e:
         log.error(f"Failed to create MESH Requests record(s) for {household.phone_number}.")
+        log.debug(f"Error: {e}")
         return None
 
 
@@ -1013,8 +1032,9 @@ def create_household_record(record: dict):
         household.save()
         return household
     
-    except Exception:
+    except Exception as e:
         log.error(f"Failed to create Household record for {household.phone_number}.")
+        log.debug(f"Error: {e}")
         return None
 
 
@@ -1027,8 +1047,9 @@ def update_migration_fields(record: dict, household: Household):
             {"id": lid, "fields": {"Migration Date": curr_date_time, "New Household": household_link}}
             for lid in record.get("legacy_record_id", [])
         ])
-    except Exception:
+    except Exception as e:
         log.error(f"Failed to link back new household to legacy requests for {household.phone_number}.")
+        log.debug(f"Error: {e}")
 
 
 def load_household(record: dict):
@@ -1093,7 +1114,7 @@ def main():
 
     n_numbers = len(legacy_requests)
     if n_numbers == 0:
-        log.warning("Found no open legacy requests!")
+        log.error("Found no open legacy requests!")
         return
 
     log.info("Extracted %s legacy households!", n_numbers)
@@ -1115,7 +1136,7 @@ def main():
             }
             n_numbers = len(legacy_requests)
             if n_numbers == 0:
-                log.warning("No records to transform after subsetting to '%s'", args.subset)
+                log.error("No records to transform after subsetting to '%s'", args.subset)
                 return
             log.info("Subsetting to %s households from '%s'", n_numbers, args.subset)
             n_missing = len(selected_numbers) - n_numbers
@@ -1127,7 +1148,7 @@ def main():
 
     n_records = len(transformed_requests)
     if n_records == 0:
-        log.warning("No transformed requests to migrate!")
+        log.error("No transformed requests to migrate!")
         return
     log.info("Transformed %s records!", n_records)
 
@@ -1137,7 +1158,7 @@ def main():
             transformed_requests = [r for r in transformed_requests if subset_func(r)]
             n_records = len(transformed_requests)
             if n_records == 0:
-                log.warning("No records to migrate after subsetting with %s", args.subset_func)
+                log.error("No records to migrate after subsetting with %s", args.subset_func)
                 return
             log.info("Selected %s households with %s", n_records, args.subset_func)
         else:

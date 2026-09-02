@@ -1,5 +1,5 @@
 from typing import List, TYPE_CHECKING
-from datetime import date
+from datetime import date, datetime
 
 from pyairtable.orm import Model, fields as F
 from pyairtable.orm.fields import Field
@@ -135,7 +135,7 @@ class Request(Model):
             type: str,
             status: str = "Open",
             legacy_date_submitted: date | None,
-            last_requested: date | None,
+            last_requested: datetime | None,
         ): ...
 
 
@@ -158,7 +158,7 @@ class FurnitureRequest(Model):
             type: str,
             status: str = "Open",
             legacy_date_submitted: date | None,
-            last_requested: date | None,
+            last_requested: datetime | None,
             geocode: str | None = None
         ): ...
 
@@ -181,7 +181,7 @@ class SocialServiceRequest(Model):
             type: str,
             status: str = "Open",
             legacy_date_submitted: date | None,
-            last_requested: date | None
+            last_requested: datetime | None
         ): ...
 
 
@@ -210,7 +210,7 @@ class MeshRequest(Model):
             status: str = "Open",
             mesh_history: str | None = None,
             legacy_date_submitted: date | None,
-            last_requested: date | None,
+            last_requested: datetime | None,
             internet_access: List[str] | None = None,
             address: str | None = None,
             address_accuracy: str | None = None,
