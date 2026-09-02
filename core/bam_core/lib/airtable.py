@@ -384,7 +384,7 @@ class Airtable(object):
                                 sub_request_field,
                                 sub_request_tag,
                                 sub_status_tags,
-                                sub_delivered_tags,
+                                sub_delivered_tags + delivered_tags,
                                 sub_timeout_tags + timeout_tags,
                                 sub_invalid_tags,
                                 sub_missed_tag,
@@ -450,12 +450,8 @@ class Airtable(object):
                                     sub_sub_request_field,
                                     sub_sub_request_tag,
                                     sub_sub_status_tags,
-                                    # respect delivered tags from one level up (only relevant for Beds)
-                                    sub_delivered_tags
-                                    + sub_sub_delivered_tags,
-                                    sub_sub_timeout_tags
-                                    + sub_timeout_tags
-                                    + timeout_tags,
+                                    sub_delivered_tags + sub_sub_delivered_tags + delivered_tags,
+                                    sub_sub_timeout_tags + sub_timeout_tags + timeout_tags,
                                     sub_sub_invalid_tags,
                                     sub_sub_missed_tag,
                                 )
