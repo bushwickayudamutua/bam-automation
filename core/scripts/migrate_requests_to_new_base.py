@@ -233,6 +233,12 @@ def transform_email(
     return {new_field_name: email, "Email Error": email_error}
 
 
+def transform_simple_lists(
+    old_field_name: str, new_field_name: str, records: list[dict], return_set: bool=False
+):
+    return {new_field_name: [r.get(old_field_name) for r in records]}
+
+
 def transform_lists(
     old_field_name: str, new_field_name: str, records: list[dict], return_set: bool=False
 ):
@@ -700,6 +706,10 @@ def transform_household_records(household_records: list[dict]) -> dict:
     """
     # og schema:new schema
     FIELD_MAPPING = {
+        "id": {
+            "new_field": "legacy_record_id",
+            "transform_fx": transform_simple_lists,
+        },
         "First Name": {
             "new_field": "Name",
             "transform_fx": select_first_non_null,
