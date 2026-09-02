@@ -106,7 +106,14 @@ def extract_open_requests_per_household():
 def format_date(date_str: str) -> date | None:
     if not date_str or date_str == "":
         return None
+    date_str = date_str.split("T")[0]
     return datetime.strptime(date_str, "%Y-%m-%d").date()
+
+
+def format_datetime(datetime_str: str) -> datetime | None:
+    if not datetime_str or datetime_str == "":
+        return None
+    return datetime.strptime(datetime_str, "%Y-%m-%dT%H:%M:%S")
 
 
 def select_first(
@@ -170,8 +177,8 @@ def transform_date_submitted(
     
     dates = [r.get(old_field_name) for r in records]
     dates = [d for d in dates if d and d != ""]
-    first_date = min(dates).split("T")[0] if dates else None
-    last_date = max(dates).split("T")[0] if dates else None
+    first_date = min(dates) if dates else None
+    last_date = max(dates) if dates else None
 
     return {
         f"Legacy First {new_field_name}": first_date,
@@ -607,7 +614,7 @@ def transform_open_requests(
     all_items_df = [
         pd.DataFrame({
             "item": [item],
-            DATE_SUBMITTED_FIELD: [(r.get(DATE_SUBMITTED_FIELD) or "").split("T")[0]],
+            DATE_SUBMITTED_FIELD: [(r.get(DATE_SUBMITTED_FIELD) or "")],
         })
         for r in records for item in (r.get(old_field_name) or [])
     ]
@@ -828,7 +835,7 @@ def create_eg_requests_records(record: dict, household: Household):
                     type=req_type,
                     status="Open",
                     legacy_date_submitted=format_date(oldest_date),
-                    last_requested=format_date(latest_date),
+                    last_requested=format_datetime(latest_date),
                 )
                 for req_type, oldest_date, latest_date in zip(
                     all_reqs["item"],
@@ -881,7 +888,7 @@ def create_furniture_requests_records(record: dict, household: Household):
                     type=TYPE_MAP.get(req_type, req_type),
                     status="Open",
                     legacy_date_submitted=format_date(oldest_date),
-                    last_requested=format_date(latest_date),
+                    last_requested=format_datetime(latest_date),
                     geocode=record.get("Geocode"),
                 )
                 for req_type, oldest_date, latest_date in zip(
@@ -926,7 +933,7 @@ def create_ss_requests_records(record: dict, household: Household):
                     type=TYPE_MAP.get(req_type, req_type),
                     status="Open",
                     legacy_date_submitted=format_date(oldest_date),
-                    last_requested=format_date(latest_date),
+                    last_requested=format_datetime(latest_date),
                 )
                 for req_type, oldest_date, latest_date in zip(
                     ss_reqs["item"],
@@ -964,7 +971,7 @@ def create_mesh_requests_records(record: dict, household: Household):
                     status=r.get("Status"),
                     mesh_history=r.get("MESH History"),
                     legacy_date_submitted=format_date(r.get("Legacy First "+DATE_SUBMITTED_FIELD)),
-                    last_requested=format_date(r.get("Legacy Last "+DATE_SUBMITTED_FIELD)),
+                    last_requested=format_datetime(r.get("Legacy Last "+DATE_SUBMITTED_FIELD)),
                     internet_access=r.get("Internet Access") or [],
                     address_accuracy=r.get("Address Accuracy"),
                     address=r.get("Address"),
