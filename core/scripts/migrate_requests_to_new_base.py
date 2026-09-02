@@ -43,7 +43,7 @@ from bam_core.constants import (
     LOW_COST_INTERNET_AT_HOME_TYPE,
 )
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG, force=True)
 log = logging.getLogger(__name__)
 
 ########################################
@@ -1096,7 +1096,7 @@ def main():
 
     n_numbers = len(legacy_requests)
     if n_numbers == 0:
-        log.warning("Found no open legacy requests!")
+        log.error("Found no open legacy requests!")
         return
 
     log.info("Extracted %s legacy households!", n_numbers)
@@ -1118,7 +1118,7 @@ def main():
             }
             n_numbers = len(legacy_requests)
             if n_numbers == 0:
-                log.warning("No records to transform after subsetting to '%s'", args.subset)
+                log.error("No records to transform after subsetting to '%s'", args.subset)
                 return
             log.info("Subsetting to %s households from '%s'", n_numbers, args.subset)
             n_missing = len(selected_numbers) - n_numbers
@@ -1130,7 +1130,7 @@ def main():
 
     n_records = len(transformed_requests)
     if n_records == 0:
-        log.warning("No transformed requests to migrate!")
+        log.error("No transformed requests to migrate!")
         return
     log.info("Transformed %s records!", n_records)
 
@@ -1140,7 +1140,7 @@ def main():
             transformed_requests = [r for r in transformed_requests if subset_func(r)]
             n_records = len(transformed_requests)
             if n_records == 0:
-                log.warning("No records to migrate after subsetting with %s", args.subset_func)
+                log.error("No records to migrate after subsetting with %s", args.subset_func)
                 return
             log.info("Selected %s households with %s", n_records, args.subset_func)
         else:
