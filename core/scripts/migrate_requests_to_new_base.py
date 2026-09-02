@@ -43,8 +43,8 @@ from bam_core.constants import (
     LOW_COST_INTERNET_AT_HOME_TYPE,
 )
 
+logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
-
 
 ########################################
 #  Setup Reference To OG Airtable Base #
@@ -450,14 +450,12 @@ def get_best_mesh_status(mesh_records: list[dict]) -> tuple[str | None, int | No
     for record in mesh_records:
         stat = record.get("MESH - Status", "")
         rank = MESH_PIPELINE_RANK.get(stat, -1)
-        log.debug("MESH Status: '%s', Rank: %s", stat, rank)
         date_submitted = record.get(DATE_SUBMITTED_FIELD)
         if (stat not in ["", "Duplicate"]) and (stat not in unique_stats):
             unique_stats.add(stat)
             mesh_history += f"- {date_submitted[0:10]}: {stat}\n"
         if rank > best_rank:
             best_rank = rank
-            log.debug("Best MESH Status: '%s', Best Rank: %s", stat, rank)
 
     return (mesh_history, best_rank) if best_rank in OPEN_RANKS else (None, None)
 
@@ -476,7 +474,6 @@ def transform_mesh_requests(
 
     mesh_requests = []
     for bin_val, bin_records in mesh_per_bin.items():
-        log.debug("BIN: '%s', Phone: '%s'", bin_val, bin_records[0].get(PHONE_FIELD))
         mesh_history, mesh_status_rank = get_best_mesh_status(bin_records)
         if mesh_status_rank is not None:
             mesh_dates = transform_date_submitted(DATE_SUBMITTED_FIELD, DATE_SUBMITTED_FIELD, bin_records)
@@ -845,8 +842,9 @@ def create_eg_requests_records(record: dict, household: Household):
             Request.batch_save(request_records)
         return request_records
     
-    except Exception:
+    except Exception as e:
         log.error(f"Failed to create Requests record(s) for {household.phone_number}.")
+        log.debug(f"Error: {e}")
         return None
 
 
@@ -898,8 +896,9 @@ def create_furniture_requests_records(record: dict, household: Household):
             FurnitureRequest.batch_save(request_records)
         return request_records
     
-    except Exception:
+    except Exception as e:
         log.error(f"Failed to create Furniture Requests record(s) for {household.phone_number}.")
+        log.debug(f"Error: {e}")
         return None
 
 
@@ -941,8 +940,9 @@ def create_ss_requests_records(record: dict, household: Household):
             SocialServiceRequest.batch_save(ss_records)
         return ss_records
     
-    except Exception:
+    except Exception as e:
         log.error(f"Failed to create Social Service Requests record(s) for {household.phone_number}.")
+        log.debug(f"Error: {e}")
         return None
 
 
@@ -980,8 +980,9 @@ def create_mesh_requests_records(record: dict, household: Household):
             MeshRequest.batch_save(mesh_records)
         return mesh_records
     
-    except Exception:
+    except Exception as e:
         log.error(f"Failed to create MESH Requests record(s) for {household.phone_number}.")
+        log.debug(f"Error: {e}")
         return None
 
 
@@ -1013,8 +1014,9 @@ def create_household_record(record: dict):
         household.save()
         return household
     
-    except Exception:
+    except Exception as e:
         log.error(f"Failed to create Household record for {household.phone_number}.")
+        log.debug(f"Error: {e}")
         return None
 
 
@@ -1027,8 +1029,9 @@ def update_migration_fields(record: dict, household: Household):
             {"id": lid, "fields": {"Migration Date": curr_date_time, "New Household": household_link}}
             for lid in record.get("legacy_record_id", [])
         ])
-    except Exception:
+    except Exception as e:
         log.error(f"Failed to link back new household to legacy requests for {household.phone_number}.")
+        log.debug(f"Error: {e}")
 
 
 def load_household(record: dict):
