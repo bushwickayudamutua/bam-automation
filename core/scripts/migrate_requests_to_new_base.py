@@ -43,7 +43,7 @@ from bam_core.constants import (
     LOW_COST_INTERNET_AT_HOME_TYPE,
 )
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+logging.basicConfig(level=logging.INFO, force=True)
 log = logging.getLogger(__name__)
 
 ########################################
@@ -75,27 +75,39 @@ def extract_open_requests_per_household():
     :return: A dictionary of household records, where the key is the phone number
     and the value is a list of records for that household.
     """
+    # Get the records that are actually on Airtable:
+    current_records = legacy_table.all(fields=[])
+    current_records = [record["id"] for record in current_records]
+
     households = defaultdict(list)
     # get all snapshots
     grouped_records = afr.get_grouped_records()
 
     # get the last snapshot for each record
+    missing_counts = 0
+    existing_counts = 0
     for record_id, snapshot in afr.get_last_snapshots(grouped_records):
-
         # identify the open requests for the snapshot
-        open_requests = afr.get_open_requests_for_snapshot(
-            record_id, snapshot, include_all_mesh=True
-        )
+        if record_id in current_records:
+            existing_counts += 1
+            open_requests = afr.get_open_requests_for_snapshot(
+                record_id, snapshot, include_all_mesh=True
+            )
+            # if there are open requests, add them to the household
+            # and format the phone number
+            # only add the household if there are open requests
+            # and the phone number is valid
+            if len(open_requests) > 0 and PHONE_FIELD in snapshot:
+                snapshot["Open Requests"] = [r["Item"] for r in open_requests]
+                phone_number = format_phone_number(snapshot[PHONE_FIELD])
+                if phone_number:
+                    households[phone_number].append(snapshot)
+        else:
+            missing_counts += 1
+            log.debug(f"Record {record_id} not found in Airtable. Skipping.")
 
-        # if there are open requests, add them to the household
-        # and format the phone number
-        # only add the household if there are open requests
-        # and the phone number is valid
-        if len(open_requests) > 0 and PHONE_FIELD in snapshot:
-            snapshot["Open Requests"] = [r["Item"] for r in open_requests]
-            phone_number = format_phone_number(snapshot[PHONE_FIELD])
-            if phone_number:
-                households[phone_number].append(snapshot)
+    log.info(f"Out of all records found in snapshots, {existing_counts} found on airtable and {missing_counts} missing.")
+    
     return households
 
 
@@ -861,8 +873,7 @@ def create_eg_requests_records(record: dict, household: Household):
         return request_records
     
     except Exception as e:
-        log.error(f"Failed to create Requests record(s) for {household.phone_number}.")
-        log.debug(f"Error: {e}")
+        log.error(f"Failed to create Requests record(s) for {household.phone_number}.\nError: {e}")
         return None
 
 
@@ -915,8 +926,7 @@ def create_furniture_requests_records(record: dict, household: Household):
         return request_records
     
     except Exception as e:
-        log.error(f"Failed to create Furniture Requests record(s) for {household.phone_number}.")
-        log.debug(f"Error: {e}")
+        log.error(f"Failed to create Furniture Requests record(s) for {household.phone_number}.\nError: {e}")
         return None
 
 
@@ -959,8 +969,7 @@ def create_ss_requests_records(record: dict, household: Household):
         return ss_records
     
     except Exception as e:
-        log.error(f"Failed to create Social Service Requests record(s) for {household.phone_number}.")
-        log.debug(f"Error: {e}")
+        log.error(f"Failed to create Social Service Requests record(s) for {household.phone_number}.\nError: {e}")
         return None
 
 
@@ -999,8 +1008,7 @@ def create_mesh_requests_records(record: dict, household: Household):
         return mesh_records
     
     except Exception as e:
-        log.error(f"Failed to create MESH Requests record(s) for {household.phone_number}.")
-        log.debug(f"Error: {e}")
+        log.error(f"Failed to create MESH Requests record(s) for {household.phone_number}.\nError: {e}")
         return None
 
 
@@ -1033,8 +1041,7 @@ def create_household_record(record: dict):
         return household
     
     except Exception as e:
-        log.error(f"Failed to create Household record for {household.phone_number}.")
-        log.debug(f"Error: {e}")
+        log.error(f"Failed to create Household record for {household.phone_number}.\nError: {e}")
         return None
 
 
@@ -1048,8 +1055,7 @@ def update_migration_fields(record: dict, household: Household):
             for lid in record.get("legacy_record_id", [])
         ])
     except Exception as e:
-        log.error(f"Failed to link back new household to legacy requests for {household.phone_number}.")
-        log.debug(f"Error: {e}")
+        log.error(f"Failed to link back new household to legacy requests for {household.phone_number}.\nError: {e}")
 
 
 def load_household(record: dict):
