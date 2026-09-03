@@ -1,3 +1,4 @@
+from urllib3 import Retry
 import argparse
 from collections import defaultdict
 from typing import Tuple
@@ -26,7 +27,6 @@ from bam_core.utils.phone import (
     format_phone_number,
     is_international_phone_number,
 )
-from bam_core.utils.retry import retry
 from bam_core.utils.email import format_email, NO_EMAIL_ERROR
 from bam_core.functions.analyze_fulfilled_requests import (
     AnalyzeFulfilledRequests,
@@ -51,7 +51,11 @@ log = logging.getLogger(__name__)
 #  Setup Reference To OG Airtable Base #
 ########################################
 
-at_og = Airtable(base_id=AIRTABLE_BASE_ID, token=AIRTABLE_TOKEN)
+at_og = Airtable(
+    base_id=AIRTABLE_BASE_ID,
+    token=AIRTABLE_TOKEN,
+    retry_strategy=Retry(total=5, backoff_factor=1)
+)
 legacy_table = at_og.get_table("Assistance Requests: Main")
 
 #######################################

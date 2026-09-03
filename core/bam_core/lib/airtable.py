@@ -1,3 +1,4 @@
+from urllib3 import Retry
 from collections import defaultdict
 from datetime import datetime
 import logging
@@ -31,10 +32,11 @@ class Airtable(object):
         self,
         base_id: str = settings.AIRTABLE_BASE_ID,
         token: str = settings.AIRTABLE_TOKEN,
+        retry_strategy: bool | Retry | None = None,
     ):
         self.base_id = base_id
         self.token = token
-        self.api = Api(token)
+        self.api = Api(token, retry_strategy=retry_strategy)
 
     def get_table(self, table_name: str) -> Table:
         """
