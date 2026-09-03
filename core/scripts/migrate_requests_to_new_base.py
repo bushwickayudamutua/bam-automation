@@ -1,5 +1,6 @@
 import argparse
 from collections import defaultdict
+from typing import Tuple
 import copy
 import logging
 import pandas as pd
@@ -817,13 +818,12 @@ def transform_households(households: dict[str, list[dict]]) -> list[dict]:
 #   Airtable Record Creation          #
 #######################################
 
-@retry(attempts=5, wait=1, backoff=2)
-def create_eg_requests_records(record: dict, household: Household):
+def create_eg_request_records(record: dict, household: Household) -> list[Request]:
     """
-    Create Requests rows from the transformed legacy assistance request record.
+    Create Request instances from the transformed legacy assistance request record.
     :param record: The transformed household record
-    :param household: The saved Household instance
-    :return: List of Request instances (empty if none to create)
+    :param household: The Household instance
+    :return: List of Request instances
     """
     
     TYPES_TO_EXCLUDE = [
@@ -832,47 +832,34 @@ def create_eg_requests_records(record: dict, household: Household):
         "Cama / Bed / 床",
     ]
 
-    try:
-        # combine the list of requests (no address information)
-        all_reqs = pd.concat([
-            record.get("Request Types", pd.DataFrame()),
-            record.get("Kitchen Items", pd.DataFrame()),
-        ], ignore_index=True)
-        request_records = []
-        if all_reqs.shape[0] > 0:
-            request_records = [
-                Request(
-                    household=household,
-                    type=req_type,
-                    status="Open",
-                    legacy_date_submitted=format_date(oldest_date),
-                    last_requested=format_datetime(latest_date),
-                )
-                for req_type, oldest_date, latest_date in zip(
-                    all_reqs["item"],
-                    all_reqs["Legacy First "+DATE_SUBMITTED_FIELD],
-                    all_reqs["Legacy Last "+DATE_SUBMITTED_FIELD],
-                )
-                if req_type not in TYPES_TO_EXCLUDE
-            ]
-
-        if request_records:
-            Request.batch_save(request_records)
-        return request_records
-    
-    except Exception as e:
-        log.error(f"Failed to create Requests record(s) for {household.phone_number}.")
-        log.debug(f"Error: {e}")
-        return None
+    # combine the list of requests (no address information)
+    all_reqs = pd.concat([
+        record.get("Request Types", pd.DataFrame()),
+        record.get("Kitchen Items", pd.DataFrame()),
+    ], ignore_index=True)
+    return [
+        Request(
+            household=household,
+            type=req_type,
+            status="Open",
+            legacy_date_submitted=format_date(oldest_date),
+            last_requested=format_datetime(latest_date),
+        )
+        for req_type, oldest_date, latest_date in zip(
+            all_reqs["item"],
+            all_reqs["Legacy First "+DATE_SUBMITTED_FIELD],
+            all_reqs["Legacy Last "+DATE_SUBMITTED_FIELD],
+        )
+        if req_type not in TYPES_TO_EXCLUDE
+    ]
 
 
-@retry(attempts=5, wait=1, backoff=2)
-def create_furniture_requests_records(record: dict, household: Household):
+def create_furniture_request_records(record: dict, household: Household) -> list[FurnitureRequest]:
     """
-    Create Furniture Requests rows from the transformed legacy assistance request record.
+    Create FurnitureRequest instances from the transformed legacy assistance request record.
     :param record: The transformed household record
-    :param household: The saved Household instance
-    :return: List of Furniture Request instances (empty if none to create)
+    :param household: The Household instance
+    :return: List of FurnitureRequest instances
     """
     
     TYPES_TO_EXCLUDE = [
@@ -885,48 +872,35 @@ def create_furniture_requests_records(record: dict, household: Household):
         "Bastidor individual / Twin Bed Frame 單人床架" : "Bastidor individual / Twin Bed Frame / 單人床架",
     }
 
-    try:
-        # combine the list of requests (with geocode, and no other address information)
-        all_reqs = pd.concat([
-            record.get("Furniture Items", pd.DataFrame()),
-            record.get("Bed Details", pd.DataFrame()),
-        ], ignore_index=True)
-        request_records = []
-        if all_reqs.shape[0] > 0:
-            request_records = [
-                FurnitureRequest(
-                    household=household,
-                    type=TYPE_MAP.get(req_type, req_type),
-                    status="Open",
-                    legacy_date_submitted=format_date(oldest_date),
-                    last_requested=format_datetime(latest_date),
-                    geocode=record.get("Geocode"),
-                )
-                for req_type, oldest_date, latest_date in zip(
-                    all_reqs["item"],
-                    all_reqs["Legacy First "+DATE_SUBMITTED_FIELD],
-                    all_reqs["Legacy Last "+DATE_SUBMITTED_FIELD],
-                )
-                if req_type not in TYPES_TO_EXCLUDE
-            ]
-
-        if request_records:
-            FurnitureRequest.batch_save(request_records)
-        return request_records
-    
-    except Exception as e:
-        log.error(f"Failed to create Furniture Requests record(s) for {household.phone_number}.")
-        log.debug(f"Error: {e}")
-        return None
+    # combine the list of requests (with geocode, and no other address information)
+    all_reqs = pd.concat([
+        record.get("Furniture Items", pd.DataFrame()),
+        record.get("Bed Details", pd.DataFrame()),
+    ], ignore_index=True)
+    return [
+        FurnitureRequest(
+            household=household,
+            type=TYPE_MAP.get(req_type, req_type),
+            status="Open",
+            legacy_date_submitted=format_date(oldest_date),
+            last_requested=format_datetime(latest_date),
+            geocode=record.get("Geocode"),
+        )
+        for req_type, oldest_date, latest_date in zip(
+            all_reqs["item"],
+            all_reqs["Legacy First "+DATE_SUBMITTED_FIELD],
+            all_reqs["Legacy Last "+DATE_SUBMITTED_FIELD],
+        )
+        if req_type not in TYPES_TO_EXCLUDE
+    ]
 
 
-@retry(attempts=5, wait=1, backoff=2)
-def create_ss_requests_records(record: dict, household: Household):
+def create_ss_request_records(record: dict, household: Household) -> list[SocialServiceRequest]:
     """
-    Create Social Service Requests rows from the transformed legacy assistance request record.
+    Create SocialServiceRequest instances from the transformed legacy assistance request record.
     :param record: The transformed household record
-    :param household: The saved Household instance
-    :return: List of SocialServiceRequest instances (empty if none to create)
+    :param household: The Household instance
+    :return: List of SocialServiceRequest instances
     """
     
     TYPE_MAP = {
@@ -934,138 +908,74 @@ def create_ss_requests_records(record: dict, household: Household):
         "Asistencia asegurando vivienda/ Securing housing / 住房協助": "Asistencia asegurando vivienda / Securing housing / 住房協助",
     }
 
-    try:
-        ss_reqs = record.get("Social Service Requests", pd.DataFrame())
-        ss_records = []
-        if ss_reqs.shape[0] > 0:
-            ss_records = [
-                SocialServiceRequest(
-                    household=household,
-                    type=TYPE_MAP.get(req_type, req_type),
-                    status="Open",
-                    legacy_date_submitted=format_date(oldest_date),
-                    last_requested=format_datetime(latest_date),
-                )
-                for req_type, oldest_date, latest_date in zip(
-                    ss_reqs["item"],
-                    ss_reqs["Legacy First "+DATE_SUBMITTED_FIELD],
-                    ss_reqs["Legacy Last "+DATE_SUBMITTED_FIELD],
-                )
-                if req_type != LOW_COST_INTERNET_AT_HOME_TYPE
-            ]
-
-        if ss_records:
-            SocialServiceRequest.batch_save(ss_records)
-        return ss_records
-    
-    except Exception as e:
-        log.error(f"Failed to create Social Service Requests record(s) for {household.phone_number}.")
-        log.debug(f"Error: {e}")
-        return None
-
-
-@retry(attempts=5, wait=1, backoff=2)
-def create_mesh_requests_records(record: dict, household: Household):
-    """
-    Create Mesh Requests rows from the transformed legacy assistance request record.
-    :param record: The transformed household record
-    :param household: The saved Household instance
-    :return: List of MeshRequest instances (empty if none to create)
-    """
-    try:
-        mesh_reqs = record.get("MESH Requests", [])
-        mesh_records = []
-        if mesh_reqs:
-            mesh_records = [
-                MeshRequest(
-                    household=household,
-                    status=r.get("Status"),
-                    mesh_history=r.get("MESH History"),
-                    legacy_date_submitted=format_date(r.get("Legacy First "+DATE_SUBMITTED_FIELD)),
-                    last_requested=format_datetime(r.get("Legacy Last "+DATE_SUBMITTED_FIELD)),
-                    internet_access=r.get("Internet Access") or [],
-                    address_accuracy=r.get("Address Accuracy"),
-                    address=r.get("Address"),
-                    street_address=r.get("Street Address"),
-                    city_and_state=r.get("City, State"),
-                    zip_code=r.get("Zip Code"),
-                    building_identification_number=r.get("Building Identification Number"),
-                )
-                for r in mesh_reqs
-            ]
-
-        if mesh_records:
-            MeshRequest.batch_save(mesh_records)
-        return mesh_records
-    
-    except Exception as e:
-        log.error(f"Failed to create MESH Requests record(s) for {household.phone_number}.")
-        log.debug(f"Error: {e}")
-        return None
-
-
-@retry(attempts=5, wait=1, backoff=2)
-def create_household_record(record: dict):
-    """
-    Create a household record from the transformed legacy assistance request record.
-    :param record: The legacy assistance request record
-    :return: The created Household instance
-    """
-    try:
-        household = Household(
-            name=record.get("Name"),
-            phone_number=record.get(PHONE_FIELD),
-            phone_is_invalid=record.get("Invalid Phone Number?"),
-            phone_is_intl=record.get("Int'l Phone Number?"),
-            email=record.get("Email"),
-            email_error=record.get("Email Error"),
-            legacy_first_date_submitted=format_date(record.get("Legacy First "+DATE_SUBMITTED_FIELD)),
-            legacy_last_date_submitted=format_date(record.get("Legacy Last "+DATE_SUBMITTED_FIELD)),
-            languages=record.get("Languages"),
-            other_languages=record.get("Other Languages"),
-            notes=record.get("Notes"),
-            last_texted=format_date(record.get("Last Texted")),
-            last_called=None,
-            needs_delivery=record.get("Needs Delivery"),
-            needs_email_outreach=record.get("Needs Email Outreach"),
+    ss_reqs = record.get("Social Service Requests", pd.DataFrame())
+    return [
+        SocialServiceRequest(
+            household=household,
+            type=TYPE_MAP.get(req_type, req_type),
+            status="Open",
+            legacy_date_submitted=format_date(oldest_date),
+            last_requested=format_datetime(latest_date),
         )
-        household.save()
-        return household
-    
-    except Exception as e:
-        log.error(f"Failed to create Household record for {household.phone_number}.")
-        log.debug(f"Error: {e}")
-        return None
+        for req_type, oldest_date, latest_date in zip(
+            ss_reqs["item"],
+            ss_reqs["Legacy First "+DATE_SUBMITTED_FIELD],
+            ss_reqs["Legacy Last "+DATE_SUBMITTED_FIELD],
+        )
+        if req_type != LOW_COST_INTERNET_AT_HOME_TYPE
+    ]
 
 
-HOUSEHOLD_URL_PREFIX = f"https://airtable.com/{AIRTABLE_V2_BASE_ID}/{Household.meta.table.id}"
-def update_migration_fields(record: dict, household: Household):
-    try:
-        curr_date_time = datetime.now().strftime("%m/%d/%Y %H:%M")
-        household_link = f"[{household.name}]({HOUSEHOLD_URL_PREFIX}/{household.id})"
-        legacy_table.batch_update([
-            {"id": lid, "fields": {"Migration Date": curr_date_time, "New Household": household_link}}
-            for lid in record.get("legacy_record_id", [])
-        ])
-    except Exception as e:
-        log.error(f"Failed to link back new household to legacy requests for {household.phone_number}.")
-        log.debug(f"Error: {e}")
-
-
-def load_household(record: dict):
+def create_mesh_request_records(record: dict, household: Household) -> list[MeshRequest]:
     """
-    Migrate an assistance request from the old base to the new base,
-    creating records in all the necessary tables.
+    Create MeshRequest instances from the transformed legacy assistance request record.
+    :param record: The transformed household record
+    :param household: The Household instance
+    :return: List of MeshRequest instances
+    """
+    mesh_reqs = record.get("MESH Requests", [])
+    return [
+        MeshRequest(
+            household=household,
+            status=r.get("Status"),
+            mesh_history=r.get("MESH History"),
+            legacy_date_submitted=format_date(r.get("Legacy First "+DATE_SUBMITTED_FIELD)),
+            last_requested=format_datetime(r.get("Legacy Last "+DATE_SUBMITTED_FIELD)),
+            internet_access=r.get("Internet Access") or [],
+            address_accuracy=r.get("Address Accuracy"),
+            address=r.get("Address"),
+            street_address=r.get("Street Address"),
+            city_and_state=r.get("City, State"),
+            zip_code=r.get("Zip Code"),
+            building_identification_number=r.get("Building Identification Number"),
+        )
+        for r in mesh_reqs
+    ]
+
+
+def create_household_record(record: dict) -> Household:
+    """
+    Create a Household instance from the transformed legacy assistance request record.
     :param record: The legacy assistance request record
-    :return: None
+    :return: The Household instance
     """
-    household = create_household_record(record)
-    if household:
-        create_eg_requests_records(record, household)
-        create_furniture_requests_records(record, household)
-        create_ss_requests_records(record, household)
-        create_mesh_requests_records(record, household)
-        update_migration_fields(record, household)
+    return Household(
+        name=record.get("Name"),
+        phone_number=record.get(PHONE_FIELD),
+        phone_is_invalid=record.get("Invalid Phone Number?"),
+        phone_is_intl=record.get("Int'l Phone Number?"),
+        email=record.get("Email"),
+        email_error=record.get("Email Error"),
+        legacy_first_date_submitted=format_date(record.get("Legacy First "+DATE_SUBMITTED_FIELD)),
+        legacy_last_date_submitted=format_date(record.get("Legacy Last "+DATE_SUBMITTED_FIELD)),
+        languages=record.get("Languages"),
+        other_languages=record.get("Other Languages"),
+        notes=record.get("Notes"),
+        last_texted=format_date(record.get("Last Texted")),
+        last_called=None,
+        needs_delivery=record.get("Needs Delivery"),
+        needs_email_outreach=record.get("Needs Email Outreach"),
+    )
 
 
 #######################################
@@ -1153,13 +1063,55 @@ def main():
         log.info("Skipping migration!")
         return
 
-    log.info("Starting migration of %s records.", n_records)
-    for i, household_request in enumerate(transformed_requests):
-        if i % 100 == 0:
-            log.info("Migrated %s records. %s records left.", i, n_records - i)
-        load_household(household_request)
-        if i == n_records - 1:
-            log.info("Migrated %s records.", i + 1)
+    log.info("Generating new records.")
+    households: list[Household] = []
+
+    requests: list[Request] = []
+    furniture_requests: list[FurnitureRequest] = []
+    ss_requests: list[SocialServiceRequest] = []
+    mesh_requests: list[MeshRequest] = []
+
+    legacy_record_map: dict[str, Tuple[str, Household]] = {}
+    for record in transformed_requests:
+        household = create_household_record(record)
+        households.append(household)
+
+        requests.extend(create_eg_request_records(record, household))
+        furniture_requests.extend(create_furniture_request_records(record, household))
+        ss_requests.extend(create_ss_request_records(record, household))
+        mesh_requests.extend(create_mesh_request_records(record, household))
+
+        migration_date = datetime.now().strftime("%m/%d/%Y %H:%M")
+        for lid in record.get("legacy_record_ids", []):
+            legacy_record_map[lid] = (migration_date, household)
+
+    log.info(
+        "Generated %s households, %s EG requests, %s furniture requests, %s social service requests, and %s mesh requests from %s legacy records.",
+        len(households),
+        len(requests),
+        len(furniture_requests),
+        len(ss_requests),
+        len(mesh_requests),
+        len(legacy_record_map)
+    )
+
+    log.info("Migrating all records.")
+    # Households need to be saved first so that other records can refer to their IDs
+    Household.batch_save(households)
+
+    Request.batch_save(requests)
+    FurnitureRequest.batch_save(furniture_requests)
+    SocialServiceRequest.batch_save(ss_requests)
+    MeshRequest.batch_save(mesh_requests)
+
+    HOUSEHOLD_URL_PREFIX = f"https://airtable.com/{AIRTABLE_V2_BASE_ID}/{Household.meta.table.id}"
+    legacy_table.batch_update([
+        {"id": lid, "fields": {
+            "Migration Date": migration_date, 
+            "New Household": f"[{household.name}]({HOUSEHOLD_URL_PREFIX}/{household.id})",
+        }}
+        for lid, (migration_date, household) in legacy_record_map.items()
+    ])
 
     log.info("Migration completed successfully!")
 
