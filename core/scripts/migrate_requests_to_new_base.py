@@ -1090,13 +1090,7 @@ def main():
         "--subset",
         type=str,
         default=None,
-        help="Selected phone numbers to migrate from the legacy requests",
-    )
-    parser.add_argument(
-        "--subset_func",
-        type=str,
-        default=None,
-        help="Function to select phone numbers to migrate from the legacy requests",
+        help="Selected Case #s to migrate from the legacy requests",
     )
     parser.add_argument(
         "--output_dir",
@@ -1127,21 +1121,17 @@ def main():
 
     if args.subset:
         with open(args.subset, "r") as f:
-            subset_str = [line_str.strip() for line_str in f.read().splitlines()]
-            selected_numbers = {num for num_str in subset_str if (num := format_phone_number(num_str))}
+            selected_case_nums = {int(line_str.strip()) for line_str in f.read().splitlines()}
             legacy_requests = {
-                num: requests
+                num: filtered_requests
                 for num, requests in legacy_requests.items()
-                if num in selected_numbers
+                if (filtered_requests := [req for req in requests if req['Case #'] in selected_case_nums])
             }
             n_numbers = len(legacy_requests)
             if n_numbers == 0:
                 log.error("No records to transform after subsetting to '%s'", args.subset)
                 return
             log.info("Subsetting to %s households from '%s'", n_numbers, args.subset)
-            n_missing = len(selected_numbers) - n_numbers
-            if n_missing > 0:
-                log.warning("Missing %s of provided phone numbers!", n_missing)
 
     log.info("Starting transformation for %s phone numbers!", n_numbers)
     transformed_requests = transform_households(legacy_requests)
@@ -1151,19 +1141,6 @@ def main():
         log.error("No transformed requests to migrate!")
         return
     log.info("Transformed %s records!", n_records)
-
-    if args.subset_func:
-        subset_func = globals().get(args.subset_func)
-        if subset_func is not None and callable(subset_func):
-            transformed_requests = [r for r in transformed_requests if subset_func(r)]
-            n_records = len(transformed_requests)
-            if n_records == 0:
-                log.error("No records to migrate after subsetting with %s", args.subset_func)
-                return
-            log.info("Selected %s households with %s", n_records, args.subset_func)
-        else:
-            log.error("Function %s not found or not callable!", args.subset_func)
-            return
 
     if args.output_dir:
         output_path = os.path.join(args.output_dir, "transformed_households.txt")
