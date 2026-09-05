@@ -56,18 +56,7 @@ at_og = Airtable(
     token=AIRTABLE_TOKEN,
     retry_strategy=Retry(total=5, backoff_factor=1)
 )
-legacy_table = at_og.get_table("Assistance Requests: Main")
-
-#######################################
-#  Initialize Snapshot Analysis FX    #
-#######################################
-# NOTE: We use the AnalyzeFulfilledRequests class to get the most recent snapshot of each record.
-# This is mostly a matter of convenience, since it already has the logic to identify open requests.
-# We could also pull the records directly from the Airtable API, but that would require more work lol.
-
-afr = AnalyzeFulfilledRequests()
-afr.use_cache = True
-
+legacy_table = at_og.assistance_requests
 
 #######################################
 #  Fetch Open Requests Per Household  #
@@ -81,26 +70,24 @@ def extract_open_requests_per_household():
     and the value is a list of records for that household.
     """
     households = defaultdict(list)
-    # get all snapshots
-    grouped_records = afr.get_grouped_records()
-
     # get the last snapshot for each record
-    for record_id, snapshot in afr.get_last_snapshots(grouped_records):
+    for page in legacy_table.iterate():
+        for record in page:
+            analysis = Airtable.analyze_requests(record, include_all_mesh=True)
 
-        # identify the open requests for the snapshot
-        open_requests = afr.get_open_requests_for_snapshot(
-            record_id, snapshot, include_all_mesh=True
-        )
+            open_requests = [
+                req_type
+                for sub_analysis in analysis.values()
+                for req_type in sub_analysis["open"]
+            ]
+            if len(open_requests) <= 0: continue
 
-        # if there are open requests, add them to the household
-        # and format the phone number
-        # only add the household if there are open requests
-        # and the phone number is valid
-        if len(open_requests) > 0 and PHONE_FIELD in snapshot:
-            snapshot["Open Requests"] = [r["Item"] for r in open_requests]
-            phone_number = format_phone_number(snapshot[PHONE_FIELD])
-            if phone_number:
-                households[phone_number].append(snapshot)
+            phone_number = format_phone_number(record["fields"][PHONE_FIELD])
+            if not phone_number: continue
+
+            # only add the household if there are open requests
+            # and the phone number is valid
+            households[phone_number].append({**record, "Open Requests": open_requests})
     return households
 
 
