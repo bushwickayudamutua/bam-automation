@@ -10,7 +10,8 @@ import numpy as np
 import os
 import sys
 
-_CORE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+# _CORE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+_CORE_DIR = "/Users/zakieh/git/bam-automation/core/"
 if _CORE_DIR not in sys.path:
     sys.path.insert(0, _CORE_DIR)
 
@@ -44,7 +45,7 @@ from bam_core.constants import (
     LOW_COST_INTERNET_AT_HOME_TYPE,
 )
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+logging.basicConfig(level=logging.INFO, force=True)
 log = logging.getLogger(__name__)
 
 ########################################
@@ -841,21 +842,24 @@ def create_eg_request_records(record: dict, household: Household) -> list[Reques
         record.get("Request Types", pd.DataFrame()),
         record.get("Kitchen Items", pd.DataFrame()),
     ], ignore_index=True)
-    return [
-        Request(
-            household=household,
-            type=req_type,
-            status="Open",
-            legacy_date_submitted=format_date(oldest_date),
-            last_requested=format_datetime(latest_date),
-        )
-        for req_type, oldest_date, latest_date in zip(
-            all_reqs["item"],
-            all_reqs["Legacy First "+DATE_SUBMITTED_FIELD],
-            all_reqs["Legacy Last "+DATE_SUBMITTED_FIELD],
-        )
-        if req_type not in TYPES_TO_EXCLUDE
-    ]
+    if all_reqs.shape[0] == 0:
+        return []
+    else:
+        return [
+            Request(
+                household=household,
+                type=req_type,
+                status="Open",
+                legacy_date_submitted=format_date(oldest_date),
+                last_requested=format_datetime(latest_date),
+            )
+            for req_type, oldest_date, latest_date in zip(
+                all_reqs["item"],
+                all_reqs["Legacy First "+DATE_SUBMITTED_FIELD],
+                all_reqs["Legacy Last "+DATE_SUBMITTED_FIELD],
+            )
+            if req_type not in TYPES_TO_EXCLUDE
+        ]
 
 
 def create_furniture_request_records(record: dict, household: Household) -> list[FurnitureRequest]:
@@ -881,22 +885,25 @@ def create_furniture_request_records(record: dict, household: Household) -> list
         record.get("Furniture Items", pd.DataFrame()),
         record.get("Bed Details", pd.DataFrame()),
     ], ignore_index=True)
-    return [
-        FurnitureRequest(
-            household=household,
-            type=TYPE_MAP.get(req_type, req_type),
-            status="Open",
-            legacy_date_submitted=format_date(oldest_date),
-            last_requested=format_datetime(latest_date),
-            geocode=record.get("Geocode"),
-        )
-        for req_type, oldest_date, latest_date in zip(
-            all_reqs["item"],
-            all_reqs["Legacy First "+DATE_SUBMITTED_FIELD],
-            all_reqs["Legacy Last "+DATE_SUBMITTED_FIELD],
-        )
-        if req_type not in TYPES_TO_EXCLUDE
-    ]
+    if all_reqs.shape[0] == 0:
+        return []
+    else:
+        return [
+            FurnitureRequest(
+                household=household,
+                type=TYPE_MAP.get(req_type, req_type),
+                status="Open",
+                legacy_date_submitted=format_date(oldest_date),
+                last_requested=format_datetime(latest_date),
+                geocode=record.get("Geocode"),
+            )
+            for req_type, oldest_date, latest_date in zip(
+                all_reqs["item"],
+                all_reqs["Legacy First "+DATE_SUBMITTED_FIELD],
+                all_reqs["Legacy Last "+DATE_SUBMITTED_FIELD],
+            )
+            if req_type not in TYPES_TO_EXCLUDE
+        ]
 
 
 def create_ss_request_records(record: dict, household: Household) -> list[SocialServiceRequest]:
@@ -913,21 +920,24 @@ def create_ss_request_records(record: dict, household: Household) -> list[Social
     }
 
     ss_reqs = record.get("Social Service Requests", pd.DataFrame())
-    return [
-        SocialServiceRequest(
-            household=household,
-            type=TYPE_MAP.get(req_type, req_type),
-            status="Open",
-            legacy_date_submitted=format_date(oldest_date),
-            last_requested=format_datetime(latest_date),
-        )
-        for req_type, oldest_date, latest_date in zip(
-            ss_reqs["item"],
-            ss_reqs["Legacy First "+DATE_SUBMITTED_FIELD],
-            ss_reqs["Legacy Last "+DATE_SUBMITTED_FIELD],
-        )
-        if req_type != LOW_COST_INTERNET_AT_HOME_TYPE
-    ]
+    if ss_reqs.shape[0] == 0:
+        return []
+    else:
+        return [
+            SocialServiceRequest(
+                household=household,
+                type=TYPE_MAP.get(req_type, req_type),
+                status="Open",
+                legacy_date_submitted=format_date(oldest_date),
+                last_requested=format_datetime(latest_date),
+            )
+            for req_type, oldest_date, latest_date in zip(
+                ss_reqs["item"],
+                ss_reqs["Legacy First "+DATE_SUBMITTED_FIELD],
+                ss_reqs["Legacy Last "+DATE_SUBMITTED_FIELD],
+            )
+            if req_type != LOW_COST_INTERNET_AT_HOME_TYPE
+        ]
 
 
 def create_mesh_request_records(record: dict, household: Household) -> list[MeshRequest]:
@@ -938,23 +948,26 @@ def create_mesh_request_records(record: dict, household: Household) -> list[Mesh
     :return: List of MeshRequest instances
     """
     mesh_reqs = record.get("MESH Requests", [])
-    return [
-        MeshRequest(
-            household=household,
-            status=r.get("Status"),
-            mesh_history=r.get("MESH History"),
-            legacy_date_submitted=format_date(r.get("Legacy First "+DATE_SUBMITTED_FIELD)),
-            last_requested=format_datetime(r.get("Legacy Last "+DATE_SUBMITTED_FIELD)),
-            internet_access=r.get("Internet Access") or [],
-            address_accuracy=r.get("Address Accuracy"),
-            address=r.get("Address"),
-            street_address=r.get("Street Address"),
-            city_and_state=r.get("City, State"),
-            zip_code=r.get("Zip Code"),
-            building_identification_number=r.get("Building Identification Number"),
-        )
-        for r in mesh_reqs
-    ]
+    if len(mesh_reqs) == 0:
+        return []
+    else:
+        return [
+            MeshRequest(
+                household=household,
+                status=r.get("Status"),
+                mesh_history=r.get("MESH History"),
+                legacy_date_submitted=format_date(r.get("Legacy First "+DATE_SUBMITTED_FIELD)),
+                last_requested=format_datetime(r.get("Legacy Last "+DATE_SUBMITTED_FIELD)),
+                internet_access=r.get("Internet Access") or [],
+                address_accuracy=r.get("Address Accuracy"),
+                address=r.get("Address"),
+                street_address=r.get("Street Address"),
+                city_and_state=r.get("City, State"),
+                zip_code=r.get("Zip Code"),
+                building_identification_number=r.get("Building Identification Number"),
+            )
+            for r in mesh_reqs
+        ]
 
 
 def create_household_record(record: dict) -> Household:
@@ -1086,7 +1099,7 @@ def main():
         mesh_requests.extend(create_mesh_request_records(record, household))
 
         migration_date = datetime.now().strftime("%m/%d/%Y %H:%M")
-        for lid in record.get("legacy_record_ids", []):
+        for lid in record.get("legacy_record_id", []):
             legacy_record_map[lid] = (migration_date, household)
 
     log.info(
@@ -1120,6 +1133,6 @@ def main():
     log.info("Migration completed successfully!")
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
 
