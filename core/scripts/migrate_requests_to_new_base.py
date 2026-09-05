@@ -10,8 +10,7 @@ import numpy as np
 import os
 import sys
 
-# _CORE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-_CORE_DIR = "/Users/zakieh/git/bam-automation/core/"
+_CORE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _CORE_DIR not in sys.path:
     sys.path.insert(0, _CORE_DIR)
 
@@ -1133,6 +1132,6 @@ def main():
     log.info("Migration completed successfully!")
 
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()
 
