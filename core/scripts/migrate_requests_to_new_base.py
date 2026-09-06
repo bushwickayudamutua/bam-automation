@@ -10,7 +10,8 @@ import numpy as np
 import os
 import sys
 
-_CORE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+# _CORE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+_CORE_DIR = "/Users/zakieh/git/bam-automation/core/"
 if _CORE_DIR not in sys.path:
     sys.path.insert(0, _CORE_DIR)
 
@@ -82,7 +83,7 @@ def extract_open_requests_per_household(airtable_formula: str | None = None):
             ]
             if len(open_requests) <= 0: continue
 
-            phone_number = format_phone_number(record["fields"][PHONE_FIELD])
+            phone_number = format_phone_number(record[PHONE_FIELD])
             if not phone_number: continue
 
             # only add the household if there are open requests
@@ -1125,5 +1126,5 @@ def main():
     log.info("Migration completed successfully!")
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
