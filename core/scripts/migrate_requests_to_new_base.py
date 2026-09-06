@@ -63,7 +63,7 @@ legacy_table = at_og.assistance_requests
 #######################################
 
 
-def extract_open_requests_per_household():
+def extract_open_requests_per_household(airtable_formula: str | None = None):
     """
     Get all open requests per household from digital ocean snapshots.
     :return: A dictionary of household records, where the key is the phone number
@@ -71,7 +71,7 @@ def extract_open_requests_per_household():
     """
     households = defaultdict(list)
     # get the last snapshot for each record
-    for page in legacy_table.iterate():
+    for page in legacy_table.iterate(formula=airtable_formula):
         for record in page:
             analysis = Airtable.analyze_requests(record, include_all_mesh=True)
 
@@ -1000,10 +1000,16 @@ def main():
         help="Transform records without migrating to new base",
     )
     parser.add_argument(
-        "--subset",
+        "--subset_case_num",
         type=str,
         default=None,
         help="Selected Case #s to migrate from the legacy requests",
+    )
+    parser.add_argument(
+        "--subset_formula",
+        type=str,
+        default=None,
+        help="Formula to select records to migrate from the legacy requests",
     )
     parser.add_argument(
         "--output_dir",
@@ -1017,7 +1023,7 @@ def main():
         if not os.path.exists(args.output_dir):
             os.makedirs(args.output_dir)
     
-    legacy_requests = extract_open_requests_per_household()  
+    legacy_requests = extract_open_requests_per_household(args.subset_formula)  
 
     n_numbers = len(legacy_requests)
     if n_numbers == 0:
@@ -1032,8 +1038,8 @@ def main():
             for line_str in legacy_requests.keys():
                 f.write(f"{line_str}\n")
 
-    if args.subset:
-        with open(args.subset, "r") as f:
+    if args.subset_case_num:
+        with open(args.subset_case_num, "r") as f:
             selected_case_nums = {int(line_str.strip()) for line_str in f.read().splitlines()}
             legacy_requests = {
                 num: filtered_requests
@@ -1042,9 +1048,9 @@ def main():
             }
             n_numbers = len(legacy_requests)
             if n_numbers == 0:
-                log.error("No records to transform after subsetting to '%s'", args.subset)
+                log.error("No records to transform after subsetting to '%s'", args.subset_case_num)
                 return
-            log.info("Subsetting to %s households from '%s'", n_numbers, args.subset)
+            log.info("Subsetting to %s households from '%s'", n_numbers, args.subset_case_num)
 
     log.info("Starting transformation for %s phone numbers!", n_numbers)
     transformed_requests = transform_households(legacy_requests)
@@ -1121,4 +1127,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
