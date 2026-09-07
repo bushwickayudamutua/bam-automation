@@ -63,7 +63,10 @@ legacy_table = at_og.assistance_requests
 #######################################
 
 
-def extract_open_requests_per_household(airtable_formula: str | None = None):
+def extract_open_requests_per_household(
+    airtable_formula: str | None = None,
+    airtable_view: str | None = None
+):
     """
     Get all open requests per household from digital ocean snapshots.
     :return: A dictionary of household records, where the key is the phone number
@@ -71,7 +74,7 @@ def extract_open_requests_per_household(airtable_formula: str | None = None):
     """
     households = defaultdict(list)
     # get the last snapshot for each record
-    for page in legacy_table.iterate(formula=airtable_formula):
+    for page in legacy_table.iterate(formula=airtable_formula, view=airtable_view):
         for record in page:
             analysis = Airtable.analyze_requests(record, include_all_mesh=True)
 
@@ -1012,6 +1015,12 @@ def main():
         help="Formula to select records to migrate from the legacy requests",
     )
     parser.add_argument(
+        "--subset_view",
+        type=str,
+        default=None,
+        help="View of records to migrate from the legacy requests",
+    )
+    parser.add_argument(
         "--output_dir",
         type=str,
         default=None,
@@ -1023,7 +1032,7 @@ def main():
         if not os.path.exists(args.output_dir):
             os.makedirs(args.output_dir)
     
-    legacy_requests = extract_open_requests_per_household(args.subset_formula)  
+    legacy_requests = extract_open_requests_per_household(args.subset_formula, args.subset_view)  
 
     n_numbers = len(legacy_requests)
     if n_numbers == 0:
@@ -1127,3 +1136,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
