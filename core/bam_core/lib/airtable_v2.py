@@ -221,3 +221,4 @@ class MeshRequest(Model):
             city_and_state: str | None = None,
             zip_code: int | None = None,
         ): ...
+

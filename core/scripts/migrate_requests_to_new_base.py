@@ -1076,10 +1076,6 @@ def main():
             for r in transformed_requests:
                 line_str = r.get(PHONE_FIELD)
                 f.write(f"{line_str}\n")
-    
-    if args.transform_only:
-        log.info("Skipping migration!")
-        return
 
     log.info("Generating new records.")
     households: list[Household] = []
@@ -1103,6 +1099,17 @@ def main():
         for lid in record.get("legacy_record_id", []):
             legacy_record_map[lid] = (migration_date, household)
 
+    # Count number of requests of each type:
+    request_counts_tb = pd.concat([
+        pd.Series([len(households)], index=["Households"]),
+        pd.Series([r.type for r in requests]).value_counts(),
+        pd.Series([r.type for r in furniture_requests]).value_counts(),
+        pd.Series([r.type for r in ss_requests]).value_counts(),
+        pd.Series([len(mesh_requests)], index=["MESH"])
+    ], axis=0)
+    output_path = os.path.join(args.output_dir, "request_counts.csv")
+    request_counts_tb.to_csv(output_path, header=False)
+
     log.info(
         "Generated %s households, %s EG requests, %s furniture requests, %s social service requests, and %s mesh requests from %s legacy records.",
         len(households),
@@ -1112,6 +1119,10 @@ def main():
         len(mesh_requests),
         len(legacy_record_map)
     )
+
+    if args.transform_only:
+        log.info("Skipping migration!")
+        return
 
     log.info("Migrating all records.")
     # Households need to be saved first so that other records can refer to their IDs
@@ -1136,4 +1147,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
