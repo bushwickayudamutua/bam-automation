@@ -72,10 +72,23 @@ def extract_open_requests_per_household(
     :return: A dictionary of household records, where the key is the phone number
     and the value is a list of records for that household.
     """
+    record_num_total = 0
+    min_case_num = None
+    max_case_num = None
     households = defaultdict(list)
     # get the last snapshot for each record
     for page in legacy_table.iterate(formula=airtable_formula, view=airtable_view):
         for record in page:
+            curr_phone_str = record["fields"][PHONE_FIELD]
+            curr_case_num = int(record["fields"]["Case #"])
+
+            # For logging:
+            record_num_total += 1
+            if min_case_num is None or curr_case_num < min_case_num:
+                min_case_num = curr_case_num
+            if max_case_num is None or curr_case_num > max_case_num:
+                max_case_num = curr_case_num
+
             analysis = Airtable.analyze_requests(record, include_all_mesh=True)
 
             open_requests = [
@@ -85,12 +98,16 @@ def extract_open_requests_per_household(
             ]
             if len(open_requests) <= 0: continue
 
-            phone_number = format_phone_number(record[PHONE_FIELD])
+            phone_number = format_phone_number(curr_phone_str)
             if not phone_number: continue
 
             # only add the household if there are open requests
             # and the phone number is valid
             households[phone_number].append({**record, "Open Requests": open_requests})
+    
+    logging.info(f"Total number of records processed: {record_num_total}")
+    logging.info(f"Min case number: {min_case_num}, Max case number: {max_case_num}")
+    
     return households
 
 
@@ -1100,16 +1117,17 @@ def main():
             legacy_record_map[lid] = (migration_date, household)
 
     # Count number of requests of each type:
-    request_counts_tb = pd.concat([
-        pd.Series([len(households)], index=["Households"]),
-        pd.Series([r.type for r in requests]).value_counts(),
-        pd.Series([r.type for r in furniture_requests]).value_counts(),
-        pd.Series([r.type for r in ss_requests]).value_counts(),
-        pd.Series([len(mesh_requests)], index=["MESH"])
-    ], axis=0)
-    output_path = os.path.join(args.output_dir, "request_counts.csv")
-    request_counts_tb.to_csv(output_path, header=False)
-
+    if args.output_dir:
+        output_path = os.path.join(args.output_dir, "request_counts.csv")
+        request_counts_tb = pd.concat([
+            pd.Series([len(households)], index=["Households"]),
+            pd.Series([r.type for r in requests]).value_counts(),
+            pd.Series([r.type for r in furniture_requests]).value_counts(),
+            pd.Series([r.type for r in ss_requests]).value_counts(),
+            pd.Series([len(mesh_requests)], index=["MESH"])
+        ], axis=0)
+        request_counts_tb.to_csv(output_path, header=False)
+    
     log.info(
         "Generated %s households, %s EG requests, %s furniture requests, %s social service requests, and %s mesh requests from %s legacy records.",
         len(households),
