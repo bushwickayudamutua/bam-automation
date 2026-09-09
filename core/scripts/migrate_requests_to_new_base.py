@@ -79,7 +79,7 @@ def extract_open_requests_per_household(
     # get the last snapshot for each record
     for page in legacy_table.iterate(formula=airtable_formula, view=airtable_view):
         for record in page:
-            curr_phone_str = record["fields"][PHONE_FIELD]
+            curr_phone_str = record["fields"].get(PHONE_FIELD, "")
             curr_case_num = int(record["fields"]["Case #"])
 
             # For logging:
@@ -1085,6 +1085,7 @@ def main():
     if n_records == 0:
         log.error("No transformed requests to migrate!")
         return
+    
     log.info("Transformed %s records!", n_records)
 
     if args.output_dir:
@@ -1095,8 +1096,8 @@ def main():
                 f.write(f"{line_str}\n")
 
     log.info("Generating new records.")
-    households: list[Household] = []
 
+    households: list[Household] = []
     requests: list[Request] = []
     furniture_requests: list[FurnitureRequest] = []
     ss_requests: list[SocialServiceRequest] = []
@@ -1165,3 +1166,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
