@@ -1,5 +1,4 @@
 from bam_core.functions.base import Function
-from bam_core.functions.dedupe_airtable_views import DedupeAirtableViews
 from bam_core.functions.update_mailjet_lists import UpdateMailjetLists
 from bam_core.functions.snapshot_airtable_views import SnapshotAirtableViews
 
@@ -8,7 +7,6 @@ def main(event, context):
     return Function.run_do_functions(
         event,
         context,
-        DedupeAirtableViews,
         UpdateMailjetLists,
         SnapshotAirtableViews,
     )

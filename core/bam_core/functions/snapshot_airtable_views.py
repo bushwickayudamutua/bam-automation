@@ -17,10 +17,6 @@ class SnapshotAirtableViews(Function):
 
     CONFIG = [
         {
-            "table_name": "Assistance Requests: Main",
-            "last_modified_field": "Last Modified",
-        },
-        {
             "table_name": "Volunteers: Main",
             "last_modified_field": "Last Modified",
         },
