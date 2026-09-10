@@ -1,3 +1,4 @@
+from urllib3 import Retry
 from typing import List, TYPE_CHECKING
 from datetime import date, datetime
 
@@ -12,6 +13,7 @@ def make_meta(table_name: str):
         'base_id': settings.AIRTABLE_V2_BASE_ID,
         'api_key': settings.AIRTABLE_V2_TOKEN,
         'table_name': table_name,
+        'retry': Retry(total=5, backoff_factor=1)
     }
 
 
@@ -219,3 +221,4 @@ class MeshRequest(Model):
             city_and_state: str | None = None,
             zip_code: int | None = None,
         ): ...
+
