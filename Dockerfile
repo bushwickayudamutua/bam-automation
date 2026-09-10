@@ -1,5 +1,5 @@
 # This Dockerfile is for running the automation API in ./app
-FROM python:3.11.4-bullseye
+FROM python:3.11.4-bookworm
 
 # set env
 ENV LC_ALL C.UTF-8
