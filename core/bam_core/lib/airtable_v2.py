@@ -2,19 +2,23 @@ from urllib3 import Retry
 from typing import List, TYPE_CHECKING
 from datetime import date, datetime
 
+from pyairtable import Api
 from pyairtable.orm import Model, fields as F
 from pyairtable.orm.fields import Field
 
-from bam_core import settings
+from bam_core.settings import AIRTABLE_V2_BASE_ID, AIRTABLE_V2_TOKEN
 
 
 def make_meta(table_name: str):
     return {
-        'base_id': settings.AIRTABLE_V2_BASE_ID,
-        'api_key': settings.AIRTABLE_V2_TOKEN,
+        'base_id': AIRTABLE_V2_BASE_ID,
+        'api_key': AIRTABLE_V2_TOKEN,
         'table_name': table_name,
         'retry': Retry(total=5, backoff_factor=1)
     }
+
+
+count_table = Api(AIRTABLE_V2_TOKEN).base(AIRTABLE_V2_BASE_ID).table('Fulfilled Request Count')
 
 
 class FormSubmission(Model):
