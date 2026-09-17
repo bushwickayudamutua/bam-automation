@@ -6,7 +6,7 @@ import os
 from io import BytesIO
 import tempfile
 import logging
-import urllib
+import urllib.parse
 from typing import Callable, List, Union, Optional
 
 import boto3
@@ -156,13 +156,12 @@ class S3(object):
             Bucket=self.bucket_name, Key=self._in_key(key)
         )
 
-    def get_contents(self, key: set):
+    def get_contents(self, key: str):
         f"""
         Fetch the file contents from a key.
         :param key: An S3 key
         :return dict
         """
-        f = None
         try:
             obj = self.resource.Object(self.bucket_name, self._in_key(key))
             with obj.get()["Body"] as f:
@@ -196,9 +195,7 @@ class S3(object):
         self.bucket.download_file(self._in_key(key), local_path)
         return local_path
 
-    def download_file_obj(
-        self, key: str, fobj: Optional[BytesIO] = None
-    ) -> BytesIO:
+    def download_file_obj(self, key: str) -> BytesIO:
         f"""
         Download an s3 key to a file-like object
         :param key: An S3 key
@@ -213,7 +210,7 @@ class S3(object):
         self,
         prefix: str,
         local_path: Union[None, str] = None,
-        key_filter: Callable = lambda x: True,
+        key_filter: Callable = lambda _x: True,
     ):
         f"""
         Download s3 files under a given prefix to a local directory. Returns the list of local filepaths.
@@ -250,7 +247,7 @@ class S3(object):
         )
 
     def _upload_file(
-        self, local_path: str, key: str, mimetype: BAM_STOR_DEFAULT_MIMETYPE
+        self, local_path: str, key: str, mimetype: str = BAM_STOR_DEFAULT_MIMETYPE
     ) -> str:
         f"""
         Upload a file to a s3 bucket, optionally applying a mimetype
@@ -267,7 +264,7 @@ class S3(object):
         return self._out_key(key)
 
     def upload(
-        self, local_path: str, key: str, mimetype: BAM_STOR_DEFAULT_MIMETYPE
+        self, local_path: str, key: str, mimetype: str = BAM_STOR_DEFAULT_MIMETYPE
     ):
         f"""
         Upload a file to a s3 bucket
@@ -331,7 +328,7 @@ class S3(object):
         :return list
         """
         new_paths = []
-        for old_obj in self.bucket.objects.filter(Prefix=self.in_key(old_pfx)):
+        for old_obj in self.bucket.objects.filter(Prefix=self._in_key(old_pfx)):
             new_key = old_obj.key.replace(old_pfx, new_pfx, 1)
             new_obj = self.bucket.Object(self._in_key(new_key))
             new_obj.copy(
@@ -346,7 +343,7 @@ class S3(object):
 
     def copy(self, old_key: str, new_key: str) -> None:
         """"""
-        return self.move(
+        self.move(
             self._in_key(old_key), self._in_key(new_key), copy=True
         )
 
@@ -356,7 +353,7 @@ class S3(object):
             self._in_key(old_pfx), self._in_key(new_pfx), copy=True
         )
 
-    def list_keys(self, prefix: str, key_filter: Callable = lambda x: True):
+    def list_keys(self, prefix: str, key_filter: Callable = lambda _x: True):
         f"""
         List keys in S3 bucket.
         :param prefix: A prefix used to identify a list of s3 keys

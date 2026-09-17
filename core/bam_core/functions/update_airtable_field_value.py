@@ -65,9 +65,7 @@ class UpdateAirtableFieldValue(Function):
         # construct a formula to get all records that match the list of phone numbers
         get_all_matching_phone_numbers = formulas.OR(
             *[
-                formulas.EQUAL(
-                    formulas.STR_VALUE(number), formulas.FIELD("Phone Number")
-                )
+                formulas.Field(PHONE_FIELD).eq(number)
                 for number in phone_numbers
             ]
         )

@@ -15,14 +15,14 @@ def list_files(path: str, ignore_hidden: bool = False) -> List[str]:
     :param ignore_hidden: whether or not to ignore hidden files (starting with ``.``)
     :return list
     """
-    return (
+    return [
         os.path.join(dp, f)
-        for dp, dn, fn in os.walk(get_full(path))
+        for dp, _dn, fn in os.walk(get_full(path))
         for f in fn
         if not (f.startswith(".") and ignore_hidden)
         and not f.endswith(".DS_Store")
         and not dp == "__MACOSX"
-    )
+    ]
 
 
 def get_full(path: str) -> str:
@@ -89,7 +89,7 @@ def retry(
     times: int = 5,
     wait: int = 5,
     backoff: float = 1.5,
-    exceptions: List[Exception] = [Exception],
+    exceptions: list[type[Exception]] = [Exception],
 ) -> Any:
     """
     Retry Decorator
@@ -105,11 +105,15 @@ def retry(
     def decorator(func):
         def new_fn(*args, **kwargs):
             attempt = 0
-            while attempt < times:
+            while True:
                 try:
                     return func(*args, **kwargs)
                 except tuple(exceptions) as e:
                     attempt += 1
+                    # If we've exhausted all attempts, raise the last exception
+                    if attempt >= times:
+                        raise e
+
                     wait_time = wait * (backoff**attempt)
                     log.warning(
                         f"Exception thrown when attempting to run {func}: {e}."
@@ -117,8 +121,6 @@ def retry(
                         f" Waiting {wait_time} seconds before retrying."
                     )
                     time.sleep(wait_time)
-            # If we've exhausted all attempts, raise the last exception
-            raise e
 
         return new_fn
 

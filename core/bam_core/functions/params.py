@@ -151,13 +151,34 @@ PARAM_TYPES = (
 PARAM_TYPES_MAP = {str(t().name): t for t in PARAM_TYPES}
 
 
-@dataclass
+@dataclass(init=False)
 class Param:
     name: str
-    type: Union[str, ParamType] = ParamStringType()
-    default: Any = None
-    description: str = ""
-    required: bool = False
+    type: ParamType
+    default: Any
+    description: str
+    required: bool
+
+    def __init__(
+        self,
+        name: str,
+        type: Union[str, ParamType] = ParamStringType(),
+        default: Any = None,
+        description: str = "",
+        required: bool = False
+    ):
+        self.name = name
+        if isinstance(type, ParamType):
+            self.type = type
+        else:
+            if type not in PARAM_TYPES_MAP:
+                raise ValueError(
+                    f"Unsupported parameter type: {type}. Choose from: {', '.join([str(t.name) for t in PARAM_TYPES])}"
+                )
+            self.type = PARAM_TYPES_MAP[type]()
+        self.default = default
+        self.description = description
+        self.required = required
 
     @property
     def short_name(self) -> str:
@@ -172,15 +193,7 @@ class Param:
 
     @property
     def type_class(self) -> ParamType:
-        if isinstance(self.type, PARAM_TYPES):
-            return self.type
-        if isinstance(self.type, str):
-            if self.type not in PARAM_TYPES_MAP:
-                raise ValueError(
-                    f"Unsupported parameter type: {self.type}. Choose from: {', '.join([str(t.name) for t in PARAM_TYPES])}"
-                )
-            return PARAM_TYPES_MAP[self.type]()
-        raise ValueError(f"Unsupported parameter type: {self.type}")
+        return self.type
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -193,7 +206,7 @@ class Param:
 
 
 class Params:
-    def __init__(self, *params: List[Union[Param, Dict[str, Any]]]):
+    def __init__(self, *params: Union[Param, Dict[str, Any]]):
         self.params = {}
         for param in params:
             self.add_param(param)

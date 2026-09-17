@@ -9,6 +9,12 @@ from pyairtable.orm.fields import Field
 from bam_core.settings import AIRTABLE_V2_BASE_ID, AIRTABLE_V2_TOKEN
 
 
+if AIRTABLE_V2_BASE_ID is None:
+    raise RuntimeError("Missing required environment variable: AIRTABLE_V2_BASE_ID")
+if AIRTABLE_V2_TOKEN is None:
+    raise RuntimeError("Missing required environment variable: AIRTABLE_V2_TOKEN")
+
+
 def make_meta(table_name: str):
     return {
         'base_id': AIRTABLE_V2_BASE_ID,
