@@ -28,7 +28,7 @@ def _fix_address(address: str) -> str:
     return address
 
 
-def _fix_zip_code(zip_code: Optional[str]) -> str:
+def _fix_zip_code(zip_code: str) -> str:
     """
     Attempt to fix common mistakes in zipcodes
     """
@@ -37,8 +37,8 @@ def _fix_zip_code(zip_code: Optional[str]) -> str:
 
 def format_address(
     address: Optional[str] = None,
-    city_state: Optional[str] = "",
-    zipcode: Optional[str] = "",
+    city_state: str = "",
+    zipcode: str = "",
     strict_bounds: bool = True,
 ) -> Dict[str, str]:
     """
