@@ -1,26 +1,19 @@
 from collections import Counter
 from typing import Any, Dict
 
+from bam_core.constants import VOLUNTEERS_TABLE_NAME
 from bam_core.functions.base import Function
 from bam_core.utils.phone import format_phone_number
 from bam_core.utils.email import format_email, NO_EMAIL_ERROR
 
 
-class CleanAirtableViews(Function):
+VOLUNTEERS_VIEW_NAME = "Raw Data: DO NOT EDIT"
+
+
+class CleanVolunteerTable(Function):
     """
     Clean phone numbers and email addresses in Airtable
     """
-
-    CONFIG = [
-        {
-            "table_name": "Assistance Requests: Main",
-            "view_name": "Raw Data: DO NOT EDIT OR CHANGE FILTERS!",
-        },
-        {
-            "table_name": "Volunteers: Main",
-            "view_name": "Raw Data: DO NOT EDIT",
-        },
-    ]
 
     def clean_phone_number(self, record, table, counter):
         """
@@ -140,17 +133,17 @@ class CleanAirtableViews(Function):
 
         return counter
 
-    def clean_view(self, view_to_clean: Dict[str, str]) -> Dict[str, Any]:
+    def run(self, params):
         """
-        Clean a view of records in Airtable
+        Clean volunteer records in Airtable
         """
         self.log.info(
-            f"Fetching {view_to_clean['table_name']}--{view_to_clean['view_name']}"
+            f"Fetching {VOLUNTEERS_TABLE_NAME}--{VOLUNTEERS_VIEW_NAME}"
         )
-        table = self.airtable.get_table(view_to_clean["table_name"])
+        table = self.airtable.volunteers
         records = self.airtable.get_view(
-            table_name=view_to_clean["table_name"],
-            view_name=view_to_clean["view_name"],
+            table_name=VOLUNTEERS_TABLE_NAME,
+            view_name=VOLUNTEERS_VIEW_NAME,
             fields=[
                 "Phone Number",
                 "Invalid Phone Number?",
@@ -159,7 +152,7 @@ class CleanAirtableViews(Function):
             ],  # add more fields here for future cleaning steps.
         )
         self.log.info(
-            f"Cleaning {len(records)} records from {view_to_clean['table_name']}--{view_to_clean['view_name']}"
+            f"Cleaning {len(records)} records from {VOLUNTEERS_TABLE_NAME}--{VOLUNTEERS_VIEW_NAME}"
         )
         phone_counter = Counter()
         email_counter = Counter()
@@ -170,23 +163,15 @@ class CleanAirtableViews(Function):
             )
             email_counter = self.clean_email(record, table, email_counter)
 
-        return {
-            "view": view_to_clean,
+        result = {
+            "table": VOLUNTEERS_TABLE_NAME,
+            "view": VOLUNTEERS_VIEW_NAME,
             "phone_numbers": dict(phone_counter),
             "email_addresses": dict(email_counter),
         }
-
-    def run(self, event, context):
-        """
-        Clean all views in config.yml
-        """
-        results = []
-        for view_to_clean in self.CONFIG:
-            result = self.clean_view(view_to_clean)
-            results.append(result)
-        self.log.info(f"Results: {results}")
-        return results
+        self.log.info(f"Result: {result}")
+        return result
 
 
 if __name__ == "__main__":
-    CleanAirtableViews().run_cli()
+    CleanVolunteerTable().run_cli()
