@@ -11,7 +11,7 @@ class SendDialpadSMSV2(Function):
 
     params = Params(
         Param(
-            name="view_name",
+            name="request_view_name",
             type="string",
             required=True,
             description="An Airtable view name to fetch Household records from.",
@@ -41,7 +41,7 @@ class SendDialpadSMSV2(Function):
         """
         Snapshot Airtable tables
         """
-        view_name = params.get("view_name")
+        view_name = params.get("request_view_name")
         message = params.get("message_template")
         max_messages = params.get("max_messages") or 1e9
         dry_run = params.get("dry_run", True)
