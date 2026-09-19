@@ -11,10 +11,10 @@ class SendDialpadSMSV2(Function):
 
     params = Params(
         Param(
-            name="request_view_name",
+            name="view_name",
             type="string",
             required=True,
-            description="An Airtable view name to fetch request records from.",
+            description="An Airtable view name to fetch Household records from.",
         ),
         Param(
             name="message_template",
@@ -27,13 +27,6 @@ class SendDialpadSMSV2(Function):
             type="int",
             default=None,
             description="The maximum number of messages to send. If not specified, all records across all the views will be processed.",
-            required=False,
-        ),
-        Param(
-            name="exclude_households_view_name",
-            type="string",
-            default=None,
-            description="An Airtable view name to retrieve households to exclude from the text blast.",
             required=False,
         ),
         Param(
