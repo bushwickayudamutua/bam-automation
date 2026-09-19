@@ -1,21 +1,20 @@
 # -*- coding: UTF-8 -*-
 
+import json
 import os
+import random
 import sys
 import time
-import json
-import random
-import requests
-from datetime import datetime
 from collections import Counter
+from collections.abc import Iterator
+from datetime import datetime
 from pprint import pformat
-from typing import Any, List, Dict, Optional, Iterator, Union
+from typing import Any
 
 import click
 import dotenv
 import requests
 from twilio.rest import Client
-
 
 # Constants #
 
@@ -61,9 +60,7 @@ def retry_with_backoff(retries=5, backoff_in_seconds=5):
                         if x == retries:
                             raise
                         else:
-                            sleep = backoff_in_seconds * 2**x + random.uniform(
-                                0, 1
-                            )
+                            sleep = backoff_in_seconds * 2**x + random.uniform(0, 1)
                             time.sleep(sleep)
                             x += 1
                     else:
@@ -150,8 +147,8 @@ class Twilio:
 def fetch_airtable_records(
     airtable_url: str,
     airtable_view_name: str,
-    filter_by_formula: Optional[str] = None,
-) -> Iterator[Dict]:
+    filter_by_formula: str | None = None,
+) -> Iterator[dict]:
     """
     Fetch a list of records for an Airtable View
     """
@@ -173,9 +170,7 @@ def fetch_airtable_records(
         offset = payload.get("offset")
 
 
-def determine_message_language(
-    contact_langauges: Union[List[str], str]
-) -> str:
+def determine_message_language(contact_langauges: list[str] | str) -> str:
     """
     Given a list of a contact's languages, determine the langauge to send the message in.
     """
@@ -184,18 +179,14 @@ def determine_message_language(
         contact_langauges = ",".join(contact_langauges)
 
     # Always prefer Spanish if a contact's list of languages includes it.
-    if Language.SPANISH in contact_langauges:
-        return Language.SPANISH
-
-    # we only write messages in Spanish
-    elif Language.QUECHUA in contact_langauges:
+    if Language.SPANISH in contact_langauges or Language.QUECHUA in contact_langauges:
         return Language.SPANISH
 
     # we only write messages in Cantonese
-    elif Language.MANDARIN in contact_langauges:
-        return Language.CANTONESE
-
-    elif Language.CANTONESE in contact_langauges:
+    elif (
+        Language.MANDARIN in contact_langauges
+        or Language.CANTONESE in contact_langauges
+    ):
         return Language.CANTONESE
 
     # Only send in English if a contact's list of languages doesn't include other languages
@@ -207,18 +198,16 @@ def determine_message_language(
 
 
 def build_twilio_message(
-    airtable_contact_record: Dict[str, Any],
-    message_text_by_language: Dict[str, str],
+    airtable_contact_record: dict[str, Any],
+    message_text_by_language: dict[str, str],
     airtable_contact_language_field: str = "Language",
     airtable_contact_phone_number_field: str = "Phone number",
     template_variables: dict = {},
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Given an airtable contact record and a dictionary of message text (from Airtable), build a twilio message.
     """
-    contact_languages = airtable_contact_record.get(
-        airtable_contact_language_field, []
-    )
+    contact_languages = airtable_contact_record.get(airtable_contact_language_field, [])
     message_language = determine_message_language(contact_languages)
 
     # never send a message without content
@@ -256,7 +245,7 @@ def build_twilio_messages_for_contacts(
     airtable_text_message_language_field: str = "Language",
     airtable_text_message_content_field: str = "Notes",
     template_variables: dict = {},
-) -> Iterator[Dict[str, Any]]:
+) -> Iterator[dict[str, Any]]:
     """
     lookup list of contacts (phone number / language)
     lookup message text by language
@@ -446,9 +435,7 @@ def main(
                         )
                         break
                 else:
-                    message["from_phone_number"] = (
-                        TWILIO_SMS_RESPONSE_PHONE_NUMBER
-                    )
+                    message["from_phone_number"] = TWILIO_SMS_RESPONSE_PHONE_NUMBER
                     message["campaign_name"] = campaign_name
                     click.echo(
                         f"({i}) Sending and waiting for response... {log_message}"
@@ -465,9 +452,7 @@ def main(
         )
         if len(twilio.errors):
             click.echo(
-                "🙀 Got some errors:\n{errors}".format(
-                    errors="\n".join(twilio.errors)
-                )
+                "🙀 Got some errors:\n{errors}".format(errors="\n".join(twilio.errors))
             )
 
 

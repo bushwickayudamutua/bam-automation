@@ -1,8 +1,8 @@
 from bam_core.utils.phone import (
-    format_phone_number,
-    extract_phone_numbers,
-    is_international_phone_number,
     _prepare_phone_number,
+    extract_phone_numbers,
+    format_phone_number,
+    is_international_phone_number,
 )
 
 
@@ -36,9 +36,7 @@ def test_prepare_phone_number():
     assert _prepare_phone_number(phone_number_with_only_invalid_tags) is None
 
     # Test phone number with mixed valid and invalid content
-    mixed_phone_number = (
-        "  #invalido 9294206969 alternativ contact #sin servicio"
-    )
+    mixed_phone_number = "  #invalido 9294206969 alternativ contact #sin servicio"
     assert _prepare_phone_number(mixed_phone_number) == "9294206969"
 
 
@@ -47,19 +45,15 @@ def test_format_phone_number():
     assert format_phone_number(valid_us_phone_number) == "(929) 420-6969"
     valid_us_phone_number_without_intl_code = "9294206969"
     assert (
-        format_phone_number(valid_us_phone_number_without_intl_code)
-        == "(929) 420-6969"
+        format_phone_number(valid_us_phone_number_without_intl_code) == "(929) 420-6969"
     )
     valid_us_phone_number_with_formatting = "(929) 420-6969"
     assert (
-        format_phone_number(valid_us_phone_number_with_formatting)
-        == "(929) 420-6969"
+        format_phone_number(valid_us_phone_number_with_formatting) == "(929) 420-6969"
     )
     valid_us_phone_number_with_formatting_and_intl_code = "+1 (929) 420-6969"
     assert (
-        format_phone_number(
-            valid_us_phone_number_with_formatting_and_intl_code
-        )
+        format_phone_number(valid_us_phone_number_with_formatting_and_intl_code)
         == "(929) 420-6969"
     )
     invalid_phone_number = "123456"

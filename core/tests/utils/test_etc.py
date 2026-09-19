@@ -1,4 +1,4 @@
-from bam_core.utils.etc import to_list, to_bool
+from bam_core.utils.etc import to_bool, to_list
 
 
 def test_to_list():

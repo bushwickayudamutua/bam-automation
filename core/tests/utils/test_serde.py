@@ -1,4 +1,4 @@
-from bam_core.utils.serde import obj_to_json, json_to_obj
+from bam_core.utils.serde import json_to_obj, obj_to_json
 
 
 def test_obj_to_json():

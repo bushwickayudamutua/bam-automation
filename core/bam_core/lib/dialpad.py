@@ -1,8 +1,10 @@
 import csv
-from typing import Any, Generator
-import requests
-import time
 import random
+import time
+from collections.abc import Generator
+from typing import Any
+
+import requests
 
 from bam_core.lib.airtable_v2 import Household
 from bam_core.settings import DIALPAD_API_TOKEN, DIALPAD_USER_ID
@@ -10,9 +12,7 @@ from bam_core.settings import DIALPAD_API_TOKEN, DIALPAD_USER_ID
 DIALPAD_API_URL = "https://dialpad.com/api/v2/sms"
 BAM_URL = "https://bushwickayudamutua.com/"
 MAX_MESSAGE_LENGTH = 160
-RANDOM_REQUEST_URL_SIZE = (
-    4  # Size of the random hex string to append to the URL
-)
+RANDOM_REQUEST_URL_SIZE = 4  # Size of the random hex string to append to the URL
 
 
 class Dialpad:
@@ -26,8 +26,12 @@ class Dialpad:
     ):
         self.api_token = api_token
         self.user_id = user_id
-        self.first_name_field = first_name_field  # Default field for first names, can be overridden
-        self.phone_number_field = phone_number_field  # Default field for phone numbers, can be overridden
+        self.first_name_field = (
+            first_name_field  # Default field for first names, can be overridden
+        )
+        self.phone_number_field = (
+            phone_number_field  # Default field for phone numbers, can be overridden
+        )
         self.log = logger
 
     def _show_parsing_warning(self, count):
@@ -85,16 +89,12 @@ class Dialpad:
                 self.log.info("Texts are sending, go to dialpad 🐥💼")
 
             request_url = self._get_random_request_url()
-            first_name = self._get_first_word(
-                row.get(self.first_name_field, "")
-            )
-            phone_num = self._clean_phone_number(
-                row.get(self.phone_number_field, "")
-            )
+            first_name = self._get_first_word(row.get(self.first_name_field, ""))
+            phone_num = self._clean_phone_number(row.get(self.phone_number_field, ""))
 
-            updated_message = message.replace(
-                "[FIRST_NAME]", first_name
-            ).replace("[REQUEST_URL]", request_url)
+            updated_message = message.replace("[FIRST_NAME]", first_name).replace(
+                "[REQUEST_URL]", request_url
+            )
             split_messages = self._split_message(updated_message)
 
             for current_split_message in split_messages:
@@ -148,9 +148,9 @@ class Dialpad:
             first_name = household.name
             phone_num = self._clean_phone_number(household.phone_number)
 
-            updated_message = message.replace(
-                "[FIRST_NAME]", first_name
-            ).replace("[REQUEST_URL]", request_url)
+            updated_message = message.replace("[FIRST_NAME]", first_name).replace(
+                "[REQUEST_URL]", request_url
+            )
             split_messages = self._split_message(updated_message)
 
             for current_split_message in split_messages:

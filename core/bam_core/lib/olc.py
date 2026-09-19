@@ -9,7 +9,6 @@
 #   encode(47.365590, 8.524997)
 
 import math
-from typing import Optional
 
 # A separator used to break the code into two parts to aid memorability.
 SEPARATOR_ = "+"
@@ -68,9 +67,7 @@ BWK_CODE_LENGTH_ = 8
 LATITUDE_PRECISION_ = pow(20, math.floor((BWK_CODE_LENGTH_ / -2) + 2))
 
 
-def encode(
-    latitude: Optional[float], longitude: Optional[float]
-) -> Optional[str]:
+def encode(latitude: float | None, longitude: float | None) -> str | None:
     """
     Encode a location into an Open Location Code.
     Produces a code of length BWK_CODE_LENGTH_ = 8.
@@ -104,7 +101,7 @@ def encode(
     latVal //= pow(GRID_ROWS_, GRID_CODE_LENGTH_)
     lngVal //= pow(GRID_COLUMNS_, GRID_CODE_LENGTH_)
     # Compute the pair section of the code.
-    for i in range(0, PAIR_CODE_LENGTH_ // 2):
+    for i in range(PAIR_CODE_LENGTH_ // 2):
         code = CODE_ALPHABET_[lngVal % ENCODING_BASE_] + code
         code = CODE_ALPHABET_[latVal % ENCODING_BASE_] + code
         latVal //= ENCODING_BASE_

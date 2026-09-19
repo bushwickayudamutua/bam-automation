@@ -3,14 +3,13 @@ All things related to serialization / deserialization
 This module should not import from other utils
 """
 
+import datetime
 import json
-from uuid import UUID
+from collections import Counter
 from decimal import Decimal
 from inspect import isgenerator
-from collections import Counter
-import datetime
 from typing import Any
-
+from uuid import UUID
 
 # ///////////////////
 # CLASSES

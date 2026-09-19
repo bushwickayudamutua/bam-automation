@@ -1,18 +1,17 @@
-import os
-import dotenv
+import base64
+import json
 import logging
 import logging.config
-import json
-import base64
+import os
+
+import dotenv
 
 # load .env file
 dotenv.load_dotenv()
 
 AIRTABLE_TOKEN = os.getenv("BAM_AIRTABLE_TOKEN", None)
 AIRTABLE_BASE_ID = os.getenv("BAM_AIRTABLE_BASE_ID", None)
-AIRTABLE_VOLUNTEERS_TABLE_ID = os.getenv(
-    "BAM_AIRTABLE_VOLUNTEERS_TABLE_ID", None
-)
+AIRTABLE_VOLUNTEERS_TABLE_ID = os.getenv("BAM_AIRTABLE_VOLUNTEERS_TABLE_ID", None)
 AIRTABLE_ESSENTIAL_GOODS_DONATIONS_TABLE_ID = os.getenv(
     "BAM_AIRTABLE_ESSENTIAL_GOODS_DONATIONS_TABLE_ID", None
 )
@@ -28,16 +27,12 @@ MAILJET_API_SECRET = os.getenv("BAM_MAILJET_API_SECRET", None)
 # google settings
 GOOGLE_MAPS_API_KEY = os.getenv("BAM_GOOGLE_MAPS_API_KEY", None)
 GOOGLE_SERVICE_ACCOUNT_CONFIG = json.loads(
-    base64.b64decode(
-        os.getenv("BAM_GOOGLE_SERVICE_ACCOUNT_JSON_BASE64", "e30=")
-    )
+    base64.b64decode(os.getenv("BAM_GOOGLE_SERVICE_ACCOUNT_JSON_BASE64", "e30="))
 )
 
 # s3 settings
 DO_TOKEN = os.getenv("BAM_DO_TOKEN", None)
-S3_BASE_URL = os.getenv(
-    "BAM_S3_BASE_URL", "https://nyc3.digitaloceanspaces.com"
-)
+S3_BASE_URL = os.getenv("BAM_S3_BASE_URL", "https://nyc3.digitaloceanspaces.com")
 S3_ENDPOINT_URL = os.getenv(
     "BAM_S3_ENDPOINT_URL", "https://nyc3.digitaloceanspaces.com"
 )

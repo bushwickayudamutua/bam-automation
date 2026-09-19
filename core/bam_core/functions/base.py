@@ -1,29 +1,27 @@
-from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
-import traceback
 import logging
-from typing import Any, Optional
+import traceback
+from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
+from typing import Any
 
+from bam_core.functions.params import Params
 from bam_core.lib.airtable import Airtable
 from bam_core.lib.dialpad import Dialpad
+from bam_core.lib.google import GoogleMaps, GoogleSheets
 from bam_core.lib.mailjet import Mailjet
+from bam_core.lib.nyc_planning_labs import NycPlanningLabs
 from bam_core.lib.s3 import S3
 from bam_core.utils.etc import now_utc
-from bam_core.lib.google import GoogleMaps, GoogleSheets
-from bam_core.lib.nyc_planning_labs import NycPlanningLabs
-from bam_core.functions.params import Params
 
 logger = logging.getLogger(__name__)
 
 
-class FunctionLogger(object):
+class FunctionLogger:
     def __init__(self, name):
         self.logger = logging.getLogger(name)
         self.log_lines = []
 
     def _log(self, level, msg):
-        self.log_lines.append(
-            {"level": level, "message": msg, "time": now_utc()}
-        )
+        self.log_lines.append({"level": level, "message": msg, "time": now_utc()})
         getattr(self.logger, level)(msg)
 
     def info(self, msg):
@@ -42,7 +40,7 @@ class FunctionLogger(object):
         self._log("warning", msg)
 
 
-class Function(object):
+class Function:
     """
     A reusable class for building Digital Ocean Functions
     """
@@ -54,7 +52,7 @@ class Function(object):
     gsheets = GoogleSheets()
     nycpl = NycPlanningLabs()
 
-    def __init__(self, parser: Optional[ArgumentParser] = None):
+    def __init__(self, parser: ArgumentParser | None = None):
         self.parser = parser or ArgumentParser(
             prog=self.__class__.__name__,
             description=self.__class__.__doc__,

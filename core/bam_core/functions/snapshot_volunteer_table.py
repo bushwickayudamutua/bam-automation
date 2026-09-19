@@ -1,15 +1,14 @@
-from pyairtable.api.types import RecordDict
 import os
 import tempfile
-from typing import Any
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 
-from bam_core.functions.base import Function
-from bam_core.functions.params import Params, Param
-from bam_core.utils.serde import obj_to_json
-from bam_core.utils.etc import now_est, now_utc
+from pyairtable.api.types import RecordDict
+
 from bam_core.constants import AIRTABLE_DATETIME_FORMAT, VOLUNTEERS_TABLE_NAME
-
+from bam_core.functions.base import Function
+from bam_core.functions.params import Param, Params
+from bam_core.utils.etc import now_est, now_utc
+from bam_core.utils.serde import obj_to_json
 
 LAST_MODIFIED_FIELD = "Last Modified"
 
@@ -87,9 +86,7 @@ class SnapshotVolunteerTable(Function):
         self.log.info(f"Fetching modified records from '{VOLUNTEERS_TABLE_NAME}'")
         records = self.get_modified_records(number_of_days)
         if not records:
-            self.log.info(
-                f"No modified records found in {VOLUNTEERS_TABLE_NAME} table"
-            )
+            self.log.info(f"No modified records found in {VOLUNTEERS_TABLE_NAME} table")
             return
         self.log.info(
             f"Found {len(records)} modified records in {VOLUNTEERS_TABLE_NAME} table"
@@ -104,16 +101,12 @@ class SnapshotVolunteerTable(Function):
             )
             try:
                 tmp.write(obj_to_json(records).encode("utf-8"))
-                self.s3.upload(
-                    tmp.name, filepath, mimetype="application/json"
-                )
+                self.s3.upload(tmp.name, filepath, mimetype="application/json")
             finally:
                 tmp.close()
                 os.unlink(tmp.name)
         else:
-            self.log.info(
-                f"Would have written {len(records)} records to {filepath}"
-            )
+            self.log.info(f"Would have written {len(records)} records to {filepath}")
         return {
             "table_name": VOLUNTEERS_TABLE_NAME,
             "records": len(records),

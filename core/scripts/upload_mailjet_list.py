@@ -1,5 +1,5 @@
-import csv
 import argparse
+import csv
 import logging
 
 from bam_core.lib.mailjet import Mailjet
@@ -10,9 +10,7 @@ mj = Mailjet()
 
 
 def get_parser():
-    parser = argparse.ArgumentParser(
-        description="Upload a list of emails to Mailjet"
-    )
+    parser = argparse.ArgumentParser(description="Upload a list of emails to Mailjet")
     parser.add_argument(
         "-l",
         "--list-names",
@@ -68,9 +66,7 @@ def main():
                 if prop in properties:
                     properties[prop] = properties[prop].lower() == "true"
             for list_name in args.list_names:
-                log.info(
-                    f"Adding {email} to {list_name} with properties: {properties}"
-                )
+                log.info(f"Adding {email} to {list_name} with properties: {properties}")
                 if not args.dry_run:
                     mj.add_contact_to_list(email, list_name, **properties)
             emails.add(email)

@@ -1,8 +1,9 @@
-from pyairtable.api.types import RecordDict
 from typing import Any
 
+from pyairtable.api.types import RecordDict
+
 from bam_core.functions.base import Function
-from bam_core.functions.params import Params, Param
+from bam_core.functions.params import Param, Params
 
 
 class UpdateMailjetLists(Function):
@@ -64,18 +65,12 @@ class UpdateMailjetLists(Function):
             for contact in all_contacts
             if not contact["fields"].get(view["fields"]["error"], None)
         ]
-        all_contacts = sorted(
-            all_contacts, key=lambda x: x[view["sort"]], reverse=True
-        )
+        all_contacts = sorted(all_contacts, key=lambda x: x[view["sort"]], reverse=True)
         # dedupe subscribers by email address
         new_contacts = {}
         for contact in all_contacts:
             email = contact["fields"].get(view["fields"]["email"], "").lower()
-            if (
-                email
-                and email not in current_contacts
-                and email not in new_contacts
-            ):
+            if email and email not in current_contacts and email not in new_contacts:
                 new_contacts[email] = {
                     "email": email,
                 }
@@ -109,9 +104,7 @@ class UpdateMailjetLists(Function):
             for contact in new_contacts:
                 for list_name in view["lists"]:
                     kwargs = {**contact, "list_name": list_name}
-                    self.log.info(
-                        f"Adding contact {contact} to list {list_name}"
-                    )
+                    self.log.info(f"Adding contact {contact} to list {list_name}")
                     if params["dry_run"]:
                         self.log.info("Dry run enabled. Skipping...")
                         continue

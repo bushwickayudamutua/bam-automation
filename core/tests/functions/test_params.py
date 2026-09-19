@@ -1,21 +1,22 @@
-import pytest
 from argparse import ArgumentParser
 from datetime import datetime
 
+import pytest
+
 from bam_core.functions.params import (
-    Params,
     Param,
-    ParamIntType,
-    ParamFloatType,
-    ParamDatetimeType,
-    ParamJsonType,
-    ParamStringType,
-    ParamBoolType,
-    ParamStringListType,
-    ParamIntListType,
-    ParamFloatListType,
-    ParamDatetimeListType,
     ParamBoolListType,
+    ParamBoolType,
+    ParamDatetimeListType,
+    ParamDatetimeType,
+    ParamFloatListType,
+    ParamFloatType,
+    ParamIntListType,
+    ParamIntType,
+    ParamJsonType,
+    Params,
+    ParamStringListType,
+    ParamStringType,
 )
 
 

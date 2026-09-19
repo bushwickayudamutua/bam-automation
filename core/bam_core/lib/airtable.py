@@ -1,14 +1,12 @@
+from pyairtable import Api, Table
 from pyairtable.api.types import RecordDict
 from urllib3 import Retry
-from typing import Any, Optional, Union
 
-from pyairtable import Table, formulas as fx, Api
-
-from bam_core.settings import AIRTABLE_BASE_ID, AIRTABLE_TOKEN
 from bam_core.constants import ESSENTIAL_GOODS_TABLE_NAME, VOLUNTEERS_TABLE_NAME
+from bam_core.settings import AIRTABLE_BASE_ID, AIRTABLE_TOKEN
 
 
-class Airtable(object):
+class Airtable:
     def __init__(
         self,
         base_id: str | None = AIRTABLE_BASE_ID,
@@ -17,11 +15,15 @@ class Airtable(object):
     ):
         if base_id is None:
             if AIRTABLE_BASE_ID is None:
-                raise RuntimeError("Missing required environment variable: AIRTABLE_BASE_ID")
+                raise RuntimeError(
+                    "Missing required environment variable: AIRTABLE_BASE_ID"
+                )
             base_id = AIRTABLE_BASE_ID
         if token is None:
             if AIRTABLE_TOKEN is None:
-                raise RuntimeError("Missing required environment variable: AIRTABLE_TOKEN")
+                raise RuntimeError(
+                    "Missing required environment variable: AIRTABLE_TOKEN"
+                )
             token = AIRTABLE_TOKEN
 
         self.base_id = base_id

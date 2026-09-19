@@ -1,11 +1,9 @@
 from collections import Counter
-from typing import Any
 
 from bam_core.constants import VOLUNTEERS_TABLE_NAME
 from bam_core.functions.base import Function
+from bam_core.utils.email import NO_EMAIL_ERROR, format_email
 from bam_core.utils.phone import format_phone_number
-from bam_core.utils.email import format_email, NO_EMAIL_ERROR
-
 
 VOLUNTEERS_VIEW_NAME = "Raw Data: DO NOT EDIT"
 
@@ -21,9 +19,7 @@ class CleanVolunteerTable(Function):
         """
         record_id = record["id"]
         phone_number = record["fields"].get("Phone Number", None)
-        was_invalid_phone_number = record["fields"].get(
-            "Invalid Phone Number?", False
-        )
+        was_invalid_phone_number = record["fields"].get("Invalid Phone Number?", False)
 
         # phone number cleaning logic #
 
@@ -123,9 +119,7 @@ class CleanVolunteerTable(Function):
 
         # mark now valid emails which had been previously marked as invalid
         if valid_email and prev_email_error:
-            self.log.info(
-                f"Marking email: {email} as valid for record: {record_id}"
-            )
+            self.log.info(f"Marking email: {email} as valid for record: {record_id}")
             table.update(record_id, {"Email Error": ""})
             counter["n_fixed_emails"] += 1
 
@@ -135,9 +129,7 @@ class CleanVolunteerTable(Function):
         """
         Clean volunteer records in Airtable
         """
-        self.log.info(
-            f"Fetching {VOLUNTEERS_TABLE_NAME}--{VOLUNTEERS_VIEW_NAME}"
-        )
+        self.log.info(f"Fetching {VOLUNTEERS_TABLE_NAME}--{VOLUNTEERS_VIEW_NAME}")
         table = self.airtable.volunteers
         records = self.airtable.get_view(
             table_name=VOLUNTEERS_TABLE_NAME,
@@ -156,9 +148,7 @@ class CleanVolunteerTable(Function):
         email_counter = Counter()
 
         for record in records:
-            phone_counter = self.clean_phone_number(
-                record, table, phone_counter
-            )
+            phone_counter = self.clean_phone_number(record, table, phone_counter)
             email_counter = self.clean_email(record, table, email_counter)
 
         result = {

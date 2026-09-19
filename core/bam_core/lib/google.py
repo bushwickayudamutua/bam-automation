@@ -1,20 +1,19 @@
-import json
 from functools import cached_property
-from typing import Any, Optional, Tuple
+from typing import Any
 
-import gspread
 import googlemaps
+import gspread
 
+from bam_core.constants import MAYDAY_LOCATION, MAYDAY_RADIUS
 from bam_core.lib import olc
 from bam_core.settings import (
     GOOGLE_MAPS_API_KEY,
     GOOGLE_SERVICE_ACCOUNT_CONFIG,
 )
-from bam_core.constants import MAYDAY_LOCATION, MAYDAY_RADIUS
 from bam_core.utils.etc import retry
 
 
-class GoogleMaps(object):
+class GoogleMaps:
     def __init__(self, api_key=GOOGLE_MAPS_API_KEY):
         self.api_key = api_key
 
@@ -22,9 +21,7 @@ class GoogleMaps(object):
     def client(self):
         return googlemaps.Client(key=self.api_key)
 
-    def get_lat_lng(
-        self, address: str
-    ) -> Tuple[Optional[float], Optional[float]]:
+    def get_lat_lng(self, address: str) -> tuple[float | None, float | None]:
         """
         Get the latitude and longitude of an address
         Args:
@@ -36,9 +33,7 @@ class GoogleMaps(object):
         loc = geocode_results[0]["geometry"]["location"]
         return loc["lat"], loc["lng"]
 
-    def get_plus_code(
-        self, lat: Optional[float], lng: Optional[float]
-    ) -> Optional[str]:
+    def get_plus_code(self, lat: float | None, lng: float | None) -> str | None:
         """
         Get a de-specified plus code for a given address
         Args:
@@ -85,7 +80,7 @@ class GoogleMaps(object):
         return self.client.addressvalidation(address)
 
 
-class GoogleSheets(object):
+class GoogleSheets:
     def __init__(self):
         pass
 

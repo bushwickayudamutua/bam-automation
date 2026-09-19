@@ -1,6 +1,7 @@
-from bam_core.utils.geo import format_address
 import unittest
 from unittest.mock import patch
+
+from bam_core.utils.geo import format_address
 
 
 class TestFormatAddress(unittest.TestCase):
@@ -36,17 +37,13 @@ class TestFormatAddress(unittest.TestCase):
                         "cityStateZipAddressLine": "BROOKLYN, NY 11201",
                     }
                 },
-                "address": {
-                    "formattedAddress": "123 Main # 1 St Brooklyn, NY 11201"
-                },
+                "address": {"formattedAddress": "123 Main # 1 St Brooklyn, NY 11201"},
             }
         }
         mock_get_lat_lng.return_value = (40.6782, -73.9442)
         mock_get_plus_code.return_value = "87G8P27V+GQ"
         mock_nycpl_search.return_value = {
-            "features": [
-                {"properties": {"addendum": {"pad": {"bin": "3000001"}}}}
-            ]
+            "features": [{"properties": {"addendum": {"pad": {"bin": "3000001"}}}}]
         }
 
         expected_result = {
@@ -88,9 +85,7 @@ class TestFormatAddress(unittest.TestCase):
                         "cityStateZipAddressLine": "BROOKLYN, NY 11201",
                     }
                 },
-                "address": {
-                    "formattedAddress": "123 Main St Brooklyn, NY 11201"
-                },
+                "address": {"formattedAddress": "123 Main St Brooklyn, NY 11201"},
             }
         }
         mock_get_lat_lng.return_value = (40.6782, -73.9442)
@@ -135,17 +130,13 @@ class TestFormatAddress(unittest.TestCase):
                     "validationGranularity": "PREMISE",
                     "inputGranularity": "PREMISE",
                 },
-                "address": {
-                    "formattedAddress": "123 Main St Brooklyn, NY 11201"
-                },
+                "address": {"formattedAddress": "123 Main St Brooklyn, NY 11201"},
             }
         }
         mock_get_lat_lng.return_value = (40.6782, -73.9442)
         mock_get_plus_code.return_value = "87G8P27V+GQ"
         mock_nycpl_search.return_value = {
-            "features": [
-                {"properties": {"addendum": {"pad": {"bin": "3000001"}}}}
-            ]
+            "features": [{"properties": {"addendum": {"pad": {"bin": "3000001"}}}}]
         }
 
         expected_result = {

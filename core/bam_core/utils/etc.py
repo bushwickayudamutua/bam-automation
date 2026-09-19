@@ -1,15 +1,15 @@
+import logging
 import os
 import time
-import logging
 from datetime import datetime
+from typing import Any
 from zoneinfo import ZoneInfo
-from typing import Any, NewType, Union
 
 log = logging.getLogger(__name__)
 
 
 def list_files(path: str, ignore_hidden: bool = False) -> list[str]:
-    f"""
+    """
     Recursively list files under a directory.
     :param path: A filepath as a string
     :param ignore_hidden: whether or not to ignore hidden files (starting with ``.``)
@@ -26,7 +26,7 @@ def list_files(path: str, ignore_hidden: bool = False) -> list[str]:
 
 
 def get_full(path: str) -> str:
-    f"""
+    """
     Get a full path
     :param path: A filepath as a string
     :return str
@@ -54,7 +54,7 @@ def now_utc() -> datetime:
     return datetime.now(ZoneInfo("UTC"))
 
 
-def to_list(value: Union[Any, list[Any]]) -> list[Any]:
+def to_list(value: Any | list[Any]) -> list[Any]:
     """
     Convert a value to a list
     :param value: A value
@@ -65,7 +65,7 @@ def to_list(value: Union[Any, list[Any]]) -> list[Any]:
     return [value]
 
 
-def to_bool(val: Union[str, bool]) -> bool:
+def to_bool(val: str | bool) -> bool:
     """
     Convert a string representation of truth to true or false.
     True values are 'y', 'yes', 't', 'true', 'on', and '1'
