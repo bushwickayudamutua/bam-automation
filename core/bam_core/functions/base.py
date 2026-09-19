@@ -74,7 +74,7 @@ class Function(object):
     def log_lines(self) -> List[Dict[str, Any]]:
         return self.log.log_lines
 
-    def run(self, params: Dict[str, Any], context: Dict[str, Any]) -> Any:
+    def run(self, params: Dict[str, Any]) -> Any:
         """
         The core logic of your function.
         """
@@ -85,14 +85,14 @@ class Function(object):
         The API Handler.
         """
         params = self.params.parse_dict(params)
-        return self.run(params, {})
+        return self.run(params)
 
-    def run_do(self, event, context) -> Dict[str, Any]:
+    def run_do(self, event) -> Dict[str, Any]:
         """
         The Digital Ocean Function Handler.
         """
         params = self.params.parse_dict(event)
-        output = self.run(params, context)
+        output = self.run(params)
         return {"body": output}
 
     def run_cli(self):
@@ -101,10 +101,10 @@ class Function(object):
         """
         self.params.add_cli_arguments(self.parser)
         params = self.params.parse_cli_arguments(self.parser)
-        return self.run(params, {})
+        return self.run(params)
 
     @classmethod
-    def run_do_functions(cls, event, context, *functions) -> Dict[str, Any]:
+    def run_do_functions(cls, event, *functions) -> Dict[str, Any]:
         """
         Run a list of DO functions and handle errors
         """
@@ -114,7 +114,7 @@ class Function(object):
             fn = function.__name__
             logger.info(f"Running {fn}\n{'*' * 80}")
             try:
-                output[fn] = function().run_do(event, context)
+                output[fn] = function().run_do(event)
             except Exception as e:
                 logger.error(f"Error running {fn}")
                 logger.error(e)

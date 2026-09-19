@@ -44,7 +44,7 @@ class SendDialpadSMSV2(Function):
         ),
     )
 
-    def run(self, params, context):
+    def run(self, params):
         """
         Snapshot Airtable tables
         """

@@ -83,7 +83,7 @@ class UpdateMailjetLists(Function):
 
         return list(new_contacts.values())
 
-    def run(self, params, context):
+    def run(self, params):
         results = []
         current_contacts = set(self.mailjet.get_all_emails())
         for view in self.CONFIG:
