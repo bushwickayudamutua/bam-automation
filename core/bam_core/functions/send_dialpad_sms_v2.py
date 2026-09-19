@@ -1,4 +1,4 @@
-from bam_core.lib import airtable_v2
+from bam_core.lib.airtable_v2 import Household
 from bam_core.functions.base import Function
 from bam_core.functions.params import Params, Param
 from bam_core.utils.etc import now_est
@@ -48,31 +48,14 @@ class SendDialpadSMSV2(Function):
         """
         Snapshot Airtable tables
         """
-        request_view_name = params.get("request_view_name")
+        view_name = params.get("view_name")
         message = params.get("message_template")
         max_messages = params.get("max_messages") or 1e9
-        exclude_households_view_name = params.get("exclude_households_view_name")
         dry_run = params.get("dry_run", True)
-
-        requests = airtable_v2.Request.all(view=request_view_name)
-        excluded_households = (
-            set() if exclude_households_view_name is None else {
-                household.bam_id
-                for household in airtable_v2.Household.all(view=exclude_households_view_name)
-            })
-
-        msg_recipients = {}
-        for request in requests:
-            household = request.household
-            household_id = household.bam_id
-            if household_id in msg_recipients or household_id in excluded_households:
-                continue
-
-            msg_recipients[household_id] = household
 
         num_messages_sent = 0
         for household in self.dialpad.send_sms_v2(
-            households=msg_recipients.values(),
+            households=Household.all(view=view_name, max_records=max_messages),
             message=message,
             testing=dry_run
         ):
@@ -84,9 +67,6 @@ class SendDialpadSMSV2(Function):
                 self.log.info(f"Setting Last Texted for household {household.bam_id}")
                 household.last_texted = now_est().date()
                 household.save()
-            if num_messages_sent >= max_messages:
-                self.log.info(f"Reached message limit of {max_messages}")
-                return
 
 
 if __name__ == "__main__":
