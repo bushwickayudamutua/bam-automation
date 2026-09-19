@@ -11,10 +11,10 @@ class SendDialpadSMSV2(Function):
 
     params = Params(
         Param(
-            name="request_view_name",
+            name="household_view_name",
             type="string",
             required=True,
-            description="An Airtable view name to fetch request records from.",
+            description="An Airtable view name to fetch Household records from.",
         ),
         Param(
             name="message_template",
@@ -30,13 +30,6 @@ class SendDialpadSMSV2(Function):
             required=False,
         ),
         Param(
-            name="exclude_households_view_name",
-            type="string",
-            default=None,
-            description="An Airtable view name to retrieve households to exclude from the text blast.",
-            required=False,
-        ),
-        Param(
             name="dry_run",
             type="bool",
             default=True,
@@ -48,7 +41,7 @@ class SendDialpadSMSV2(Function):
         """
         Snapshot Airtable tables
         """
-        view_name = params.get("view_name")
+        view_name = params.get("household_view_name")
         message = params.get("message_template")
         max_messages = params.get("max_messages") or 1e9
         dry_run = params.get("dry_run", True)
