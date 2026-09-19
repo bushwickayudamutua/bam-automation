@@ -3,7 +3,6 @@
 # Current EG items: baby_diapers, adult_diapers, soap, feminine_products, school_supplies, clothing, pots_and_pans, plates_and_cups, utensils
 
 capitalize: True # capitalize all letters in the item label
-add_clothing: False # include clothing in messages for other EG items
 
 baby_diapers:
   type: "Pañales / Baby Diapers / 嬰兒紙尿褲"

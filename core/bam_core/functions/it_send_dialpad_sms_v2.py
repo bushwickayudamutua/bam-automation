@@ -2,7 +2,7 @@ from bam_core.lib.airtable_v2 import Household
 from bam_core.functions.base import Function
 from bam_core.functions.params import Params, Param
 from bam_core.utils.etc import now_est
-
+import yaml
 
 class ItSendDialpadSMSV2(Function):
     """
@@ -77,11 +77,27 @@ class ItSendDialpadSMSV2(Function):
         Snapshot Airtable tables
         """
         view_name = params.get("view_name")
-        message = params.get("message_template")
+        distro_day = params.get("distro_day")
+        EG_items = params.get("EG_items")
+        languages = params.get("languages")
+        volunteer = params.get("volunteer")
+        message_template_yaml = params.get("message_template")
+        item_label_yaml = params.get("item_label")
         exclude_texted_today = params.get("exclude_texted_today", True)
         max_messages = params.get("max_messages", 500)
         dry_run = params.get("dry_run", True)
 
+        with open(message_template_yaml, 'r') as file:
+            message_template_pars = yaml.safe_load(file)
+
+        with open(item_label_yaml, 'r') as file:
+            item_label_pars = yaml.safe_load(file)
+
+        for item in EG_items:
+            for lang in languages:
+                message_template_yaml[]
+                item_label_yaml[item][lang]
+        
         households_formula = "NOT(IS_SAME({Last Texted}, TODAY()))" if exclude_texted_today else None
         households_all = Household.all(view=view_name, formula=households_formula, max_records=max_messages)
 
