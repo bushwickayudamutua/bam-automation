@@ -4,7 +4,7 @@ from bam_core.functions.params import Params, Param
 from bam_core.utils.etc import now_est
 
 
-class SendDialpadSMSV2(Function):
+class ItSendDialpadSMSV2(Function):
     """
     Given an Airtable view, iterate over EG items and languages, and send SMS messages to phone numbers in the view via Dialpad.
     """
@@ -17,10 +17,40 @@ class SendDialpadSMSV2(Function):
             description="An Airtable view name to fetch Household records from.",
         ),
         Param(
+            name="distro_day",
+            type="string",
+            required=True,
+            description="The day of EG distro. Must be defined in 'message_template' for each language.",
+        ),
+        Param(
+            name="EG_items",
+            type="string_list",
+            required=True,
+            description="The EG items to text for. Must be defined in 'item_label' for each language.",
+        ),
+        Param(
+            name="languages",
+            type="string_list",
+            required=True,
+            description="The languages to text in. Must be included in 'item_label' and 'message_template' parameters.",
+        ),
+        Param(
+            name="volunteer",
+            type="string_list",
+            required=True,
+            description="Name of the volunteer sending sms messages. Must match the order of 'languages'",
+        ),
+        Param(
             name="message_template",
             type="string",
             required=True,
-            description="The template of the message to send via SMS. Use [FIRST_NAME] to insert the first name and [REQUEST_URL] to insert a request form URL which is randomized so it wont get blocked by Dialpad.",
+            description="Path to the yaml file with the template(s) of the message to send via SMS.",
+        ),
+        Param(
+            name="item_label",
+            type="string",
+            required=True,
+            description="Path to the yaml file with the EG item labels in different languages.",
         ),
         Param(
             name="exclude_texted_today",
@@ -31,9 +61,8 @@ class SendDialpadSMSV2(Function):
         Param(
             name="max_messages",
             type="int",
-            default=None,
-            description="The maximum number of messages to send. If not specified, all records across all the views will be processed.",
-            required=False,
+            default=500,
+            description="The maximum number of messages to send. If not specified, the default maximum is 500.",
         ),
         Param(
             name="dry_run",
@@ -50,7 +79,7 @@ class SendDialpadSMSV2(Function):
         view_name = params.get("view_name")
         message = params.get("message_template")
         exclude_texted_today = params.get("exclude_texted_today", True)
-        max_messages = params.get("max_messages") or 500
+        max_messages = params.get("max_messages", 500)
         dry_run = params.get("dry_run", True)
 
         households_formula = "NOT(IS_SAME({Last Texted}, TODAY()))" if exclude_texted_today else None

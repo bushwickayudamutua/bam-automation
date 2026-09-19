@@ -1,0 +1,10 @@
+view_name: "Zakieh - Outreach"
+distro_day: "Sunday"
+EG_items: ["baby_diapers", "school_supplies", "clothing"]
+languages: ["Spanish", "English", "Arabic"]
+volunteer: ["Zak", "Zak", "زکية"]
+message_template: "sms_params/message_template.yaml"
+item_label: "sms_params/item_label.yaml"
+exclude_texted_today: True
+max_messages: 200
+dry_run: True

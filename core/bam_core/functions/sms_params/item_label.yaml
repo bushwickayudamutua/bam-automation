@@ -1,0 +1,60 @@
+# This file contains the EG item labels used in the SMS messages.
+# Current langueags: English, Spanish, Arabic
+# Current EG items: baby_diapers, adult_diapers, soap, feminine_products, school_supplies, clothing, pots_and_pans, plates_and_cups, utensils
+
+capitalize: True # capitalize all letters in the item label
+add_clothing: False # include clothing in messages for other EG items
+
+baby_diapers:
+  type: "Pañales / Baby Diapers / 嬰兒紙尿褲"
+  English: "baby diapers"
+  Spanish: "pañales"
+  Arabic: "حفاضات الأطفال"
+
+adult_diapers:
+  type: "Pañales de adultos / Adult Diapers / 成人紙尿褲"
+  English: "adult diapers"
+  Spanish: "pañales de adultos"
+  Arabic: "حفاضات الكبار"
+
+soap:
+  type: "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品"
+  English: "soap"
+  Spanish: "jabón"
+  Arabic: "صابون"
+
+feminine_products:
+  type: "Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾"
+  English: "feminine products"
+  Spanish: "productos femenino"
+  Arabic: "منتجات النظافة النسائية"
+
+school_supplies:
+  type: "Cosas de Escuela / School Supplies / 學校用品"
+  English: "school supplies"
+  Spanish: "cosas de escuela"
+  Arabic: "لوازم مدرسية"
+
+clothing:
+  type: "Ropa / Clothing / 服裝"
+  English: "clothing"
+  Spanish: "ropa"
+  Arabic: "ملابس"
+
+pots_and_pans:
+  type: "Ollas y Sartenes / Pots & Pans / 鍋碗瓢盆"
+  English: "pots and pans"
+  Spanish: "ollas y sartenes"
+  Arabic: "أواني طهي"
+
+plates_and_cups:
+  type: "Platos o Tazas / Plates or Cups / 盘子或杯子"
+  English: "plates and cups"
+  Spanish: "platos o tazas"
+  Arabic: "أطباق وأكواب"
+
+utensils:
+  type: "Utensilios / Utensils / 餐具"
+  English: "kitchen utensils"
+  Spanish: "utensilios de cocina"
+  Arabic: "أدوات مطبخ"
