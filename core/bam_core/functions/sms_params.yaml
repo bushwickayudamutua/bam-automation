@@ -1,0 +1,69 @@
+view_name: ""
+max_messages: 100
+dry_run: True
+
+message_template:
+  English:
+    script: "Hi [FIRST_NAME], I'm Zak from BAM. We are distributing [ITEM_LABEL], [DAY], [TIME]. Location is [LOCATION]. If you want an appointment, what time do you prefer? Thank you :)"
+    day: "TOMORROW SUNDAY"
+    time: "between 11 am - 12:30 pm"
+    location: "323 Linden St, BK"
+  Spanish:
+    script: "Hola [FIRST_NAME], soy Zak de BAM. Tenemos una distribución de [ITEM_LABEL], [DAY], [TIME], en [LOCATION]. Si deseas una cita porfa dinos a qué hora prefieres. Gracias :)"
+    day: "MAÑANA DOMINGO"
+    time: "entre las 11 am - 12:30 pm"
+    location: "323 Linden St, BK"
+  Arabic:
+    script: "سلام، أنا [اسم] من «بام». سنقوم غدًا بتوزيع [المنتج]. لدينا مواعيد [يوم] [وقت] في [مكان]. لو كنت تريد ميعاد، ما الوقت الذي يناسبكم؟ شكرا :)"
+    day: "غدا يوم الأحد"
+    time: "من ۱۱ صباحًا حتى ۱۲:۳۰ ظهرًا"
+    location: "٣٢٣ شارع ليندن في بروكلين"
+
+item_label:
+  capitalize: True
+  add_clothing: False
+  baby_diapers:
+    type: "Pañales / Baby Diapers / 嬰兒紙尿褲"
+    English: "baby diapers"
+    Spanish: "pañales"
+    Arabic: "حفاضات الأطفال"
+  adult_diapers:
+    type: "Pañales de adultos / Adult Diapers / 成人紙尿褲"
+    English: "adult diapers"
+    Spanish: "pañales de adultos"
+    Arabic: "حفاضات الكبار"
+  soap:
+    type: "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品"
+    English: "soap"
+    Spanish: "jabón"
+    Arabic: "صابون"
+  feminine_products:
+    type: "Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾"
+    English: "feminine products"
+    Spanish: "productos femenino"
+    Arabic: "منتجات النظافة النسائية"
+  school_supplies:
+    type: "Cosas de Escuela / School Supplies / 學校用品"
+    English: "school supplies"
+    Spanish: "cosas de escuela"
+    Arabic: "لوازم مدرسية"
+  clothing:
+    type: "Ropa / Clothing / 服裝"
+    English: "clothing"
+    Spanish: "ropa"
+    Arabic: "ملابس"
+  pots_and_pans:
+    type: "Ollas y Sartenes / Pots & Pans / 鍋碗瓢盆"
+    English: "pots and pans"
+    Spanish: "ollas y sartenes"
+    Arabic: "أواني طهي"
+  plates_and_cups:
+    type: "Platos o Tazas / Plates or Cups / 盘子或杯子"
+    English: "plates and cups"
+    Spanish: "platos o tazas"
+    Arabic: "أطباق وأكواب"
+  utensils:
+    type: "Utensilios / Utensils / 餐具"
+    English: "kitchen utensils"
+    Spanish: "utensilios de cocina"
+    Arabic: "أدوات مطبخ"

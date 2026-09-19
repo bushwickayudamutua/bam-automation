@@ -6,7 +6,7 @@ from bam_core.utils.etc import now_est
 
 class SendDialpadSMSV2(Function):
     """
-    Given an Airtable view, send SMS messages to phone numbers in the view via Dialpad.
+    Given an Airtable view, iterate over EG items and languages, and send SMS messages to phone numbers in the view via Dialpad.
     """
 
     params = Params(
