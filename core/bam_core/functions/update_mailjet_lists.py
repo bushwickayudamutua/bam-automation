@@ -1,4 +1,5 @@
-from typing import Any, Dict, List
+from pyairtable.api.types import RecordDict
+from typing import Any
 
 from bam_core.functions.base import Function
 from bam_core.functions.params import Params, Param
@@ -45,9 +46,9 @@ class UpdateMailjetLists(Function):
 
     def _filter_new_contacts(
         self,
-        view: Dict[str, Any],
-        all_contacts: List[Dict[str, Any]],
-        current_contacts: List[str],
+        view: dict[str, Any],
+        all_contacts: list[RecordDict],
+        current_contacts: set[str],
     ):
         """
         Filter contacts to only include new contacts
@@ -58,12 +59,13 @@ class UpdateMailjetLists(Function):
         Returns:
             a list of new contacts
         """
+        all_contacts = [
+            contact
+            for contact in all_contacts
+            if not contact["fields"].get(view["fields"]["error"], None)
+        ]
         all_contacts = sorted(
             all_contacts, key=lambda x: x[view["sort"]], reverse=True
-        )
-        all_contacts = filter(
-            lambda x: not x["fields"].get(view["fields"]["error"], None),
-            all_contacts,
         )
         # dedupe subscribers by email address
         new_contacts = {}

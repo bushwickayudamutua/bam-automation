@@ -1,21 +1,30 @@
+from pyairtable.api.types import RecordDict
 from urllib3 import Retry
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 from pyairtable import Table, formulas as fx, Api
 
-from bam_core import settings
+from bam_core.settings import AIRTABLE_BASE_ID, AIRTABLE_TOKEN
 from bam_core.constants import ESSENTIAL_GOODS_TABLE_NAME, VOLUNTEERS_TABLE_NAME
 
 
 class Airtable(object):
     def __init__(
         self,
-        base_id: str = settings.AIRTABLE_BASE_ID,
-        token: str = settings.AIRTABLE_TOKEN,
+        base_id: str | None = AIRTABLE_BASE_ID,
+        token: str | None = AIRTABLE_TOKEN,
         retry_strategy: bool | Retry | None = None,
     ):
+        if base_id is None:
+            if AIRTABLE_BASE_ID is None:
+                raise RuntimeError("Missing required environment variable: AIRTABLE_BASE_ID")
+            base_id = AIRTABLE_BASE_ID
+        if token is None:
+            if AIRTABLE_TOKEN is None:
+                raise RuntimeError("Missing required environment variable: AIRTABLE_TOKEN")
+            token = AIRTABLE_TOKEN
+
         self.base_id = base_id
-        self.token = token
         self.api = Api(token, retry_strategy=retry_strategy)
 
     def get_table(self, table_name: str) -> Table:
@@ -30,26 +39,16 @@ class Airtable(object):
         self,
         table_name: str,
         view_name: str,
-        fields: List[str] = [],
-        flatten: bool = False,
-    ) -> Table:
+        fields: list[str] = [],
+    ) -> list[RecordDict]:
         """
         Get a table object from the Airtable API
         :param table_name: The name of the table to get
         :return Table
         """
-        records = self.api.table(self.base_id, table_name).all(
+        return self.api.table(self.base_id, table_name).all(
             view=view_name, fields=fields
         )
-        if not flatten:
-            return records
-
-        # flatten records
-        flattened_records = []
-        for record in records:
-            record = self._flatten_record(record)
-            flattened_records.append(record)
-        return flattened_records
 
     # core table objects
 

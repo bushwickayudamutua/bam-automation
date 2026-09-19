@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import Any, Dict
+from typing import Any
 
 from bam_core.constants import VOLUNTEERS_TABLE_NAME
 from bam_core.functions.base import Function
@@ -28,7 +28,6 @@ class CleanVolunteerTable(Function):
         # phone number cleaning logic #
 
         valid_phone_number = False
-        clean_phone_number = None
         if phone_number:
             clean_phone_number = format_phone_number(phone_number)
             if clean_phone_number is not None:
@@ -73,7 +72,6 @@ class CleanVolunteerTable(Function):
         prev_email_error = record["fields"].get("Email Error", None)
 
         valid_email = False
-        clean_email = None
         email_error = ""
 
         # check for empty emails

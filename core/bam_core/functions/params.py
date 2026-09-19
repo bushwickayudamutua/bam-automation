@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from argparse import ArgumentParser
 from dataclasses import dataclass
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 
 from bam_core.utils.serde import json_to_obj
 from bam_core.utils.etc import to_bool
@@ -195,7 +195,7 @@ class Param:
     def type_class(self) -> ParamType:
         return self.type
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "type": self.type.name,
@@ -206,12 +206,12 @@ class Param:
 
 
 class Params:
-    def __init__(self, *params: Union[Param, Dict[str, Any]]):
+    def __init__(self, *params: Union[Param, dict[str, Any]]):
         self.params = {}
         for param in params:
             self.add_param(param)
 
-    def add_param(self, param: Union[Param, Dict[str, Any]]):
+    def add_param(self, param: Union[Param, dict[str, Any]]):
         if isinstance(param, dict):
             param = Param(**param)
         if not isinstance(param.type_class, PARAM_TYPES):
@@ -240,13 +240,13 @@ class Params:
                 kwargs["default"] = param.default
             parser.add_argument(*args, **kwargs)
 
-    def parse_cli_arguments(self, parser: ArgumentParser) -> Dict[str, Any]:
+    def parse_cli_arguments(self, parser: ArgumentParser) -> dict[str, Any]:
         """
         Parse CLI arguments using the provided parser
         """
         return vars(parser.parse_args())
 
-    def parse_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def parse_dict(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         Parse a dictionary of parameters
         Args:
@@ -268,7 +268,7 @@ class Params:
             parsed_params[param.name] = value
         return parsed_params
 
-    def parse_json(self, json_input: str) -> Dict[str, Any]:
+    def parse_json(self, json_input: str) -> dict[str, Any]:
         """
         Parse a JSON string of parameters
         Args:
@@ -279,7 +279,7 @@ class Params:
         data = json_to_obj(json_input)
         return self.parse_dict(data)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Format the parameters as a dictionary
         """

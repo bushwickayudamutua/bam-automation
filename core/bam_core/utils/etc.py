@@ -3,12 +3,12 @@ import time
 import logging
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from typing import Any, List, NewType, Union
+from typing import Any, NewType, Union
 
 log = logging.getLogger(__name__)
 
 
-def list_files(path: str, ignore_hidden: bool = False) -> List[str]:
+def list_files(path: str, ignore_hidden: bool = False) -> list[str]:
     f"""
     Recursively list files under a directory.
     :param path: A filepath as a string
@@ -54,7 +54,7 @@ def now_utc() -> datetime:
     return datetime.now(ZoneInfo("UTC"))
 
 
-def to_list(value: Union[Any, List[Any]]) -> List[Any]:
+def to_list(value: Union[Any, list[Any]]) -> list[Any]:
     """
     Convert a value to a list
     :param value: A value

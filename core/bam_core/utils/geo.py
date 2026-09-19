@@ -1,5 +1,5 @@
 import argparse
-from typing import Dict, Optional
+from typing import Optional, TypedDict
 from bam_core.lib.google import GoogleMaps
 from bam_core.lib.nyc_planning_labs import NycPlanningLabs
 
@@ -10,6 +10,15 @@ COMMON_ZIPCODE_MISTAKES = {
 DEFAULT_BIN_RESPONSES = ["3000000", "1000000"]
 
 DEFAULT_CITY_STATE = "Brooklyn, NY"
+
+
+class AddressSummary(TypedDict):
+    cleaned_address: str
+    bin: str
+    cleaned_address_accuracy: str
+    plus_code: str
+    lat: float | None
+    lng: float | None
 
 
 def _fix_address(address: str) -> str:
@@ -40,7 +49,7 @@ def format_address(
     city_state: str = "",
     zipcode: str = "",
     strict_bounds: bool = True,
-) -> Dict[str, str]:
+) -> AddressSummary:
     """
     Format an address using the Google Maps API and the NYC Planning Labs API
     Args:
@@ -49,13 +58,13 @@ def format_address(
         zipcode (str): The zipcode to use if the address is missing
         strict_bounds (bool): Whether to use strict bounds of 10 miles from Mayday
     Returns:
-        Dict[str, str]: The formatted address, bin, accuracy, lat, lng, and plus_code
+        dict[str, str]: The formatted address, bin, accuracy, lat, lng, and plus_code
     """
     # connect to APIs
     gmaps = GoogleMaps()
     nycpl = NycPlanningLabs()
 
-    response = {
+    response: AddressSummary = {
         "cleaned_address": "",
         "bin": "",
         "cleaned_address_accuracy": "No result",

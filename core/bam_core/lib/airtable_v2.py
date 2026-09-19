@@ -1,5 +1,5 @@
 from urllib3 import Retry
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from datetime import date, datetime
 
 from pyairtable import Api
@@ -64,19 +64,19 @@ class FormSubmission(Model):
             name: str | None = None,
             phone_number: str | None = None,
             email: str | None = None,
-            languages: List[str] | None = None,
+            languages: list[str] | None = None,
             other_languages: str | None = None,
             notes: str | None = None,
             street_address: str | None = None,
             city_and_state: str | None = None,
             zip_code: int | None = None,
-            request_types: List[str] | None = None,
+            request_types: list[str] | None = None,
             furniture_acknowledgement: bool = False,
-            furniture_items: List[str] | None = None,
-            bed_details: List[str] | None = None,
-            kitchen_items: List[str] | None = None,
-            ss_request_types: List[str] | None = None,
-            internet_access: List[str] | None = None,
+            furniture_items: list[str] | None = None,
+            bed_details: list[str] | None = None,
+            kitchen_items: list[str] | None = None,
+            ss_request_types: list[str] | None = None,
+            internet_access: list[str] | None = None,
             roof_is_accessible: bool = False,
         ): ...
 
@@ -119,7 +119,7 @@ class Household(Model):
             email_error: str,
             legacy_first_date_submitted: date | None = None,
             legacy_last_date_submitted: date | None = None,
-            languages: List[str],
+            languages: list[str],
             other_languages: str | None = None,
             notes: str | None = None,
             last_texted: date | None = None,
@@ -223,7 +223,7 @@ class MeshRequest(Model):
             mesh_history: str | None = None,
             legacy_date_submitted: date | None,
             last_requested: datetime | None,
-            internet_access: List[str] | None = None,
+            internet_access: list[str] | None = None,
             address: str | None = None,
             address_accuracy: str | None = None,
             building_identification_number: int | None = None,

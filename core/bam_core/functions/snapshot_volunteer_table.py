@@ -1,6 +1,7 @@
+from pyairtable.api.types import RecordDict
 import os
 import tempfile
-from typing import Any, Dict, List
+from typing import Any
 from datetime import timedelta, datetime
 
 from bam_core.functions.base import Function
@@ -33,14 +34,12 @@ class SnapshotVolunteerTable(Function):
         ),
     )
 
-    def get_modified_records(self, number_of_days: int | None) -> List[Dict[str, Any]]:
+    def get_modified_records(self, number_of_days: int | None) -> list[RecordDict]:
         """
         Fetch modified records from Airtable
         """
         records = []
         for record in self.airtable.volunteers.all():
-            fields = record.pop("fields", {})
-            record.update(fields)
             if number_of_days is not None:
                 last_modified = record.get(LAST_MODIFIED_FIELD, None)
                 if last_modified:

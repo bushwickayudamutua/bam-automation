@@ -1,7 +1,7 @@
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 import traceback
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from bam_core.lib.airtable import Airtable
 from bam_core.lib.dialpad import Dialpad
@@ -71,23 +71,23 @@ class Function(object):
         return Params()
 
     @property
-    def log_lines(self) -> List[Dict[str, Any]]:
+    def log_lines(self) -> list[dict[str, Any]]:
         return self.log.log_lines
 
-    def run(self, params: Dict[str, Any]) -> Any:
+    def run(self, params: dict[str, Any]) -> Any:
         """
         The core logic of your function.
         """
         raise NotImplementedError
 
-    def run_api(self, params: Dict[str, Any]) -> Any:
+    def run_api(self, params: dict[str, Any]) -> Any:
         """
         The API Handler.
         """
         params = self.params.parse_dict(params)
         return self.run(params)
 
-    def run_do(self, event) -> Dict[str, Any]:
+    def run_do(self, event) -> dict[str, Any]:
         """
         The Digital Ocean Function Handler.
         """
@@ -104,7 +104,7 @@ class Function(object):
         return self.run(params)
 
     @classmethod
-    def run_do_functions(cls, event, *functions) -> Dict[str, Any]:
+    def run_do_functions(cls, event, *functions) -> dict[str, Any]:
         """
         Run a list of DO functions and handle errors
         """

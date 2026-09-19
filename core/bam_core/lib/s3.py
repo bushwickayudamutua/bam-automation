@@ -7,12 +7,22 @@ from io import BytesIO
 import tempfile
 import logging
 import urllib.parse
-from typing import Callable, List, Union, Optional
+from typing import Callable, Union, Optional
 
 import boto3
 import requests
 
-from bam_core import settings
+from bam_core.settings import (
+    S3_ACCESS_KEY_ID,
+    S3_SECRET_ACCESS_KEY,
+    S3_BUCKET,
+    S3_CDN_ID,
+    S3_ENDPOINT_URL,
+    S3_BASE_URL,
+    S3_REGION_NAME,
+    S3_PLATFORM,
+    DO_TOKEN,
+)
 from bam_core.utils import etc
 
 log = logging.getLogger(__name__)
@@ -52,15 +62,23 @@ def parse(s3_url) -> tuple:
 class S3(object):
     def __init__(
         self,
-        bucket_name: str = settings.S3_BUCKET,
-        aws_access_key_id: str = settings.S3_ACCESS_KEY_ID,
-        aws_secret_access_key: str = settings.S3_SECRET_ACCESS_KEY,
-        endpoint_url: str = settings.S3_ENDPOINT_URL,
-        base_url: str = settings.S3_BASE_URL,
-        region_name: Optional[str] = settings.S3_REGION_NAME,
-        platform: str = settings.S3_PLATFORM,
+        bucket_name: str = S3_BUCKET,
+        aws_access_key_id: str | None = None,
+        aws_secret_access_key: str | None = None,
+        endpoint_url: str = S3_ENDPOINT_URL,
+        base_url: str = S3_BASE_URL,
+        region_name: Optional[str] = S3_REGION_NAME,
+        platform: str = S3_PLATFORM,
     ):
         self.scheme, self.bucket_name = get_bucket_name_and_scheme(bucket_name)
+        if aws_access_key_id is None:
+            if S3_ACCESS_KEY_ID is None:
+                raise RuntimeError("Missing required environment variable: S3_ACCESS_KEY_ID")
+            aws_access_key_id = S3_ACCESS_KEY_ID
+        if aws_secret_access_key is None:
+            if S3_SECRET_ACCESS_KEY is None:
+                raise RuntimeError("Missing required environment variable: S3_SECRET_ACCESS_KEY")
+            aws_secret_access_key = S3_SECRET_ACCESS_KEY
         self.access_key = aws_access_key_id
         self.access_secret = aws_secret_access_key
         self.endpoint_url = endpoint_url
@@ -319,7 +337,7 @@ class S3(object):
 
     def move_all(
         self, old_pfx: str, new_pfx: str, copy: bool = False
-    ) -> List[str]:
+    ) -> list[str]:
         f"""
         Move files on s3 returning their new paths
         :param old_pfx: the files' current prefix
@@ -347,7 +365,7 @@ class S3(object):
             self._in_key(old_key), self._in_key(new_key), copy=True
         )
 
-    def copy_all(self, old_pfx: str, new_pfx: str) -> List[str]:
+    def copy_all(self, old_pfx: str, new_pfx: str) -> list[str]:
         """"""
         return self.move_all(
             self._in_key(old_pfx), self._in_key(new_pfx), copy=True
@@ -434,8 +452,8 @@ class S3(object):
         "https://api.digitalocean.com/v2/cdn/endpoints/<CDN_ENDPOINT_ID>/cache"
         """
         r = requests.delete(
-            f"https://api.digitalocean.com/v2/cdn/endpoints/{settings.S3_CDN_ID}/cache",
-            headers={"Authorization": "Bearer {}".format(settings.DO_TOKEN)},
+            f"https://api.digitalocean.com/v2/cdn/endpoints/{S3_CDN_ID}/cache",
+            headers={"Authorization": "Bearer {}".format(DO_TOKEN)},
             json={"files": [f"{prefix}*"]},
         )
         r.raise_for_status()

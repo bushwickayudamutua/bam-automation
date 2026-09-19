@@ -1,6 +1,6 @@
 import json
 from functools import cached_property
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 import gspread
 import googlemaps
@@ -56,7 +56,7 @@ class GoogleMaps(object):
         types: list[str] = ["premise", "subpremise", "geocode"],
         language: str = "en-US",
         strict_bounds: bool = True,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get a place from the Google Maps API
         Args:
@@ -76,7 +76,7 @@ class GoogleMaps(object):
             strict_bounds=strict_bounds,
         )
 
-    def get_normalized_address(self, address: str) -> Dict[str, Any]:
+    def get_normalized_address(self, address: str) -> dict[str, Any]:
         """
         Normalize an address using the Google Maps API
         Args:
@@ -108,7 +108,7 @@ class GoogleSheets(object):
         self,
         sheet_name: str,
         sheet_index: int,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         overwrite: bool = True,
         header: bool = True,
     ):
