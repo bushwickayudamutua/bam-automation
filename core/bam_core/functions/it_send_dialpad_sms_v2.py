@@ -99,7 +99,8 @@ class ItSendDialpadSMSV2(Function):
 
         with open(item_label_yaml, 'r') as file:
             item_label_pars = yaml.safe_load(file)
-        
+
+        # Create message templates iterating over 'request_types' and 'languages':
         message_template = {}
         for item in request_types:
             message_template[item] = {}
@@ -141,6 +142,7 @@ class ItSendDialpadSMSV2(Function):
         for lang in languages:
             message_template_pars[lang]["languages"] = set(message_template_pars[lang]["languages"])
 
+        # Create text message per household:
         messages = []
         for household in households:
             curr_name = household.name
@@ -174,26 +176,34 @@ class ItSendDialpadSMSV2(Function):
         messages = messages[selected_households]
         
         self.log.info(f"Selected {len(households)} households!")
-        
+
+        # Send SMS via Dialpad per household:
         num_messages_sent = 0
-        for household in self.dialpad.send_sms_v2(
+        for household in self.dialpad.it_send_sms_v2(
             households=households,
-            message=message,
-            testing=dry_run
+            message=messages,
+            testing=dry_run,
+            verbose=verbose
         ):
             if not household:
                 continue
+
             num_messages_sent += 1
             if num_messages_sent >= max_messages:
                 break
+
             # update last auto-texted field in Airtable
             if not dry_run:
-                self.log.info(f"Setting Last Texted for household {household.bam_id}")
+                if verbose:
+                    self.log.info(f"Setting Last Texted for household {household.bam_id}")
                 household.last_texted = now_est().date()
                 household.save()
-        
+
         self.log.info(f"Successfully sent {num_messages_sent} messages!")
+        num_failed = len(households) - num_messages_sent
+        if num_failed > 0:
+            self.log.info(f"{num_failed} messages failed!") 
 
 
 if __name__ == "__main__":
-    SendDialpadSMSV2().run_cli()
+    ItSendDialpadSMSV2().run_cli()
