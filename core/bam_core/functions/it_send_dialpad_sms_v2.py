@@ -70,6 +70,12 @@ class ItSendDialpadSMSV2(Function):
             default=True,
             description="If true, messages will not be sent and only logged. Useful for testing.",
         ),
+        Param(
+            name="verbose",
+            type="bool",
+            default=True,
+            description="If true, the sms message per household is logged.",
+        ),
     )
 
     def run(self, params, context):
@@ -86,6 +92,7 @@ class ItSendDialpadSMSV2(Function):
         exclude_texted_today = params.get("exclude_texted_today", True)
         max_messages = params.get("max_messages", 500)
         dry_run = params.get("dry_run", True)
+        verbose = params.get("verbose", True)
 
         with open(message_template_yaml, 'r') as file:
             message_template_pars = yaml.safe_load(file)
@@ -93,9 +100,9 @@ class ItSendDialpadSMSV2(Function):
         with open(item_label_yaml, 'r') as file:
             item_label_pars = yaml.safe_load(file)
         
-        messages = {}
+        message_template = {}
         for item in request_types:
-            messages[item] = {}
+            message_template[item] = {}
             for lang, vol in zip(languages, volunteer):
                 item_label = item_label_pars[item][lang]
                 item_cap = item_label_pars["capitalize"]
@@ -123,10 +130,10 @@ class ItSendDialpadSMSV2(Function):
                         .replace("[TIME]", time)
                         .replace("[LOCATION]", location)
                     )
-                messages[item][lang] = curr_msg
+                message_template[item][lang] = curr_msg
         
         households_formula = "NOT(IS_SAME({Last Texted}, TODAY()))" if exclude_texted_today else None
-        households_all = Household.all(view=view_name, formula=households_formula)
+        households = Household.all(view=view_name, formula=households_formula)
 
         for item in request_types:
             item_label_pars[item]["types"] = set(item_label_pars[item]["types"])
@@ -134,8 +141,8 @@ class ItSendDialpadSMSV2(Function):
         for lang in languages:
             message_template_pars[lang]["languages"] = set(message_template_pars[lang]["languages"])
 
-        messages_all = []
-        for household in households_all:
+        messages = []
+        for household in households:
             curr_name = household.name
 
             which_type = [
@@ -145,7 +152,7 @@ class ItSendDialpadSMSV2(Function):
             if which_type:
                 curr_type = request_types[which_type[0]]
             else:
-                messages_all.append(None)
+                messages.append(None)
                 continue
 
             which_lang = [
@@ -155,18 +162,22 @@ class ItSendDialpadSMSV2(Function):
             if which_lang:
                 curr_lang = languages[which_lang[0]]
             else:
-                messages_all.append(None)
+                messages.append(None)
                 continue
 
-            curr_msg = messages[curr_type][curr_lang]
-            curr_msg = curr_msg.replace("[FIRST_NAME]", curr_name)
-            messages_all.append(curr_msg)
+            curr_msg = message_template[curr_type][curr_lang]
+            curr_msg = curr_msg.replace("[FIRST_NAME]", curr_name) # this is not possible in Arabic yet
+            messages.append(curr_msg)
+
+        selected_households = [m is not None for m in messages]
+        households = households[selected_households]
+        messages = messages[selected_households]
         
-        self.log.info(f"Selected {len(households_all)} households!")
+        self.log.info(f"Selected {len(households)} households!")
         
         num_messages_sent = 0
         for household in self.dialpad.send_sms_v2(
-            households=households_all,
+            households=households,
             message=message,
             testing=dry_run
         ):
