@@ -3,6 +3,7 @@
 # Current distro days: Sunday
 
 English:
+  languages: ["Inglés / English / 英文"]
   script: "Hi [FIRST_NAME], I'm [VOLUNTEER] from BAM. We are distributing [ITEM_LABEL], [DAY], [TIME]. Location is [LOCATION]. If you want an appointment, what time do you prefer? Thank you :)"
   location: "323 Linden St, BK"
   Sunday:
@@ -10,6 +11,7 @@ English:
     time: "between 11 am - 12:30 pm"
 
 Spanish:
+  languages: ["Español / Spanish / 西班牙语"]
   script: "Hola [FIRST_NAME], soy [VOLUNTEER] de BAM. Tenemos una distribución de [ITEM_LABEL], [DAY], [TIME], en [LOCATION]. Si deseas una cita porfa dinos a qué hora prefieres. Gracias :)"
   location: "323 Linden St, BK"
   Sunday:
@@ -17,8 +19,10 @@ Spanish:
     time: "entre las 11 am - 12:30 pm"
 
 Arabic:
+  languages: ["Árabe / Arabic / 阿拉伯語"]
   script: "سلام [اسم]، أنا [متطوع] من «بام». سنقوم غدًا بتوزيع [المنتج]. لدينا مواعيد [يوم] [وقت] في [مكان]. لو كنت تريد ميعاد، ما الوقت الذي يناسبكم؟ شكرا :)"
   location: "٣٢٣ شارع ليندن في بروكلين"
   Sunday:
     day: "غدا يوم الأحد"
     time: "من ۱۱ صباحًا حتى ۱۲:۳۰ ظهرًا"
+
