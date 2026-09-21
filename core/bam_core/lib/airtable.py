@@ -1,4 +1,3 @@
-from typing import Any
 
 from pyairtable import Api, Table
 from pyairtable.api.types import RecordDict
@@ -63,12 +62,3 @@ class Airtable:
     @property
     def volunteers(self) -> Table:
         return self.get_table(VOLUNTEERS_TABLE_NAME)
-
-    @classmethod
-    def _flatten_record(cls, record: dict[str, Any]) -> dict[str, Any]:
-        """
-        Flatten an Airtable record
-        """
-        fields = record.pop("fields", {})
-        record.update(fields)
-        return record
