@@ -1,6 +1,4 @@
-
 from pyairtable import Api, Table
-from pyairtable.api.types import RecordDict
 from urllib3 import Retry
 
 from bam_core.constants import ESSENTIAL_GOODS_TABLE_NAME, VOLUNTEERS_TABLE_NAME
@@ -30,7 +28,7 @@ class Airtable:
         self.base_id = base_id
         self.api = Api(token, retry_strategy=retry_strategy)
 
-    def get_table(self, table_name: str) -> Table:
+    def _get_table(self, table_name: str) -> Table:
         """
         Get a table object from the Airtable API
         :param table_name: The name of the table to get
@@ -38,27 +36,12 @@ class Airtable:
         """
         return self.api.table(self.base_id, table_name)
 
-    def get_view(
-        self,
-        table_name: str,
-        view_name: str,
-        fields: list[str] = [],
-    ) -> list[RecordDict]:
-        """
-        Get a table object from the Airtable API
-        :param table_name: The name of the table to get
-        :return Table
-        """
-        return self.api.table(self.base_id, table_name).all(
-            view=view_name, fields=fields
-        )
-
     # core table objects
 
     @property
     def essential_goods(self) -> Table:
-        return self.get_table(ESSENTIAL_GOODS_TABLE_NAME)
+        return self._get_table(ESSENTIAL_GOODS_TABLE_NAME)
 
     @property
     def volunteers(self) -> Table:
-        return self.get_table(VOLUNTEERS_TABLE_NAME)
+        return self._get_table(VOLUNTEERS_TABLE_NAME)
