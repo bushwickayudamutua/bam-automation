@@ -1,8 +1,9 @@
 from typing import Any
+
 import requests
 
 
-class NycPlanningLabs(object):
+class NycPlanningLabs:
     base_url = "https://geosearch.planninglabs.nyc/v2"
 
     def __init__(self):

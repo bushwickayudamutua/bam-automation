@@ -1,6 +1,6 @@
-from bam_core.lib import airtable_v2
 from bam_core.functions.base import Function
-from bam_core.functions.params import Params, Param
+from bam_core.functions.params import Param, Params
+from bam_core.lib.airtable_v2 import Household, Request
 from bam_core.utils.etc import now_est
 
 
@@ -54,12 +54,17 @@ class SendDialpadSMSV2(Function):
         exclude_households_view_name = params.get("exclude_households_view_name")
         dry_run = params.get("dry_run", True)
 
-        requests = airtable_v2.Request.all(view=request_view_name)
+        requests = Request.all(view=request_view_name)
         excluded_households = (
-            set() if exclude_households_view_name is None else {
+            set()
+            if exclude_households_view_name is None
+            else {
                 household.bam_id
-                for household in airtable_v2.Household.all(view=exclude_households_view_name)
-            })
+                for household in Household.all(
+                    view=exclude_households_view_name
+                )
+            }
+        )
 
         msg_recipients = {}
         for request in requests:
@@ -72,9 +77,7 @@ class SendDialpadSMSV2(Function):
 
         num_messages_sent = 0
         for household in self.dialpad.send_sms_v2(
-            households=msg_recipients.values(),
-            message=message,
-            testing=dry_run
+            households=msg_recipients.values(), message=message, testing=dry_run
         ):
             if not household:
                 continue
