@@ -59,7 +59,7 @@ def format_address(
         zipcode (str): The zipcode to use if the address is missing
         strict_bounds (bool): Whether to use strict bounds of 10 miles from Mayday
     Returns:
-        dict[str, str]: The formatted address, bin, accuracy, lat, lng, and plus_code
+        AddressSummary: The formatted address, bin, accuracy, lat, lng, and plus_code
     """
     # connect to APIs
     gmaps = GoogleMaps()
