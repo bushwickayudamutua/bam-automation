@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional
+
 import phonenumbers
 
 log = logging.getLogger(__name__)
@@ -7,7 +7,7 @@ log = logging.getLogger(__name__)
 MIN_PHONE_LENGTH = 7
 
 
-def _prepare_phone_number(phone_number: str) -> Optional[str]:
+def _prepare_phone_number(phone_number: str) -> str | None:
     """
     Fix common issues with phone numbers
     """
@@ -31,11 +31,7 @@ def _prepare_phone_number(phone_number: str) -> Optional[str]:
 
     # check if there are enough digits in the phone number
     prep_phone_number = "".join(
-        [
-            c
-            for c in prep_phone_number
-            if c.isdigit() or c in ["(", ")", "-", " ", "+"]
-        ]
+        [c for c in prep_phone_number if c.isdigit() or c in ["(", ")", "-", " ", "+"]]
     )
     if len(prep_phone_number) < MIN_PHONE_LENGTH:
         return None
@@ -68,7 +64,7 @@ def is_international_phone_number(raw_phone_number: str) -> bool:
         return False
 
 
-def format_phone_number(raw_phone_number: str) -> Optional[str]:
+def format_phone_number(raw_phone_number: str) -> str | None:
     """
     Format a phone number to the US standard
     :param phone_number: The phone number to format
@@ -93,13 +89,11 @@ def format_phone_number(raw_phone_number: str) -> Optional[str]:
         )
 
     except Exception as e:
-        log.warning(
-            f"Error formatting phone number {phone_number} because of {e}"
-        )
+        log.warning(f"Error formatting phone number {phone_number} because of {e}")
         return None
 
 
-def extract_phone_numbers(text: str) -> List[str]:
+def extract_phone_numbers(text: str) -> list[str]:
     """
     Extract and format all phone numbers from an unstructured blob of text.
     This function will only extract **valid** phone numbers, so those with an incorrect area code,

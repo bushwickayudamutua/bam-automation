@@ -1,6 +1,6 @@
-from bam_core.lib.airtable_v2 import Household
 from bam_core.functions.base import Function
-from bam_core.functions.params import Params, Param
+from bam_core.functions.params import Param, Params
+from bam_core.lib.airtable_v2 import Household
 from bam_core.utils.etc import now_est
 
 
@@ -37,7 +37,7 @@ class SendDialpadSMSV2(Function):
         ),
     )
 
-    def run(self, params, context):
+    def run(self, params):
         """
         Snapshot Airtable tables
         """
@@ -50,7 +50,7 @@ class SendDialpadSMSV2(Function):
         for household in self.dialpad.send_sms_v2(
             households=Household.all(view=view_name, max_records=max_messages),
             message=message,
-            testing=dry_run
+            testing=dry_run,
         ):
             if not household:
                 continue

@@ -1,6 +1,6 @@
 from bam_core.functions.base import Function
 from bam_core.functions.update_mailjet_lists import UpdateMailjetLists
-from bam_core.functions.snapshot_airtable_views import SnapshotAirtableViews
+from bam_core.functions.snapshot_volunteer_table import SnapshotVolunteerTable
 
 
 def main(event, context):

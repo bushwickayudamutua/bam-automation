@@ -1,11 +1,12 @@
 import time
-from typing import Any, Dict, List
+from typing import Any
+
 import requests
 
 from bam_core import settings
 
 
-class Mailjet(object):
+class Mailjet:
     # a list of contact lists and their IDs
     # these were manually created in the Mailjet dashboard
     # If we delete them, we'll need to update this list
@@ -60,9 +61,7 @@ class Mailjet(object):
         if not str(result.status_code).startswith("2"):
             try:
                 data = result.json()
-                error_message = (
-                    f"{data.get('ErrorMessage')}: {data.get('ErrorInfo')}"
-                )
+                error_message = f"{data.get('ErrorMessage')}: {data.get('ErrorInfo')}"
             except:
                 error_message = result.content or "Unknown error"
             if "already exists" in error_message and email in error_message:
@@ -97,9 +96,7 @@ class Mailjet(object):
         if not str(result.status_code).startswith("2"):
             try:
                 data = result.json()
-                error_message = (
-                    f"{data.get('ErrorMessage')}: {data.get('ErrorInfo')}"
-                )
+                error_message = f"{data.get('ErrorMessage')}: {data.get('ErrorInfo')}"
             except:
                 error_message = result.content or "Unknown error"
             raise Exception(error_message)
@@ -107,7 +104,7 @@ class Mailjet(object):
 
     def add_contact_to_list(
         self, email: str, list_name: str, **properties
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Add a contact to a list
         Args:
@@ -120,7 +117,7 @@ class Mailjet(object):
 
     def remove_contact_from_list(
         self, email: str, list_name: str, **properties
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Remove a contact from a list
         Args:
@@ -133,7 +130,7 @@ class Mailjet(object):
 
     def unsubscribe_contact_from_list(
         self, email: str, list_name: str, **properties
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Unsubscribe a contact from a list
         Args:
@@ -144,9 +141,7 @@ class Mailjet(object):
             email, list_name, self.ACTION_UNSUBSCRIBE, **properties
         )
 
-    def get_contacts(
-        self, limit: int = 1000, offset: int = 0
-    ) -> List[Dict[str, Any]]:
+    def get_contacts(self, limit: int = 1000, offset: int = 0) -> list[dict[str, Any]]:
         """
         Get a list of contacts
         Args:
@@ -161,15 +156,13 @@ class Mailjet(object):
         if not str(result.status_code).startswith("2"):
             try:
                 data = result.json()
-                error_message = (
-                    f"{data.get('ErrorMessage')}: {data.get('ErrorInfo')}"
-                )
+                error_message = f"{data.get('ErrorMessage')}: {data.get('ErrorInfo')}"
             except:
                 error_message = result.content or "Unknown error"
             raise Exception(error_message)
         return result.json().get("Data", [])
 
-    def get_all_contacts(self) -> List[Dict[str, Any]]:
+    def get_all_contacts(self) -> list[dict[str, Any]]:
         """
         Get all contacts
         """
@@ -184,7 +177,7 @@ class Mailjet(object):
             offset += limit
         return contacts
 
-    def get_all_emails(self) -> List[str]:
+    def get_all_emails(self) -> list[str]:
         """
         Get all emails
         """

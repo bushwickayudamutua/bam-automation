@@ -1,8 +1,9 @@
-from typing import Any, Dict
+from typing import Any
+
 import requests
 
 
-class NycPlanningLabs(object):
+class NycPlanningLabs:
     base_url = "https://geosearch.planninglabs.nyc/v2"
 
     def __init__(self):
@@ -11,7 +12,7 @@ class NycPlanningLabs(object):
             {"Content-Type": "application/json", "Accept": "application/json"}
         )
 
-    def search(self, text: str, size: int = 1) -> Dict[str, Any]:
+    def search(self, text: str, size: int = 1) -> dict[str, Any]:
         """
         Search for a location in NYC using the geosearch API
         Args:
