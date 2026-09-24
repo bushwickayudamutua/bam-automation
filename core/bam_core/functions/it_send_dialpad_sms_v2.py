@@ -82,6 +82,9 @@ class ItSendDialpadSMSV2(Function):
         """
         Snapshot Airtable tables
         """
+
+        print(params)
+
         view_name = params.get("view_name")
         distro_day = params.get("distro_day")
         request_types = params.get("request_types")
@@ -93,7 +96,7 @@ class ItSendDialpadSMSV2(Function):
         max_messages = params.get("max_messages", 500)
         dry_run = params.get("dry_run", True)
         verbose = params.get("verbose", True)
-
+        
         with open(message_template_yaml, 'r') as file:
             message_template_pars = yaml.safe_load(file)
 
@@ -171,17 +174,17 @@ class ItSendDialpadSMSV2(Function):
             curr_msg = curr_msg.replace("[FIRST_NAME]", curr_name) # this is not possible in Arabic yet
             messages.append(curr_msg)
 
-        selected_households = [m is not None for m in messages]
-        households = households[selected_households]
-        messages = messages[selected_households]
+        selected_households = [i for i, m in enumerate(messages) if m is not None]
+        households = [households[i] for i in selected_households]
+        messages = [messages[i] for i in selected_households]
         
-        self.log.info(f"Selected {len(households)} households!")
+        self.log.info(f"Selected {len(selected_households)} households!")
 
         # Send SMS via Dialpad per household:
         num_messages_sent = 0
         for household in self.dialpad.it_send_sms_v2(
             households=households,
-            message=messages,
+            messages=messages,
             testing=dry_run,
             verbose=verbose
         ):
@@ -199,7 +202,11 @@ class ItSendDialpadSMSV2(Function):
                 household.last_texted = now_est().date()
                 household.save()
 
-        self.log.info(f"Successfully sent {num_messages_sent} messages!")
+        if(dry_run):
+            self.log.info(f"Successfully tested {num_messages_sent} messages!")
+        else:
+            self.log.info(f"Successfully sent {num_messages_sent} messages!")
+        
         num_failed = len(households) - num_messages_sent
         if num_failed > 0:
             self.log.info(f"{num_failed} messages failed!") 
@@ -207,3 +214,4 @@ class ItSendDialpadSMSV2(Function):
 
 if __name__ == "__main__":
     ItSendDialpadSMSV2().run_cli()
+

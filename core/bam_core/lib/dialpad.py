@@ -195,7 +195,7 @@ class Dialpad:
         testing: bool = False,
         verbose: bool = True,
     ) -> Generator[Household, None, None]:
-        for i, household, message in enumerate(households, messages):
+        for i, (household, message) in enumerate(zip(households, messages)):
             if not testing and i % 30 == 0 and i != 0:
                 self.log.info("Taking a little nap so that we don't get rate limited, will start back up in 30 seconds 😴")
                 time.sleep(30)
