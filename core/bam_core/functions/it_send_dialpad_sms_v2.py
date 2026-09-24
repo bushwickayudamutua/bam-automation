@@ -136,9 +136,11 @@ class ItSendDialpadSMSV2(Function):
                     )
                 message_template[item][lang] = curr_msg
         
-        households_formula = "NOT(IS_SAME({Last Texted}, TODAY()))" if exclude_texted_today else None
+        households_formula = "NOT({Last Texted} = TODAY())" if exclude_texted_today else None
         households = Household.all(view=view_name, formula=households_formula)
-
+        self.log.info(households_formula)
+        self.log.info(households[0].last_texted)
+        
         for item in request_types:
             item_label_pars[item]["types"] = set(item_label_pars[item]["types"])
 
