@@ -171,7 +171,11 @@ class ItSendDialpadSMSV2(Function):
                 continue
 
             curr_msg = message_template[curr_type][curr_lang]
-            curr_msg = curr_msg.replace("[FIRST_NAME]", curr_name) # this is not possible in Arabic yet
+            if curr_lang == "Arabic":
+                curr_msg = curr_msg.replace("[اسم]", curr_name)
+            else:
+                curr_msg = curr_msg.replace("[FIRST_NAME]", curr_name) # this is not possible in Arabic yet
+            
             messages.append(curr_msg)
 
         selected_households = [i for i, m in enumerate(messages) if m is not None]
@@ -198,7 +202,7 @@ class ItSendDialpadSMSV2(Function):
             # update last auto-texted field in Airtable
             if not dry_run:
                 if verbose:
-                    self.log.info(f"Setting Last Texted for household {household.bam_id}")
+                    self.log.info(f"Setting Last Texted for household {household.bam_id} at {household.phone_number}")
                 household.last_texted = now_est().date()
                 household.save()
 
