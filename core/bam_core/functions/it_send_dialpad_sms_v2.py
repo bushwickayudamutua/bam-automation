@@ -150,8 +150,6 @@ class ItSendDialpadSMSV2(Function):
         # Create text message per household:
         messages = []
         for household in households:
-            curr_name = household.name
-
             which_type = [
                 i for i, item in enumerate(request_types)
                 if item_label_pars[item]["types"].issubset(set(household.open_request_types))
@@ -171,12 +169,13 @@ class ItSendDialpadSMSV2(Function):
             else:
                 messages.append(None)
                 continue
-
+            
             curr_msg = message_template[curr_type][curr_lang]
+            curr_name = self.dialpad._get_first_word(household.name)
             if curr_lang == "Arabic":
                 curr_msg = curr_msg.replace("[اسم]", curr_name)
             else:
-                curr_msg = curr_msg.replace("[FIRST_NAME]", curr_name) # this is not possible in Arabic yet
+                curr_msg = curr_msg.replace("[FIRST_NAME]", curr_name)
             
             messages.append(curr_msg)
 
