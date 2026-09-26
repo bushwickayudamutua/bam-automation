@@ -2,6 +2,7 @@ from bam_core.lib.airtable_v2 import Household
 from bam_core.functions.base import Function
 from bam_core.functions.params import Params, Param
 from bam_core.utils.etc import now_est
+from datetime import date
 
 
 class SendDialpadSMSV2(Function):
@@ -53,7 +54,8 @@ class SendDialpadSMSV2(Function):
         max_messages = params.get("max_messages") or 500
         dry_run = params.get("dry_run", True)
 
-        households_formula = "NOT(IS_SAME({Last Texted}, TODAY()))" if exclude_texted_today else None
+        today = date.today().strftime("%Y-%m-%d")
+        households_formula = "NOT(IS_SAME({Last Texted}, '"+today+"'))" if exclude_texted_today else None
         households_all = Household.all(view=view_name, formula=households_formula, max_records=max_messages)
 
         self.log.info(f"Selected {len(households_all)} households!")

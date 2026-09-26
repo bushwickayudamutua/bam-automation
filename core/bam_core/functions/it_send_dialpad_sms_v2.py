@@ -2,6 +2,7 @@ from bam_core.lib.airtable_v2 import Household
 from bam_core.functions.base import Function
 from bam_core.functions.params import Params, Param
 from bam_core.utils.etc import now_est
+from datetime import date
 import yaml
 
 class ItSendDialpadSMSV2(Function):
@@ -135,8 +136,9 @@ class ItSendDialpadSMSV2(Function):
                         .replace("[LOCATION]", location)
                     )
                 message_template[item][lang] = curr_msg
-        
-        households_formula = None # "NOT({Last Texted} = TODAY())" if exclude_texted_today else None
+
+        today = date.today().strftime("%Y-%m-%d")
+        households_formula = "NOT(IS_SAME({Last Texted}, '"+today+"'))" if exclude_texted_today else None
         households = Household.all(view=view_name, formula=households_formula)
         
         for item in request_types:
@@ -180,9 +182,17 @@ class ItSendDialpadSMSV2(Function):
         selected_households = [i for i, m in enumerate(messages) if m is not None]
         households = [households[i] for i in selected_households]
         messages = [messages[i] for i in selected_households]
-        
-        self.log.info(f"Selected {len(selected_households)} households!")
 
+        num_households = len(selected_households)
+        mode_str = "test" if dry_run else "text"
+        if num_households == 0:
+            self.log.info(f"No households selected!")
+            return
+        elif num_households > max_messages:
+            self.log.info(f"Will {mode_str} {max_messages} out of {num_households} selected households!")
+        else:
+            self.log.info(f"Will {mode_str} {num_households} selected households!")
+        
         # Send SMS via Dialpad per household:
         num_messages_sent = 0
         for household in self.dialpad.it_send_sms_v2(
@@ -205,12 +215,8 @@ class ItSendDialpadSMSV2(Function):
                 household.last_texted = now_est().date()
                 household.save()
 
-        if(dry_run):
-            self.log.info(f"Successfully tested {num_messages_sent} messages!")
-        else:
-            self.log.info(f"Successfully sent {num_messages_sent} messages!")
-        
-        num_failed = len(households) - num_messages_sent
+        self.log.info(f"Successfully {mode_str}ed {num_messages_sent} messages!")
+        num_failed = min(max_messages, num_households) - num_messages_sent
         if num_failed > 0:
             self.log.info(f"{num_failed} messages failed!") 
 
