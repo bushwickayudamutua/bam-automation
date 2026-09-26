@@ -39,7 +39,7 @@ class ItSendDialpadSMSV2(Function):
             name="volunteer",
             type="string_list",
             required=True,
-            description="Name of the volunteer sending sms messages. Must match the order of 'languages'",
+            description="Name of the volunteer sending sms messages. Must be one value or a list matching the order of 'languages'",
         ),
         Param(
             name="message_template",
@@ -52,6 +52,12 @@ class ItSendDialpadSMSV2(Function):
             type="string",
             required=True,
             description="Path to the yaml file with the EG item labels in different languages.",
+        ),
+        Param(
+            name="formula_filter",
+            type="string",
+            default=None,
+            description="An optional formula to filter the Households Airtable view.",
         ),
         Param(
             name="exclude_texted_today",
@@ -93,6 +99,7 @@ class ItSendDialpadSMSV2(Function):
         volunteer = params.get("volunteer")
         message_template_yaml = params.get("message_template")
         item_label_yaml = params.get("item_label")
+        formula_filter = params.get("formula_filter", None)
         exclude_texted_today = params.get("exclude_texted_today", True)
         max_messages = params.get("max_messages", 500)
         dry_run = params.get("dry_run", True)
@@ -103,6 +110,11 @@ class ItSendDialpadSMSV2(Function):
 
         with open(item_label_yaml, 'r') as file:
             item_label_pars = yaml.safe_load(file)
+
+        if len(volunteer) == 1:
+            volunteer = volunteer * len(languages)
+        elif len(volunteer) != len(languages):
+            raise ValueError("'volunteer' must be one value or a list matching the order of 'languages'!")
 
         # Create message templates iterating over 'request_types' and 'languages':
         message_template = {}
@@ -136,16 +148,25 @@ class ItSendDialpadSMSV2(Function):
                         .replace("[LOCATION]", location)
                     )
                 message_template[item][lang] = curr_msg
-
-        today = date.today().strftime("%Y-%m-%d")
-        households_formula = "NOT(IS_SAME({Last Texted}, '"+today+"'))" if exclude_texted_today else None
-        households = Household.all(view=view_name, formula=households_formula)
         
         for item in request_types:
             item_label_pars[item]["types"] = set(item_label_pars[item]["types"])
 
         for lang in languages:
             message_template_pars[lang]["languages"] = set(message_template_pars[lang]["languages"])
+        
+        today = date.today().strftime("%Y-%m-%d")
+        exclude_texted_today_formula = "NOT(IS_SAME({Last Texted}, '"+today+"'))"
+        if formula_filter is not None and exclude_texted_today:
+            households_formula = "AND("+formula_filter+", "+exclude_texted_today_formula+")"
+        elif formula_filter is not None:
+            households_formula = formula_filter
+        elif exclude_texted_today:
+            households_formula = exclude_texted_today_formula
+        else:
+            households_formula = None
+
+        households = Household.all(view=view_name, formula=households_formula)
 
         # Create text message per household:
         messages = []
@@ -192,7 +213,7 @@ class ItSendDialpadSMSV2(Function):
             self.log.info(f"Will {mode_str} {max_messages} out of {num_households} selected households!")
         else:
             self.log.info(f"Will {mode_str} {num_households} selected households!")
-        
+
         # Send SMS via Dialpad per household:
         num_messages_sent = 0
         for household in self.dialpad.it_send_sms_v2(
