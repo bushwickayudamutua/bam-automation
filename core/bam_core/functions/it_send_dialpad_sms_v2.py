@@ -136,10 +136,8 @@ class ItSendDialpadSMSV2(Function):
                     )
                 message_template[item][lang] = curr_msg
         
-        households_formula = "NOT({Last Texted} = TODAY())" if exclude_texted_today else None
+        households_formula = None # "NOT({Last Texted} = TODAY())" if exclude_texted_today else None
         households = Household.all(view=view_name, formula=households_formula)
-        self.log.info(households_formula)
-        self.log.info(households[0].last_texted)
         
         for item in request_types:
             item_label_pars[item]["types"] = set(item_label_pars[item]["types"])
@@ -162,7 +160,7 @@ class ItSendDialpadSMSV2(Function):
 
             which_lang = [
                 i for i, lang in enumerate(languages)
-                if message_template_pars[lang]["languages"].issubset(set(household.languages))
+                if not message_template_pars[lang]["languages"].isdisjoint(set(household.languages))
             ]
             if which_lang:
                 curr_lang = languages[which_lang[0]]
