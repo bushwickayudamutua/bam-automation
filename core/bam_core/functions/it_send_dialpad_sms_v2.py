@@ -1,0 +1,247 @@
+from bam_core.lib.airtable_v2 import Household
+from bam_core.functions.base import Function
+from bam_core.functions.params import Params, Param
+from bam_core.utils.etc import now_est
+from datetime import date
+import yaml
+
+class ItSendDialpadSMSV2(Function):
+    """
+    Given an Airtable view, iterate over EG items and languages, and send SMS messages to phone numbers in the view via Dialpad.
+    """
+
+    params = Params(
+        Param(
+            name="view_name",
+            type="string",
+            required=True,
+            description="An Airtable view name to fetch Household records from.",
+        ),
+        Param(
+            name="distro_day",
+            type="string",
+            required=True,
+            description="The day of EG distro. Must be defined in 'message_template' for each language.",
+        ),
+        Param(
+            name="request_types",
+            type="string_list",
+            required=True,
+            description="The EG items to text for. Must be defined in 'item_label' for each language.",
+        ),
+        Param(
+            name="languages",
+            type="string_list",
+            required=True,
+            description="The languages to text in. Must be included in 'item_label' and 'message_template' parameters.",
+        ),
+        Param(
+            name="volunteer",
+            type="string_list",
+            required=True,
+            description="Name of the volunteer sending sms messages. Must be one value or a list matching the order of 'languages'",
+        ),
+        Param(
+            name="message_template",
+            type="string",
+            required=True,
+            description="Path to the yaml file with the template(s) of the message to send via SMS.",
+        ),
+        Param(
+            name="item_label",
+            type="string",
+            required=True,
+            description="Path to the yaml file with the EG item labels in different languages.",
+        ),
+        Param(
+            name="formula_filter",
+            type="string",
+            default=None,
+            description="An optional formula to filter the Households Airtable view.",
+        ),
+        Param(
+            name="exclude_texted_today",
+            type="bool",
+            default=True,
+            description="If true, households that were texted today will be excluded.",
+        ),
+        Param(
+            name="max_messages",
+            type="int",
+            default=500,
+            description="The maximum number of messages to send. If not specified, the default maximum is 500.",
+        ),
+        Param(
+            name="dry_run",
+            type="bool",
+            default=True,
+            description="If true, messages will not be sent and only logged. Useful for testing.",
+        ),
+        Param(
+            name="verbose",
+            type="bool",
+            default=True,
+            description="If true, the sms message per household is logged.",
+        ),
+    )
+
+    def run(self, params, context):
+        """
+        Snapshot Airtable tables
+        """
+
+        print(params)
+
+        view_name = params.get("view_name")
+        distro_day = params.get("distro_day")
+        request_types = params.get("request_types")
+        languages = params.get("languages")
+        volunteer = params.get("volunteer")
+        message_template_yaml = params.get("message_template")
+        item_label_yaml = params.get("item_label")
+        formula_filter = params.get("formula_filter", None)
+        exclude_texted_today = params.get("exclude_texted_today", True)
+        max_messages = params.get("max_messages", 500)
+        dry_run = params.get("dry_run", True)
+        verbose = params.get("verbose", True)
+        
+        with open(message_template_yaml, 'r') as file:
+            message_template_pars = yaml.safe_load(file)
+
+        with open(item_label_yaml, 'r') as file:
+            item_label_pars = yaml.safe_load(file)
+
+        if len(volunteer) == 1:
+            volunteer = volunteer * len(languages)
+        elif len(volunteer) != len(languages):
+            raise ValueError("'volunteer' must be one value or a list matching the order of 'languages'!")
+
+        # Create message templates iterating over 'request_types' and 'languages':
+        message_template = {}
+        for item in request_types:
+            message_template[item] = {}
+            for lang, vol in zip(languages, volunteer):
+                item_label = item_label_pars[item][lang]
+                item_cap = item_label_pars["capitalize"]
+                day = message_template_pars[lang][distro_day]["day"]
+                time = message_template_pars[lang][distro_day]["time"]
+                location = message_template_pars[lang]["location"]
+                curr_msg = message_template_pars[lang]["script"]
+                if lang == "Arabic":
+                    curr_msg = (
+                        curr_msg
+                        .replace("[متطوع]", vol)
+                        .replace("[المنتج]", item_label)
+                        .replace("[يوم]", day)
+                        .replace("[وقت]", time)
+                        .replace("[مكان]", location)
+                    )
+                else:
+                    if item_cap and lang in ["English", "Spanish"]:
+                        item_label = item_label.upper()
+                    curr_msg = (
+                        curr_msg
+                        .replace("[VOLUNTEER]", vol)
+                        .replace("[ITEM_LABEL]", item_label)
+                        .replace("[DAY]", day)
+                        .replace("[TIME]", time)
+                        .replace("[LOCATION]", location)
+                    )
+                message_template[item][lang] = curr_msg
+        
+        for item in request_types:
+            item_label_pars[item]["types"] = set(item_label_pars[item]["types"])
+
+        for lang in languages:
+            message_template_pars[lang]["languages"] = set(message_template_pars[lang]["languages"])
+        
+        today = date.today().strftime("%Y-%m-%d")
+        exclude_texted_today_formula = "NOT(IS_SAME({Last Texted}, '"+today+"'))"
+        if formula_filter is not None and exclude_texted_today:
+            households_formula = "AND("+formula_filter+", "+exclude_texted_today_formula+")"
+        elif formula_filter is not None:
+            households_formula = formula_filter
+        elif exclude_texted_today:
+            households_formula = exclude_texted_today_formula
+        else:
+            households_formula = None
+
+        households = Household.all(view=view_name, formula=households_formula)
+
+        # Create text message per household:
+        messages = []
+        for household in households:
+            which_type = [
+                i for i, item in enumerate(request_types)
+                if item_label_pars[item]["types"].issubset(set(household.open_request_types))
+            ]
+            if which_type:
+                curr_type = request_types[which_type[0]]
+            else:
+                messages.append(None)
+                continue
+
+            which_lang = [
+                i for i, lang in enumerate(languages)
+                if not message_template_pars[lang]["languages"].isdisjoint(set(household.languages))
+            ]
+            if which_lang:
+                curr_lang = languages[which_lang[0]]
+            else:
+                messages.append(None)
+                continue
+            
+            curr_msg = message_template[curr_type][curr_lang]
+            curr_name = self.dialpad._get_first_word(household.name)
+            if curr_lang == "Arabic":
+                curr_msg = curr_msg.replace("[اسم]", curr_name)
+            else:
+                curr_msg = curr_msg.replace("[FIRST_NAME]", curr_name)
+            
+            messages.append(curr_msg)
+
+        selected_households = [i for i, m in enumerate(messages) if m is not None]
+        households = [households[i] for i in selected_households]
+        messages = [messages[i] for i in selected_households]
+
+        num_households = len(selected_households)
+        mode_str = "test" if dry_run else "text"
+        if num_households == 0:
+            self.log.info(f"No households selected!")
+            return
+        elif num_households > max_messages:
+            self.log.info(f"Will {mode_str} {max_messages} out of {num_households} selected households!")
+        else:
+            self.log.info(f"Will {mode_str} {num_households} selected households!")
+
+        # Send SMS via Dialpad per household:
+        num_messages_sent = 0
+        for household in self.dialpad.it_send_sms_v2(
+            households=households,
+            messages=messages,
+            testing=dry_run,
+            verbose=verbose
+        ):
+            if not household:
+                continue
+
+            num_messages_sent += 1
+            if num_messages_sent >= max_messages:
+                break
+
+            # update last auto-texted field in Airtable
+            if not dry_run:
+                if verbose:
+                    self.log.info(f"Setting Last Texted for household {household.bam_id} at {household.phone_number}")
+                household.last_texted = now_est().date()
+                household.save()
+
+        self.log.info(f"Successfully {mode_str}ed {num_messages_sent} messages!")
+        num_failed = min(max_messages, num_households) - num_messages_sent
+        if num_failed > 0:
+            self.log.info(f"{num_failed} messages failed!") 
+
+
+if __name__ == "__main__":
+    ItSendDialpadSMSV2().run_cli()
+

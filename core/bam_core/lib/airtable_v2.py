@@ -111,6 +111,8 @@ class Household(Model):
     needs_delivery = F.CheckboxField("Needs Delivery")
     needs_email_outreach = F.CheckboxField("Needs Email Outreach")
 
+    open_request_types = F.MultilineTextField("Open Request Types")
+    
     if TYPE_CHECKING:
 
         def __init__(
