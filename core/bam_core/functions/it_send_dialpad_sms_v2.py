@@ -148,14 +148,16 @@ class ItSendDialpadSMSV2(Function):
                     )
                 message_template[item][lang] = curr_msg
 
+        field_to_attr = Household.field_to_attr()
         request_date_cols = []
         for item in request_types:
             item_label_pars[item]["types"] = set(item_label_pars[item]["types"])
-            request_date_cols.append(item_label_pars[item]["sort_by"])
+            request_date_cols.append(field_to_attr.map(item_label_pars[item]["sort_by"]))
 
         for lang in languages:
             message_template_pars[lang]["languages"] = set(message_template_pars[lang]["languages"])
-        
+
+        # Optional formula filtering:
         today = date.today().strftime("%Y-%m-%d")
         exclude_texted_today_formula = "NOT(IS_SAME({Last Texted}, '"+today+"'))"
         if formula_filter is not None and exclude_texted_today:
@@ -173,8 +175,10 @@ class ItSendDialpadSMSV2(Function):
         messages = []
         request_dates = []
         for household in households:
-            # request_date_row = {col: getattr(household) for col in request_date_cols}
-            # Household._field_name_descriptor_map().get()
+            request_date_row = {
+                col: d if (d := getattr(household, col)) else [pd.NA]
+                for col in request_date_cols
+            }
             request_dates.append(request_date_row)
 
             which_type = [
@@ -206,22 +210,27 @@ class ItSendDialpadSMSV2(Function):
             
             messages.append(curr_msg)
 
+        # Sort selected households by requested date fields:
         selected_households = [i for i, m in enumerate(messages) if m is not None]
-        households = [households[i] for i in selected_households]
-        messages = [messages[i] for i in selected_households]
-        request_dates = pd.concat([request_dates[i] for i in selected_households])
+        request_dates = pd.concat([pd.DataFrame(request_dates[i]) for i in selected_households], ignore_index=True)
+        request_dates.sort_values(by=request_date_cols, ascending=True, na_position="last", ignore_index=False, inplace=True)
+        selected_households = [selected_households[i] for i in request_dates.index]
 
-        request_dates.sort_values(by=request_date_cols, ascending=True, na_position="Last", ignore_index=True, inplace=True)
-
+        # Restrict number of households if needed:
         num_households = len(selected_households)
         mode_str = "test" if dry_run else "text"
         if num_households == 0:
             self.log.info(f"No households selected!")
             return
         elif num_households > max_messages:
+            selected_households = selected_households[:max_messages]
             self.log.info(f"Will {mode_str} {max_messages} out of {num_households} selected households!")
+            num_households = max_messages
         else:
             self.log.info(f"Will {mode_str} {num_households} selected households!")
+        
+        households = [households[i] for i in selected_households]
+        messages = [messages[i] for i in selected_households]
 
         # Send SMS via Dialpad per household:
         num_messages_sent = 0
@@ -246,10 +255,11 @@ class ItSendDialpadSMSV2(Function):
                 household.save()
 
         self.log.info(f"Successfully {mode_str}ed {num_messages_sent} messages!")
-        num_failed = min(max_messages, num_households) - num_messages_sent
+        num_failed = num_households - num_messages_sent
         if num_failed > 0:
             self.log.info(f"{num_failed} messages failed!") 
 
 
 if __name__ == "__main__":
     ItSendDialpadSMSV2().run_cli()
+
