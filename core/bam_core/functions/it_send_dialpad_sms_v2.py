@@ -3,6 +3,7 @@ from bam_core.functions.base import Function
 from bam_core.functions.params import Params, Param
 from bam_core.utils.etc import now_est
 from datetime import date
+import pandas as pd
 import yaml
 
 class ItSendDialpadSMSV2(Function):
@@ -90,8 +91,6 @@ class ItSendDialpadSMSV2(Function):
         Snapshot Airtable tables
         """
 
-        print(params)
-
         view_name = params.get("view_name")
         distro_day = params.get("distro_day")
         request_types = params.get("request_types")
@@ -148,9 +147,11 @@ class ItSendDialpadSMSV2(Function):
                         .replace("[LOCATION]", location)
                     )
                 message_template[item][lang] = curr_msg
-        
+
+        request_date_cols = []
         for item in request_types:
             item_label_pars[item]["types"] = set(item_label_pars[item]["types"])
+            request_date_cols.append(item_label_pars[item]["sort_by"])
 
         for lang in languages:
             message_template_pars[lang]["languages"] = set(message_template_pars[lang]["languages"])
@@ -170,7 +171,12 @@ class ItSendDialpadSMSV2(Function):
 
         # Create text message per household:
         messages = []
+        request_dates = []
         for household in households:
+            # request_date_row = {col: getattr(household) for col in request_date_cols}
+            # Household._field_name_descriptor_map().get()
+            request_dates.append(request_date_row)
+
             which_type = [
                 i for i, item in enumerate(request_types)
                 if item_label_pars[item]["types"].issubset(set(household.open_request_types))
@@ -203,6 +209,9 @@ class ItSendDialpadSMSV2(Function):
         selected_households = [i for i, m in enumerate(messages) if m is not None]
         households = [households[i] for i in selected_households]
         messages = [messages[i] for i in selected_households]
+        request_dates = pd.concat([request_dates[i] for i in selected_households])
+
+        request_dates.sort_values(by=request_date_cols, ascending=True, na_position="Last", ignore_index=True, inplace=True)
 
         num_households = len(selected_households)
         mode_str = "test" if dry_run else "text"
@@ -244,4 +253,3 @@ class ItSendDialpadSMSV2(Function):
 
 if __name__ == "__main__":
     ItSendDialpadSMSV2().run_cli()
-
