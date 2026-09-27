@@ -244,8 +244,6 @@ class ItSendDialpadSMSV2(Function):
                 continue
 
             num_messages_sent += 1
-            if num_messages_sent >= max_messages:
-                break
 
             # update last auto-texted field in Airtable
             if not dry_run:
