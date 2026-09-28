@@ -51,7 +51,7 @@ class SendDialpadSMSV2(Function):
         view_name = params.get("view_name")
         message = params.get("message_template")
         exclude_texted_today = params.get("exclude_texted_today", True)
-        max_messages = params.get("max_messages") or 500
+        max_messages = params.get("max_messages", 500)
         dry_run = params.get("dry_run", True)
 
         today = date.today().strftime("%Y-%m-%d")
