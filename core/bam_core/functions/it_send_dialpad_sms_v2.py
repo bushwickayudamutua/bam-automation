@@ -5,6 +5,10 @@ from bam_core.utils.etc import now_est
 from datetime import date
 import yaml
 
+
+MESSAGE_TEMPLATE_PARAMS = "sms_params/message_template.yaml"
+REQUEST_LABEL_PARAMS = "sms_params/item_label.yaml"
+
 class ItSendDialpadSMSV2(Function):
     """
     Given an Airtable view, iterate over EG items and languages, and send SMS messages to phone numbers in the view via Dialpad.
@@ -43,15 +47,15 @@ class ItSendDialpadSMSV2(Function):
         ),
         Param(
             name="message_template",
-            type="string",
-            required=True,
-            description="Path to the yaml file with the template(s) of the message to send via SMS.",
+            type="json",
+            default=None,
+            description="Optional parameters to override 'sms_params/message_template.yaml'",
         ),
         Param(
-            name="item_label",
-            type="string",
-            required=True,
-            description="Path to the yaml file with the EG item labels in different languages.",
+            name="request_label",
+            type="json",
+            default=None,
+            description="Optional parameters to override 'sms_params/request_label.yaml'",
         ),
         Param(
             name="formula_filter",
@@ -95,19 +99,19 @@ class ItSendDialpadSMSV2(Function):
         request_types = params.get("request_types")
         languages = params.get("languages")
         volunteer = params.get("volunteer")
-        message_template_yaml = params.get("message_template")
-        item_label_yaml = params.get("item_label")
+        message_template_input = params.get("message_template")
+        request_label_input = params.get("request_label")
         formula_filter = params.get("formula_filter", None)
         exclude_texted_today = params.get("exclude_texted_today", True)
         max_messages = params.get("max_messages", 500)
         dry_run = params.get("dry_run", True)
         verbose = params.get("verbose", True)
         
-        with open(message_template_yaml, 'r') as file:
+        with open(MESSAGE_TEMPLATE_PARAMS, 'r') as file:
             message_template_pars = yaml.safe_load(file)
 
-        with open(item_label_yaml, 'r') as file:
-            item_label_pars = yaml.safe_load(file)
+        with open(REQUEST_LABEL_PARAMS, 'r') as file:
+            request_label_pars = yaml.safe_load(file)
 
         if len(volunteer) == 1:
             volunteer = volunteer * len(languages)
@@ -119,8 +123,8 @@ class ItSendDialpadSMSV2(Function):
         for item in request_types:
             message_template[item] = {}
             for lang, vol in zip(languages, volunteer):
-                item_label = item_label_pars[item][lang]
-                item_cap = item_label_pars["capitalize"]
+                item_label = request_label_pars[item][lang]
+                item_cap = request_label_pars["capitalize"]
                 day = message_template_pars[lang][distro_day]["day"]
                 time = message_template_pars[lang][distro_day]["time"]
                 location = message_template_pars[lang]["location"]
@@ -166,7 +170,7 @@ class ItSendDialpadSMSV2(Function):
         for household in households:
             which_type = [
                 i for i, item in enumerate(request_types)
-                if all([rtype in household.open_request_types for rtype in item_label_pars[item]["types"]])
+                if all([rtype in household.open_request_types for rtype in request_label_pars[item]["types"]])
             ]
             if which_type:
                 curr_type = request_types[which_type[0]]
@@ -197,7 +201,7 @@ class ItSendDialpadSMSV2(Function):
         households_idx = [i for i, m in enumerate(messages) if m is not None]
         request_dates = []
         for item in request_types:
-            sort_type = item_label_pars[item]["types"][0]
+            sort_type = request_label_pars[item]["types"][0]
             request_dates.append([
                 d[0] if (d := households[i].get_requested_date(sort_type)) else "9999"
                 for i in households_idx

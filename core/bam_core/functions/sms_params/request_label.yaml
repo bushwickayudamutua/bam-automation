@@ -1,0 +1,78 @@
+# This file contains the EG item labels used in the SMS messages.
+# Current langueags: English, Spanish, Arabic, Chinese
+# Current EG items: baby_diapers, adult_diapers, clothing, soap, pads, school_supplies,
+#                   pots_and_pans, plates_and_cups, diapers_and_clothing, soap_and_pads
+
+
+capitalize: False # capitalize all letters in the item label (does not apply to Arabic or Chinese)
+
+baby_diapers:
+  types: ["Pañales / Baby Diapers / 嬰兒紙尿褲"]
+  English: "baby diapers"
+  Spanish: "pañales"
+  Arabic: "حفاضات الأطفال"
+  Chinese: "婴儿纸尿裤"
+
+adult_diapers:
+  types: ["Pañales de adultos / Adult Diapers / 成人紙尿褲"]
+  English: "adult diapers"
+  Spanish: "pañales de adultos"
+  Arabic: "حفاضات الكبار"
+  Chinese: "成人纸尿裤"
+
+clothing:
+  types: ["Ropa / Clothing / 服裝"]
+  English: "clothing"
+  Spanish: "ropa"
+  Arabic: "ملابس"
+  Chinese: "衣服"
+
+soap:
+  types: ["Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品"]
+  English: "soap"
+  Spanish: "jabón"
+  Arabic: "صابون"
+  Chinese: "肥皂"
+
+pads:
+  types: ["Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾"]
+  English: "feminine products"
+  Spanish: "productos femenino"
+  Arabic: "منتجات النظافة النسائية"
+  Chinese: "卫生巾"
+
+school_supplies:
+  types: ["Cosas de Escuela / School Supplies / 學校用品"]
+  English: "school supplies"
+  Spanish: "cosas de escuela"
+  Arabic: "لوازم مدرسية"
+  Chinese: "学校用品"
+
+pots_and_pans:
+  types: ["Ollas y Sartenes / Pots & Pans / 鍋碗瓢盆"]
+  English: "pots and pans"
+  Spanish: "ollas y sartenes"
+  Arabic: "أواني طهي"
+  Chinese: "锅和平底锅"
+
+plates_and_cups:
+  types: ["Platos o Tazas / Plates or Cups / 盘子或杯子"]
+  English: "plates and cups"
+  Spanish: "platos o tazas"
+  Arabic: "أطباق وأكواب"
+  Chinese: "盘子和杯子"
+
+diapers_and_clothing:
+  types: ["Pañales / Baby Diapers / 嬰兒紙尿褲", "Ropa / Clothing / 服裝"]
+  English: "baby diapers & clothing"
+  Spanish: "pañales y ropa"
+  Arabic: "حفاضات الأطفال و ملابس"
+  Chinese: "纸尿裤和衣服"
+
+soap_and_pads:
+  types: ["Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品", "Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾"]
+  English: "soap & feminine products"
+  Spanish: "jabón y productos femenino"
+  Arabic: "صابون و منتجات النظافة النسائية"
+  Chinese: "肥皂和卫生巾"
+
