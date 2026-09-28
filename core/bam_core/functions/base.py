@@ -85,7 +85,7 @@ class Function:
         params = self.params.parse_dict(params)
         return self.run(params)
 
-    def run_do(self, event) -> dict[str, Any]:
+    def run_do(self, event, _context) -> dict[str, Any]:
         """
         The Digital Ocean Function Handler.
         """
