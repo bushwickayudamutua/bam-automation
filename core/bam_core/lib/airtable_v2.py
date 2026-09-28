@@ -23,14 +23,6 @@ def make_meta(table_name: str):
         'retry': Retry(total=5, backoff_factor=1)
     }
 
-def field_to_attr(self):
-    return {
-        field_desc.field_name: attr_name 
-        for attr_name, field_desc in self._attribute_descriptor_map().items()
-    }
-
-Model.field_to_attr = classmethod(field_to_attr)
-
 
 count_table = Api(AIRTABLE_V2_TOKEN).base(AIRTABLE_V2_BASE_ID).table('Fulfilled Request Count')
 
@@ -147,6 +139,13 @@ class Household(Model):
             needs_delivery: bool = False,
             needs_email_outreach: bool = False
         ): ...
+    
+
+    def field_to_attr(self):
+        return {
+            field_desc.field_name: attr_name 
+            for attr_name, field_desc in self._attribute_descriptor_map().items()
+        }
 
 
 class Request(Model):
