@@ -3,7 +3,6 @@ from bam_core.functions.base import Function
 from bam_core.functions.params import Params, Param
 from bam_core.utils.etc import now_est
 from datetime import date
-import pandas as pd
 import yaml
 
 class ItSendDialpadSMSV2(Function):
@@ -147,11 +146,6 @@ class ItSendDialpadSMSV2(Function):
                         .replace("[LOCATION]", location)
                     )
                 message_template[item][lang] = curr_msg
-
-        field_to_attr = Household.field_to_attr()
-        request_date_cols = []
-        for item in request_types:
-            request_date_cols.append(field_to_attr.map(item_label_pars[item]["sort_by"]))
         
         # Optional formula filtering:
         today = date.today().strftime("%Y-%m-%d")
@@ -169,14 +163,7 @@ class ItSendDialpadSMSV2(Function):
 
         # Create text message per household:
         messages = []
-        request_dates = []
         for household in households:
-            request_date_row = {
-                col: d if (d := getattr(household, col)) else [pd.NA]
-                for col in request_date_cols
-            }
-            request_dates.append(request_date_row)
-
             which_type = [
                 i for i, item in enumerate(request_types)
                 if all([rtype in household.open_request_types for rtype in item_label_pars[item]["types"]])
@@ -206,27 +193,34 @@ class ItSendDialpadSMSV2(Function):
             
             messages.append(curr_msg)
 
-        # Sort selected households by requested date fields:
-        selected_households = [i for i, m in enumerate(messages) if m is not None]
-        request_dates = pd.concat([pd.DataFrame(request_dates[i]) for i in selected_households], ignore_index=True)
-        request_dates.sort_values(by=request_date_cols, ascending=True, na_position="last", ignore_index=False, inplace=True)
-        selected_households = [selected_households[i] for i in request_dates.index]
+        # Sort selected households by earliest requested date fields:
+        households_idx = [i for i, m in enumerate(messages) if m is not None]
+        request_dates = []
+        for item in request_types:
+            sort_type = item_label_pars[item]["types"][0]
+            request_dates.append([
+                d[0] if (d := households[i].get_requested_date(sort_type)) else "9999"
+                for i in households_idx
+            ])
+        request_dates.append(households_idx)
+        request_dates = sorted(zip(*request_dates))
+        households_idx = [row[-1] for row in request_dates]
 
         # Restrict number of households if needed:
-        num_households = len(selected_households)
+        num_households = len(households_idx)
         mode_str = "test" if dry_run else "text"
         if num_households == 0:
             self.log.info(f"No households selected!")
             return
         elif num_households > max_messages:
-            selected_households = selected_households[:max_messages]
+            households_idx = households_idx[:max_messages]
             self.log.info(f"Will {mode_str} {max_messages} out of {num_households} selected households!")
             num_households = max_messages
         else:
             self.log.info(f"Will {mode_str} {num_households} selected households!")
         
-        households = [households[i] for i in selected_households]
-        messages = [messages[i] for i in selected_households]
+        households = [households[i] for i in households_idx]
+        messages = [messages[i] for i in households_idx]
 
         # Send SMS via Dialpad per household:
         num_messages_sent = 0
