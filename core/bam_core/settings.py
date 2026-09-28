@@ -21,6 +21,9 @@ AIRTABLE_ESSENTIAL_GOODS_DONATIONS_TABLE_ID = os.getenv(
 AIRTABLE_V2_BASE_ID = os.getenv("BAM_AIRTABLE_V2_BASE_ID", None)
 AIRTABLE_V2_TOKEN = os.getenv("BAM_AIRTABLE_V2_TOKEN", None)
 
+# outreach info
+EG_DISTRO_LOCATION = os.getenv("EG_DISTRO_LOCATION", None)
+
 # mailjet settings
 MAILJET_API_KEY = os.getenv("BAM_MAILJET_API_KEY", None)
 MAILJET_API_SECRET = os.getenv("BAM_MAILJET_API_SECRET", None)

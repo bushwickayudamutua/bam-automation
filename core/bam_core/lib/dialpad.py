@@ -1,5 +1,6 @@
 import csv
-from typing import Any, Generator
+from collections.abc import Generator
+from typing import Any
 import requests
 import time
 import random
@@ -36,9 +37,6 @@ class Dialpad:
         )
         return response.lower() == "y"
 
-    def get_random_hex(self, size=4):
-        return
-
     def _get_random_request_url(self):
         return BAM_URL + "".join(
             random.choices("0123456789abcdef", k=RANDOM_REQUEST_URL_SIZE)
@@ -73,10 +71,10 @@ class Dialpad:
             split_messages.append(current_message.strip())
         return split_messages
 
-    def send_sms(
-        self, rows: list[dict[str, Any]], message: str, testing: bool = False
-    ) -> Generator[dict[str, Any], None, None]:
-        for i, row in enumerate(rows):
+    def batch_send_sms(
+        self, messages: list[tuple[str, str]], testing: bool = False
+    ) -> Generator[int]:
+        for i, (phone_num, message) in enumerate(messages):
             if not testing and i % 30 == 0 and i != 0:
                 self.log.info(
                     "Taking a little nap so that we don't get rate limited, will start back up in 30 seconds 😴"
@@ -84,110 +82,87 @@ class Dialpad:
                 time.sleep(30)
                 self.log.info("Texts are sending, go to dialpad 🐥💼")
 
+            phone_num = self._clean_phone_number(phone_num)
+            split_messages = self._split_message(message)
+
+            for current_split_message in split_messages:
+                payload = {
+                    "infer_country_code": False,
+                    "to_numbers": phone_num,
+                    "text": current_split_message,
+                    "user_id": self.user_id,
+                }
+                headers = {
+                    "accept": "application/json",
+                    "content-type": "application/json",
+                    "authorization": f"Bearer {self.api_token}",
+                }
+                self.log.info(
+                    f"""[{phone_num}] {"WOULD SEND" if testing else "SENDING"}: '{current_split_message}'"""
+                )
+                if not testing:
+                    try:
+                        response = requests.post(
+                            DIALPAD_API_URL, json=payload, headers=headers
+                        )
+                        json_resp = response.json()
+                        self.log.info(f"Response: {json_resp}")
+                        if not response.ok:
+                            api_error_message = json_resp.get("error", {}).get(
+                                "message", "Unknown error"
+                            )
+                            self.log.error(
+                                f"Error sending message to {phone_num}: {api_error_message}"
+                            )
+                            break
+                    except Exception as e:
+                        self.log.error(f"Error: {e}")
+            if not testing:
+                time.sleep(2)
+            yield i
+
+    def send_sms(
+        self, rows: list[dict[str, Any]], message_template: str, testing: bool = False
+    ) -> Generator[dict[str, Any]]:
+        messages = []
+        for row in rows:
             request_url = self._get_random_request_url()
             first_name = self._get_first_word(
                 row.get(self.first_name_field, "")
             )
-            phone_num = self._clean_phone_number(
-                row.get(self.phone_number_field, "")
-            )
+            phone_num = row.get(self.phone_number_field, "")
 
-            updated_message = message.replace(
+            message = message_template.replace(
                 "[FIRST_NAME]", first_name
             ).replace("[REQUEST_URL]", request_url)
-            split_messages = self._split_message(updated_message)
+            messages.append((phone_num, message))
 
-            for current_split_message in split_messages:
-                payload = {
-                    "infer_country_code": False,
-                    "to_numbers": phone_num,
-                    "text": current_split_message,
-                    "user_id": self.user_id,
-                }
-                headers = {
-                    "accept": "application/json",
-                    "content-type": "application/json",
-                    "authorization": f"Bearer {self.api_token}",
-                }
-                self.log.info(
-                    f"""[{phone_num}] {"WOULD SEND" if testing else "SENDING"}: '{current_split_message}'"""
-                )
-                if not testing:
-                    try:
-                        response = requests.post(
-                            DIALPAD_API_URL, json=payload, headers=headers
-                        )
-                        json_resp = response.json()
-                        self.log.info(f"Response: {json_resp}")
-                        if not response.ok:
-                            api_error_message = json_resp.get("error", {}).get(
-                                "message", "Unknown error"
-                            )
-                            self.log.error(
-                                f"Error sending message to {first_name} at {phone_num}: {api_error_message}"
-                            )
-                            break
-                    except Exception as e:
-                        self.log.error(f"Error: {e}")
-            if not testing:
-                time.sleep(2)
-            yield row
+        for i in self.batch_send_sms(messages, testing):
+            yield rows[i]
 
     def send_sms_v2(
-        self, households: list[Household], message: str, testing: bool = False
-    ) -> Generator[Household, None, None]:
-        for i, household in enumerate(households):
-            if not testing and i % 30 == 0 and i != 0:
-                self.log.info(
-                    "Taking a little nap so that we don't get rate limited, will start back up in 30 seconds 😴"
-                )
-                time.sleep(30)
-                self.log.info("Texts are sending, go to dialpad 🐥💼")
-
+        self, households: list[Household], message_template: str, testing: bool = False
+    ) -> Generator[Household]:
+        messages = []
+        for household in households:
             request_url = self._get_random_request_url()
             first_name = household.name
-            phone_num = self._clean_phone_number(household.phone_number)
+            phone_num = household.phone_number
 
-            updated_message = message.replace(
+            message = message_template.replace(
                 "[FIRST_NAME]", first_name
             ).replace("[REQUEST_URL]", request_url)
-            split_messages = self._split_message(updated_message)
 
-            for current_split_message in split_messages:
-                payload = {
-                    "infer_country_code": False,
-                    "to_numbers": phone_num,
-                    "text": current_split_message,
-                    "user_id": self.user_id,
-                }
-                headers = {
-                    "accept": "application/json",
-                    "content-type": "application/json",
-                    "authorization": f"Bearer {self.api_token}",
-                }
-                self.log.info(
-                    f"""[{phone_num}] {"WOULD SEND" if testing else "SENDING"}: '{current_split_message}'"""
-                )
-                if not testing:
-                    try:
-                        response = requests.post(
-                            DIALPAD_API_URL, json=payload, headers=headers
-                        )
-                        json_resp = response.json()
-                        self.log.info(f"Response: {json_resp}")
-                        if not response.ok:
-                            api_error_message = json_resp.get("error", {}).get(
-                                "message", "Unknown error"
-                            )
-                            self.log.error(
-                                f"Error sending message to {first_name} at {phone_num}: {api_error_message}"
-                            )
-                            break
-                    except Exception as e:
-                        self.log.error(f"Error: {e}")
-            if not testing:
-                time.sleep(2)
-            yield household
+            messages.append((phone_num, message))
+
+        for i in self.batch_send_sms(messages, testing):
+            yield households[i]
+
+    def send_sms_v3(self, households: list[tuple[Household, str]], testing: bool = False) -> Generator[Household]:
+        messages = [(household.phone_number, message) for household, message in households]
+
+        for i in self.batch_send_sms(messages, testing):
+            yield households[i][0]
 
     def send_sms_from_csv(self, file_path, user_message):
         with open(file_path, newline="", encoding="utf-8") as csv_file:
@@ -195,7 +170,7 @@ class Dialpad:
             rows = list(reader)
             print(f"{len(rows)} records in this file")
             if self._show_parsing_warning(len(rows)):
-                for row in self.send_sms(rows, user_message):
+                for _row in self.send_sms(rows, user_message):
                     pass
             else:
                 print("Operation cancelled.")
