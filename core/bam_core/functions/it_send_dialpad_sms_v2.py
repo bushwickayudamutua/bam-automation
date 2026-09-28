@@ -151,12 +151,8 @@ class ItSendDialpadSMSV2(Function):
         field_to_attr = Household.field_to_attr()
         request_date_cols = []
         for item in request_types:
-            item_label_pars[item]["types"] = set(item_label_pars[item]["types"])
             request_date_cols.append(field_to_attr.map(item_label_pars[item]["sort_by"]))
-
-        for lang in languages:
-            message_template_pars[lang]["languages"] = set(message_template_pars[lang]["languages"])
-
+        
         # Optional formula filtering:
         today = date.today().strftime("%Y-%m-%d")
         exclude_texted_today_formula = "NOT(IS_SAME({Last Texted}, '"+today+"'))"
@@ -183,7 +179,7 @@ class ItSendDialpadSMSV2(Function):
 
             which_type = [
                 i for i, item in enumerate(request_types)
-                if item_label_pars[item]["types"].issubset(set(household.open_request_types))
+                if all([rtype in household.open_request_types for rtype in item_label_pars[item]["types"]])
             ]
             if which_type:
                 curr_type = request_types[which_type[0]]
@@ -193,7 +189,7 @@ class ItSendDialpadSMSV2(Function):
 
             which_lang = [
                 i for i, lang in enumerate(languages)
-                if not message_template_pars[lang]["languages"].isdisjoint(set(household.languages))
+                if any([hlang in household.languages for hlang in message_template_pars[lang]["languages"]])
             ]
             if which_lang:
                 curr_lang = languages[which_lang[0]]

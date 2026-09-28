@@ -116,7 +116,7 @@ class Household(Model):
     needs_delivery = F.CheckboxField('Needs Delivery')
     needs_email_outreach = F.CheckboxField('Needs Email Outreach')
 
-    open_request_types = F.MultilineTextField("Open Request Types")
+    open_request_types = F.LookupField[F.SelectField]("Open Request Types")
     
     baby_diapers_requested_at = F.LookupField[F.DateField]('Baby Diapers Requested At')
     adult_diapers_requested_at = F.LookupField[F.DateField]('Adult Diapers Requested At')
