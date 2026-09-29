@@ -1,13 +1,13 @@
 from bam_core.lib.airtable_v2 import Household
 from bam_core.functions.base import Function
 from bam_core.functions.params import Params, Param
-from bam_core.utils.etc import now_est
+from bam_core.utils.etc import now_est, replace_parameters
 from datetime import date
-import yaml
+import json
 
 
-MESSAGE_TEMPLATE_PARAMS = "sms_params/message_template.yaml"
-REQUEST_LABEL_PARAMS = "sms_params/item_label.yaml"
+MESSAGE_TEMPLATE_PARAMS = "sms_params/message_template.json"
+REQUEST_LABEL_PARAMS = "sms_params/item_label.json"
 
 class ItSendDialpadSMSV2(Function):
     """
@@ -49,13 +49,13 @@ class ItSendDialpadSMSV2(Function):
             name="message_template",
             type="json",
             default=None,
-            description="Optional parameters to override 'sms_params/message_template.yaml'",
+            description="Optional parameters to override default parameters for text messace scripts in 'sms_params/message_template.json'",
         ),
         Param(
             name="request_label",
             type="json",
             default=None,
-            description="Optional parameters to override 'sms_params/request_label.yaml'",
+            description="Optional parameters to override default parameters for handling EG item types in 'sms_params/request_label.json'",
         ),
         Param(
             name="formula_filter",
@@ -99,19 +99,25 @@ class ItSendDialpadSMSV2(Function):
         request_types = params.get("request_types")
         languages = params.get("languages")
         volunteer = params.get("volunteer")
-        message_template_input = params.get("message_template")
-        request_label_input = params.get("request_label")
+        message_template_custom = params.get("message_template")
+        request_label_custom = params.get("request_label")
         formula_filter = params.get("formula_filter", None)
         exclude_texted_today = params.get("exclude_texted_today", True)
         max_messages = params.get("max_messages", 500)
         dry_run = params.get("dry_run", True)
         verbose = params.get("verbose", True)
         
+        # Load default parameters for text messace scripts:
         with open(MESSAGE_TEMPLATE_PARAMS, 'r') as file:
-            message_template_pars = yaml.safe_load(file)
+            message_template_pars = json.load(file)
 
+        # Load default parameters for handling EG item types:
         with open(REQUEST_LABEL_PARAMS, 'r') as file:
-            request_label_pars = yaml.safe_load(file)
+            request_label_pars = json.load(file)
+
+        # Add / replace with custom input parameters:
+        message_template_pars = replace_parameters(message_template_custom, message_template_pars)
+        request_label_pars = replace_parameters(request_label_custom, request_label_pars)
 
         if len(volunteer) == 1:
             volunteer = volunteer * len(languages)
@@ -128,6 +134,13 @@ class ItSendDialpadSMSV2(Function):
                 day = message_template_pars[lang][distro_day]["day"]
                 time = message_template_pars[lang][distro_day]["time"]
                 location = message_template_pars[lang]["location"]
+
+                if not item_label:
+                    ValueError(f"Item label can not be empty! Please provide label in {lang} with 'request_label'")
+
+                if not all(day, time, location):
+                    ValueError(f"Distro details can not be empty! Please provide day, time, and location in {lang} with 'message_template'")
+
                 curr_msg = message_template_pars[lang]["script"]
                 if lang == "Arabic":
                     curr_msg = (

@@ -4,6 +4,7 @@ import logging
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Any, List, NewType, Union
+from copy import deepcopy
 
 log = logging.getLogger(__name__)
 
@@ -125,3 +126,24 @@ def retry(
         return new_fn
 
     return decorator
+
+
+def replace_parameters(
+    A: dict,
+    B: dict = None,
+) -> dict:
+    """
+    Recursively adds named parameters from nested 'dict' A to B,
+    and overrides existing values in B.
+    """
+    
+    if B is None:
+        B = deepcopy(A)
+    else:
+        for p, v in A.items():
+            if isinstance(v, dict):
+                B[p] = replace_parameters(v, B.get(p))
+            else:
+                B[p] = deepcopy(v)
+    
+    return B
