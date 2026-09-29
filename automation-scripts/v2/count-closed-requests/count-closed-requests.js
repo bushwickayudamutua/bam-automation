@@ -33,15 +33,17 @@ async function processRequests(table, reqIds, getCountCol) {
   // Step 2: group requests by date
   const requestGroups = new Map();
 
-  const reqs = (await table.selectRecordsAsync({
-    recordIds: reqIds,
-    fields: table.fields,
-  })).records;
-  for (const req of reqs) {
-    const date = req.getCellValue('Status Last Updated At');
+  for (let idx = 0; idx < reqIds.length; idx += 100) {
+    const reqs = (await table.selectRecordsAsync({
+      recordIds: reqIds.slice(idx, idx + 100),
+      fields: table.fields,
+    })).records;
+    for (const req of reqs) {
+      const date = req.getCellValue('Status Last Updated At');
 
-    if (!requestGroups.has(date)) requestGroups.set(date, []);
-    requestGroups.get(date).push(req);
+      if (!requestGroups.has(date)) requestGroups.set(date, []);
+      requestGroups.get(date).push(req);
+    }
   }
 
   // Step 3: process each group
