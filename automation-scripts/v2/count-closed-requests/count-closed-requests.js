@@ -33,21 +33,23 @@ async function processRequests(table, reqIds, getCountCol) {
   // Step 2: group requests by date
   const requestGroups = new Map();
 
-  const reqs = (await table.selectRecordsAsync({
-    recordIds: reqIds,
-    fields: table.fields,
-  })).records;
-  for (const req of reqs) {
-    const date = req.getCellValue('Status Last Updated At');
+  for (let idx = 0; idx < reqIds.length; idx += 100) {
+    const reqs = (await table.selectRecordsAsync({
+      recordIds: reqIds.slice(idx, idx + 100),
+      fields: table.fields,
+    })).records;
+    for (const req of reqs) {
+      const date = req.getCellValue('Status Last Updated At');
 
-    if (!requestGroups.has(date)) requestGroups.set(date, []);
-    requestGroups.get(date).push(req);
+      if (!requestGroups.has(date)) requestGroups.set(date, []);
+      requestGroups.get(date).push(req);
+    }
   }
 
   // Step 3: process each group
   for (const [date, reqs] of requestGroups) {
-    const fields = {};
-    const countRec = await findOrCreateCountRecord(date);
+    // Aggregate count updates
+    const countUpdates = {};
 
     const reqsToDelete = [];
     for (const req of reqs) {
@@ -61,16 +63,22 @@ async function processRequests(table, reqIds, getCountCol) {
       // Bump counter if delivered
       const reqStatus = req.getCellValue('Status').name;
       if (reqStatus === DELIVERED_TAG) {
-        fields[countCol] ??= countRec.getCellValue(countCol);
-        fields[countCol]++;
+        countUpdates[countCol] ??= 0;
+        countUpdates[countCol]++;
       }
 
       // Mark request for deletion
       reqsToDelete.push(req)
     }
 
-    // Update counter
-    await countTable.updateRecordAsync(countRec, fields);
+    // Write updates to count table
+    if (Object.keys(countUpdates).length >= 0) {
+      const countRec = await findOrCreateCountRecord(date);
+      for (const countCol of Object.keys(countUpdates)) {
+        countUpdates[countCol] += countRec.getCellValue(countCol);
+      }
+      await countTable.updateRecordAsync(countRec, countUpdates);
+    }
 
     // Delete marked requests in pages of 50
     for (let idx = 0; idx < reqsToDelete.length; idx += 50) {
