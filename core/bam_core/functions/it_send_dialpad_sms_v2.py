@@ -9,6 +9,7 @@ import json
 MESSAGE_TEMPLATE_PARAMS = "sms_params/message_template.json"
 REQUEST_LABEL_PARAMS = "sms_params/item_label.json"
 
+
 class ItSendDialpadSMSV2(Function):
     """
     Given an Airtable view, iterate over EG items and languages, and send SMS messages to phone numbers in the view via Dialpad.
@@ -116,9 +117,11 @@ class ItSendDialpadSMSV2(Function):
             request_label_pars = json.load(file)
 
         # Add / replace with custom input parameters:
-        message_template_pars = replace_parameters(message_template_custom, message_template_pars)
-        request_label_pars = replace_parameters(request_label_custom, request_label_pars)
-
+        if message_template_custom:
+            message_template_pars = replace_parameters(message_template_custom, message_template_pars)
+        if request_label_custom:
+            request_label_pars = replace_parameters(request_label_custom, request_label_pars)
+        
         if len(volunteer) == 1:
             volunteer = volunteer * len(languages)
         elif len(volunteer) != len(languages):
@@ -131,14 +134,14 @@ class ItSendDialpadSMSV2(Function):
             for lang, vol in zip(languages, volunteer):
                 item_label = request_label_pars[item][lang]
                 item_cap = request_label_pars["capitalize"]
-                day = message_template_pars[lang][distro_day]["day"]
-                time = message_template_pars[lang][distro_day]["time"]
                 location = message_template_pars[lang]["location"]
+                day = message_template_pars[lang]["distro"][distro_day]["day"]
+                time = message_template_pars[lang]["distro"][distro_day]["time"]
 
                 if not item_label:
                     ValueError(f"Item label can not be empty! Please provide label in {lang} with 'request_label'")
 
-                if not all(day, time, location):
+                if not all(location, day, time):
                     ValueError(f"Distro details can not be empty! Please provide day, time, and location in {lang} with 'message_template'")
 
                 curr_msg = message_template_pars[lang]["script"]
@@ -262,7 +265,54 @@ class ItSendDialpadSMSV2(Function):
         self.log.info(f"Successfully {mode_str}ed {num_messages_sent} messages!")
         num_failed = num_households - num_messages_sent
         if num_failed > 0:
-            self.log.info(f"{num_failed} messages failed!") 
+            self.log.info(f"{num_failed} messages failed!")
+
+
+def parse_message_template(input_params: dict) -> Params:
+    template = input_params.get("message_template", input_params)
+    
+    if not isinstance(template, dict):
+        raise ValueError("'message_template' must be a 'dict' type")
+
+    for lang, subpars in template.items():
+        if not isinstance(subpars, dict):
+            raise ValueError(f"'{lang}' must be a 'dict' type")
+
+        if "languages" in subpars:
+            ln = subpars["languages"]
+            if not isinstance(ln, list) or len(ln) == 0:
+                raise ValueError(f"'{lang}.languages' must be a non-empty list")
+
+        if "script" in subpars:
+            sc = subpars["script"]
+            if not isinstance(sc, str) or sc.strip() == "":
+                raise ValueError(f"'{lang}.script' must be a non-empty string")
+
+        if "location" in subpars:
+            lc = subpars["location"]
+            if not isinstance(lc, str) or lc.strip() == "":
+                raise ValueError(f"'{lang}.location' must be a non-empty string")
+
+        if "distro" in subpars:
+            distro = subpars["distro"]
+            if not isinstance(distro, dict):
+                raise ValueError(f"'{lang}.distro' must be a dictionary")
+            
+            for day, day_info in distro.items():
+                if not isinstance(day_info, dict):
+                    raise ValueError(f"'{lang}.distro.{day}' must be a dictionary")
+
+                if "day" in day_info:
+                    d = day_info["day"]
+                    if not isinstance(d, str) or d.strip() == "":
+                        raise ValueError(f"'{lang}.distro.{day}.day' must be a non-empty string")
+
+                if "time" in day_info:
+                    t = day_info["time"]
+                    if not isinstance(t, str) or t.strip() == "":
+                        raise ValueError(f"'{lang}.distro.{day}.time' must be a non-empty string")
+    
+    return Params(Param("message_template", type="json", default=template))
 
 
 if __name__ == "__main__":
