@@ -1,3 +1,5 @@
+import logging
+
 from pydantic import BaseModel, Field
 from pydantic_settings import CliImplicitFlag
 
@@ -5,6 +7,9 @@ from bam_core.functions.base import Function
 from bam_core.lib.airtable_v2 import Household
 from bam_core.lib.dialpad import Dialpad
 from bam_core.utils.etc import now_est
+
+logger = logging.getLogger(__name__)
+dialpad = Dialpad(logger=logger)
 
 
 class Params(BaseModel):
@@ -29,9 +34,6 @@ class SendDialpadSMSV2(Function[Params]):
     Given a list of Airtable views, send SMS messages to phone numbers in the view via Dialpad.
     """
 
-    def __init__(self):
-        self.dialpad = Dialpad(logger=self.log)
-
     param_model = Params
 
     def run(self, params: Params, /):
@@ -40,7 +42,7 @@ class SendDialpadSMSV2(Function[Params]):
         """
 
         num_messages_sent = 0
-        for household in self.dialpad.send_sms_v2(
+        for household in dialpad.send_sms_v2(
             households=Household.all(
                 view=params.view_name, max_records=params.max_messages
             ),
@@ -52,7 +54,7 @@ class SendDialpadSMSV2(Function[Params]):
             num_messages_sent += 1
             # update last auto-texted field in Airtable
             if not params.dry_run:
-                self.log.info(f"Setting Last Texted for household {household.bam_id}")
+                logger.info(f"Setting Last Texted for household {household.bam_id}")
                 household.last_texted = now_est().date()
                 household.save()
 

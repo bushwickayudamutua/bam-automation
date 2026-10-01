@@ -1,3 +1,4 @@
+import logging
 import os
 import tempfile
 from datetime import UTC, datetime, timedelta
@@ -13,6 +14,7 @@ from bam_core.lib.airtable_v2 import FurnitureRequest, Request, count_table
 from bam_core.lib.s3 import S3
 from bam_core.utils.serde import obj_to_json
 
+logger = logging.getLogger(__name__)
 s3 = S3()
 
 
@@ -139,7 +141,7 @@ class UpdateWebsiteRequestData(Function):
         fp = s3.upload(tf, s3_filepath, mimetype="application/json")
         s3.set_public(fp)
         s3.purge_cdn_cache(s3_filepath)
-        self.log.info(f"Purged CDN cache for file: {s3_filepath}")
+        logger.info(f"Purged CDN cache for file: {s3_filepath}")
 
     def run(self, params: Params, /):
         """"""
@@ -165,7 +167,7 @@ class UpdateWebsiteRequestData(Function):
             "metrics": [],
         }
         for metric in METRIC_CONFIGS:
-            self.log.info(f"Generating metric:\n\t{metric}")
+            logger.info(f"Generating metric:\n\t{metric}")
             name = metric["name"]
             translations = metric["translations"]
             model = metric["model"]
@@ -215,19 +217,19 @@ class UpdateWebsiteRequestData(Function):
                 }
             )
 
-        self.log.info(
+        logger.info(
             f"Generated metrics:\n\tOPEN {open_request_data['metrics']}\n\tFULFILLED {fulfilled_request_data['metrics']}"
         )
 
         if params.dry_run:
-            self.log.info("Dry run enabled. Skipping upload to digital ocean space.")
+            logger.info("Dry run enabled. Skipping upload to digital ocean space.")
             return open_request_data, fulfilled_request_data
         self._write_data_to_s3(open_request_data, OPEN_REQUEST_FILEPATH)
-        self.log.info(
+        logger.info(
             f"Uploaded open request data with updated ts: {now.isoformat()} to digital ocean space: {OPEN_REQUEST_FILEPATH}"
         )
         self._write_data_to_s3(fulfilled_request_data, FULFILLED_REQUEST_FILEPATH)
-        self.log.info(
+        logger.info(
             f"Uploaded fulfilled request data from {start_date} to {end_date} to digital ocean space: {FULFILLED_REQUEST_FILEPATH}"
         )
 

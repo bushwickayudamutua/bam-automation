@@ -1,3 +1,5 @@
+import logging
+
 from pyairtable.api.types import RecordDict
 from pydantic import BaseModel, Field
 from pydantic_settings import CliImplicitFlag
@@ -14,6 +16,7 @@ from bam_core.lib.mailjet import Mailjet
 
 MAILJET_LISTS = ["Volunteers", "All Contacts"]
 
+logger = logging.getLogger(__name__)
 airtable = Airtable()
 mailjet = Mailjet()
 
@@ -68,7 +71,7 @@ class UpdateMailjetLists(Function):
 
     def run(self, params: Params, /):
         current_contacts = set(mailjet.get_all_emails())
-        self.log.info(f"Syncing contacts from {VOLUNTEERS_TABLE_NAME}")
+        logger.info(f"Syncing contacts from {VOLUNTEERS_TABLE_NAME}")
         all_contacts = airtable.volunteers.all(
             fields=[
                 VOLUNTEER_NAME_FIELD,
@@ -78,7 +81,7 @@ class UpdateMailjetLists(Function):
         )
         new_contacts = self._filter_new_contacts(all_contacts, current_contacts)
         n_new_contacts = len(new_contacts)
-        self.log.info(
+        logger.info(
             f"Syncing {n_new_contacts} new contacts from {VOLUNTEERS_TABLE_NAME} to mailjet lists: {MAILJET_LISTS}"
         )
 
@@ -87,15 +90,15 @@ class UpdateMailjetLists(Function):
         for contact in new_contacts:
             for list_name in MAILJET_LISTS:
                 kwargs = {**contact, "list_name": list_name}
-                self.log.info(f"Adding contact {contact} to list {list_name}")
+                logger.info(f"Adding contact {contact} to list {list_name}")
                 if params.dry_run:
-                    self.log.info("Dry run enabled. Skipping...")
+                    logger.info("Dry run enabled. Skipping...")
                     continue
                 try:
                     mailjet.add_contact_to_list(**kwargs)
                 except Exception as e:
                     n_failures += 1
-                    self.log.error(
+                    logger.error(
                         f"Failed to add contact {contact} to list {list_name}: {e}. Continuing..."
                     )
 

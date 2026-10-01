@@ -15,9 +15,6 @@ class Function(Generic[P]):
     A reusable class for building Digital Ocean Functions
     """
 
-    def __init__(self):
-        self.log = logging.getLogger(self.__class__.__name__)
-
     param_model: type[P]
 
     def run(self, _params: P, /):

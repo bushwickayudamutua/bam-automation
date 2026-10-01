@@ -1,3 +1,4 @@
+import logging
 import os
 import tempfile
 from datetime import datetime, timedelta
@@ -15,6 +16,7 @@ from bam_core.utils.serde import obj_to_json
 
 LAST_MODIFIED_FIELD = "Last Modified"
 
+logger = logging.getLogger(__name__)
 airtable = Airtable()
 s3 = S3()
 
@@ -79,12 +81,12 @@ class SnapshotVolunteerTable(Function[Params]):
         """
         Snapshot Airtable tables
         """
-        self.log.info(f"Fetching modified records from '{VOLUNTEERS_TABLE_NAME}'")
-        records = self.get_modified_records(params.number_of_days)
+        logger.info(f"Fetching modified records from '{VOLUNTEERS_TABLE_NAME}'")
+        records = self._get_modified_records(params.number_of_days)
         if not records:
-            self.log.info(f"No modified records found in {VOLUNTEERS_TABLE_NAME} table")
+            logger.info(f"No modified records found in {VOLUNTEERS_TABLE_NAME} table")
             return
-        self.log.info(
+        logger.info(
             f"Found {len(records)} modified records in {VOLUNTEERS_TABLE_NAME} table"
         )
 
@@ -92,7 +94,7 @@ class SnapshotVolunteerTable(Function[Params]):
         tmp = tempfile.NamedTemporaryFile(delete=False)
         filepath = self.get_filepath(VOLUNTEERS_TABLE_NAME)
         if not params.dry_run:
-            self.log.info(
+            logger.info(
                 f"Writing {len(records)} records to {tmp.name} and uploading to {filepath}"
             )
             try:
@@ -102,7 +104,7 @@ class SnapshotVolunteerTable(Function[Params]):
                 tmp.close()
                 os.unlink(tmp.name)
         else:
-            self.log.info(f"Would have written {len(records)} records to {filepath}")
+            logger.info(f"Would have written {len(records)} records to {filepath}")
         return {
             "table_name": VOLUNTEERS_TABLE_NAME,
             "records": len(records),
