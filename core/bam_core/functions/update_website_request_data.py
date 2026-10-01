@@ -6,7 +6,8 @@ from typing import NotRequired, TypedDict
 
 from pyairtable.formulas import AND, OR, Field
 from pyairtable.orm import Model
-from pydantic import BaseModel, Field as PdField
+from pydantic import BaseModel
+from pydantic import Field as PdField
 from pydantic_settings import CliImplicitFlag
 
 from bam_core.functions.base import Function

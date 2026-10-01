@@ -1,10 +1,7 @@
-import logging
-import traceback
 from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, ValidationError
 from pydantic_settings import CliApp
-
 
 P = TypeVar("P", bound=BaseModel)
 

@@ -2,13 +2,11 @@ from functools import cached_property
 from typing import Any
 
 import googlemaps
-import gspread
 
 from bam_core.constants import MAYDAY_LOCATION, MAYDAY_RADIUS
 from bam_core.lib import olc
 from bam_core.settings import (
     GOOGLE_MAPS_API_KEY,
-    GOOGLE_SERVICE_ACCOUNT_CONFIG,
 )
 
 

@@ -1,9 +1,11 @@
 from pydantic import BaseModel
+
 from bam_core.functions.base import Function
 
 
 def test_function_run():
-    class TestParams(BaseModel): pass
+    class TestParams(BaseModel):
+        pass
 
     class TestFunction(Function[TestParams]):
         def run(self, params):

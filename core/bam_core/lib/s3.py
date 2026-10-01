@@ -91,9 +91,7 @@ class S3:
         self.resource = self.connect_resource()
         self.client = self.connect_client()
         self.bucket = self.get_bucket()
-        if not self.scheme:
-            self.scheme = "s3"
-        if self.platform == "s3":
+        if not self.scheme or self.platform == "s3":
             self.scheme = "s3"
         self.s3_prefix = f"{self.scheme}://{self.bucket_name}/"
         self.logger = parent_logger.getChild("s3")
