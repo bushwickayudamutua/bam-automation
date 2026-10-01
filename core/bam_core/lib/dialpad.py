@@ -189,7 +189,7 @@ class Dialpad:
                 time.sleep(2)
             yield household
 
-    def it_send_sms_v2(
+    def it_send_sms(
         self, households: list[Household],
         messages: list[str],
         testing: bool = False,
