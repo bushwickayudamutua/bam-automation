@@ -27,7 +27,7 @@ class CleanVolunteerTable(Function[BaseModel]):
 
     param_model = BaseModel
 
-    def clean_phone_number(self, record: RecordDict, counter: Counter[str]):
+    def _clean_phone_number(self, record: RecordDict, counter: Counter[str]):
         """
         Clean phone number and update record if necessary
         """
@@ -77,7 +77,7 @@ class CleanVolunteerTable(Function[BaseModel]):
 
         return counter
 
-    def clean_email(self, record: RecordDict, counter: Counter[str]):
+    def _clean_email(self, record: RecordDict, counter: Counter[str]):
         """
         Clean email and update record if necessary
         """
@@ -163,8 +163,8 @@ class CleanVolunteerTable(Function[BaseModel]):
         email_counter = Counter()
 
         for record in records:
-            phone_counter = self.clean_phone_number(record, phone_counter)
-            email_counter = self.clean_email(record, email_counter)
+            phone_counter = self._clean_phone_number(record, phone_counter)
+            email_counter = self._clean_email(record, email_counter)
 
         result = {
             "phone_numbers": dict(phone_counter),

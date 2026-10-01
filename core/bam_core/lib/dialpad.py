@@ -38,7 +38,7 @@ class Dialpad:
         )
         return response.lower() == "y"
 
-    def get_random_hex(self, size=4):
+    def _get_random_hex(self, _size=4):
         return
 
     def _get_random_request_url(self):
@@ -136,7 +136,7 @@ class Dialpad:
             yield row
 
     def send_sms_v2(
-        self, households: list[Household], message: str, testing: bool = False
+        self, households: list[Household], message_template: str, testing: bool = False
     ) -> Generator[Household, None, None]:
         for i, household in enumerate(households):
             if not testing and i % 30 == 0 and i != 0:
@@ -150,7 +150,7 @@ class Dialpad:
             first_name = household.name
             phone_num = self._clean_phone_number(household.phone_number)
 
-            updated_message = message.replace(
+            updated_message = message_template.replace(
                 "[FIRST_NAME]", first_name
             ).replace("[REQUEST_URL]", request_url)
             split_messages = self._split_message(updated_message)
@@ -197,8 +197,7 @@ class Dialpad:
             rows = list(reader)
             print(f"{len(rows)} records in this file")
             if self._show_parsing_warning(len(rows)):
-                for row in self.send_sms(rows, user_message):
-                    pass
+                self.send_sms(rows, user_message)
             else:
                 print("Operation cancelled.")
 

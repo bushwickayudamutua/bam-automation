@@ -37,7 +37,7 @@ class SnapshotVolunteerTable(Function[Params]):
 
     param_model = Params
 
-    def get_modified_records(self, number_of_days: int | None) -> list[RecordDict]:
+    def _get_modified_records(self, number_of_days: int | None) -> list[RecordDict]:
         """
         Fetch modified records from Airtable
         """
@@ -57,25 +57,25 @@ class SnapshotVolunteerTable(Function[Params]):
                 records.append(record)
         return records
 
-    def get_slug_from_table_name(self, table_name: str) -> str:
+    def _get_slug_from_table_name(self, table_name: str) -> str:
         """
         Get a filepath from a table name
         """
         return table_name.replace(":", "").replace(" ", "-").lower()
 
-    def get_date_slug(self):
+    def _get_date_slug(self):
         """
         Get a date slug
         NOTE: This is in EST, when we parse this datetime in `analyze_fulfilled_requests.py`, we convert it to UTC.
         """
         return now_est().strftime(r"%Y-%m-%d-%H-%M-%S")
 
-    def get_filepath(self, table_name: str):
+    def _get_filepath(self, table_name: str):
         """
         Get a filepath for a table
         """
-        slug = self.get_slug_from_table_name(table_name)
-        return f"airtable-snapshots/{slug}/{slug}-{self.get_date_slug()}.json"
+        slug = self._get_slug_from_table_name(table_name)
+        return f"airtable-snapshots/{slug}/{slug}-{self._get_date_slug()}.json"
 
     def run(self, params: Params, /):
         """
@@ -92,7 +92,7 @@ class SnapshotVolunteerTable(Function[Params]):
 
         # write json to a tempfile and upload to digital ocean space
         tmp = tempfile.NamedTemporaryFile(delete=False)
-        filepath = self.get_filepath(VOLUNTEERS_TABLE_NAME)
+        filepath = self._get_filepath(VOLUNTEERS_TABLE_NAME)
         if not params.dry_run:
             logger.info(
                 f"Writing {len(records)} records to {tmp.name} and uploading to {filepath}"
