@@ -10,7 +10,10 @@ from pydantic_settings import CliImplicitFlag
 
 from bam_core.functions.base import Function
 from bam_core.lib.airtable_v2 import FurnitureRequest, Request, count_table
+from bam_core.lib.s3 import S3
 from bam_core.utils.serde import obj_to_json
+
+s3 = S3()
 
 
 def request_status_is(s: str):
@@ -133,9 +136,9 @@ class UpdateWebsiteRequestData(Function):
         tf = os.path.join(td, "data.json")
         with open(tf, "w") as f:
             f.write(obj_to_json(data))
-        fp = self.s3.upload(tf, s3_filepath, mimetype="application/json")
-        self.s3.set_public(fp)
-        self.s3.purge_cdn_cache(s3_filepath)
+        fp = s3.upload(tf, s3_filepath, mimetype="application/json")
+        s3.set_public(fp)
+        s3.purge_cdn_cache(s3_filepath)
         self.log.info(f"Purged CDN cache for file: {s3_filepath}")
 
     def run(self, params: Params, /):
@@ -216,7 +219,7 @@ class UpdateWebsiteRequestData(Function):
             f"Generated metrics:\n\tOPEN {open_request_data['metrics']}\n\tFULFILLED {fulfilled_request_data['metrics']}"
         )
 
-        if params["dry_run"]:
+        if params.dry_run:
             self.log.info("Dry run enabled. Skipping upload to digital ocean space.")
             return open_request_data, fulfilled_request_data
         self._write_data_to_s3(open_request_data, OPEN_REQUEST_FILEPATH)

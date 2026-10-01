@@ -5,15 +5,6 @@ from typing import Any, Generic, TypeVar
 from pydantic import BaseModel, ValidationError
 from pydantic_settings import CliApp
 
-from bam_core.functions.params import Params
-from bam_core.lib.airtable import Airtable
-from bam_core.lib.dialpad import Dialpad
-from bam_core.lib.google import GoogleMaps, GoogleSheets
-from bam_core.lib.mailjet import Mailjet
-from bam_core.lib.nyc_planning_labs import NycPlanningLabs
-from bam_core.lib.s3 import S3
-from bam_core.utils.etc import now_utc
-
 logger = logging.getLogger(__name__)
 
 P = TypeVar("P", bound=BaseModel)
@@ -24,16 +15,8 @@ class Function(Generic[P]):
     A reusable class for building Digital Ocean Functions
     """
 
-    mailjet = Mailjet()
-    airtable = Airtable()
-    s3 = S3()
-    gmaps = GoogleMaps()
-    gsheets = GoogleSheets()
-    nycpl = NycPlanningLabs()
-
     def __init__(self):
         self.log = logging.getLogger(self.__class__.__name__)
-        self.dialpad = Dialpad(logger=self.log)
 
     param_model: type[P]
 

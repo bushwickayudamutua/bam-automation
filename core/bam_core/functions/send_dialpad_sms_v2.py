@@ -3,6 +3,7 @@ from pydantic_settings import CliImplicitFlag
 
 from bam_core.functions.base import Function
 from bam_core.lib.airtable_v2 import Household
+from bam_core.lib.dialpad import Dialpad
 from bam_core.utils.etc import now_est
 
 
@@ -27,6 +28,9 @@ class SendDialpadSMSV2(Function[Params]):
     """
     Given a list of Airtable views, send SMS messages to phone numbers in the view via Dialpad.
     """
+
+    def __init__(self):
+        self.dialpad = Dialpad(logger=self.log)
 
     param_model = Params
 

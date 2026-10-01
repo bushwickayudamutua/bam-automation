@@ -8,11 +8,15 @@ from pydantic_settings import CliImplicitFlag
 
 from bam_core.constants import AIRTABLE_DATETIME_FORMAT, VOLUNTEERS_TABLE_NAME
 from bam_core.functions.base import Function
+from bam_core.lib.airtable import Airtable
+from bam_core.lib.s3 import S3
 from bam_core.utils.etc import now_est, now_utc
 from bam_core.utils.serde import obj_to_json
 
 LAST_MODIFIED_FIELD = "Last Modified"
 
+airtable = Airtable()
+s3 = S3()
 
 
 class Params(BaseModel):
@@ -36,7 +40,7 @@ class SnapshotVolunteerTable(Function[Params]):
         Fetch modified records from Airtable
         """
         records = []
-        for record in self.airtable.volunteers.all():
+        for record in airtable.volunteers.all():
             if number_of_days is not None:
                 last_modified = record.get(LAST_MODIFIED_FIELD)
                 if last_modified:
@@ -93,7 +97,7 @@ class SnapshotVolunteerTable(Function[Params]):
             )
             try:
                 tmp.write(obj_to_json(records).encode("utf-8"))
-                self.s3.upload(tmp.name, filepath, mimetype="application/json")
+                s3.upload(tmp.name, filepath, mimetype="application/json")
             finally:
                 tmp.close()
                 os.unlink(tmp.name)

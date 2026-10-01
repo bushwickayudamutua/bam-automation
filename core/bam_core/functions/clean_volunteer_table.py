@@ -11,9 +11,11 @@ from bam_core.constants import (
     VOLUNTEERS_TABLE_NAME,
 )
 from bam_core.functions.base import Function
+from bam_core.lib.airtable import Airtable
 from bam_core.utils.email import NO_EMAIL_ERROR, format_email
 from bam_core.utils.phone import format_phone_number
 
+airtable = Airtable()
 
 
 class CleanVolunteerTable(Function[BaseModel]):
@@ -44,7 +46,7 @@ class CleanVolunteerTable(Function[BaseModel]):
                     self.log.info(
                         f"Changing phone number: {phone_number} to {clean_phone_number} for record: {record_id}"
                     )
-                    self.airtable.volunteers.update(
+                    airtable.volunteers.update(
                         record_id,
                         {
                             VOLUNTEER_PHONE_NUMBER_FIELD: clean_phone_number,
@@ -58,9 +60,7 @@ class CleanVolunteerTable(Function[BaseModel]):
             self.log.info(
                 f"Marking phone number: {phone_number} as invalid for record: {record_id}"
             )
-            self.airtable.volunteers.update(
-                record_id, {VOLUNTEER_INVALID_PHONE_FIELD: True}
-            )
+            airtable.volunteers.update(record_id, {VOLUNTEER_INVALID_PHONE_FIELD: True})
             counter["n_invalid_phone_numbers"] += 1
 
         # mark now valid phone numbers which had been previously marked as invalid
@@ -68,7 +68,7 @@ class CleanVolunteerTable(Function[BaseModel]):
             self.log.info(
                 f"Marking phone number: {phone_number} as valid for record: {record_id}"
             )
-            self.airtable.volunteers.update(
+            airtable.volunteers.update(
                 record_id, {VOLUNTEER_INVALID_PHONE_FIELD: False}
             )
             counter["n_fixed_phone_numbers"] += 1
@@ -92,7 +92,7 @@ class CleanVolunteerTable(Function[BaseModel]):
                 self.log.info(
                     f"Marking email: {email} as invalid for record: {record_id} because of error: {NO_EMAIL_ERROR}"
                 )
-                self.airtable.volunteers.update(
+                airtable.volunteers.update(
                     record_id,
                     {
                         VOLUNTEER_EMAIL_FIELD: "",
@@ -111,7 +111,7 @@ class CleanVolunteerTable(Function[BaseModel]):
                     self.log.info(
                         f"Changing email: {email} to {clean_email} for record: {record_id}"
                     )
-                    self.airtable.volunteers.update(
+                    airtable.volunteers.update(
                         record_id,
                         {
                             VOLUNTEER_EMAIL_FIELD: clean_email,
@@ -127,7 +127,7 @@ class CleanVolunteerTable(Function[BaseModel]):
             self.log.info(
                 f"Marking email: {email} as invalid for record: {record_id} because of error: {email_error}"
             )
-            self.airtable.volunteers.update(
+            airtable.volunteers.update(
                 record_id, {VOLUNTEER_EMAIL_ERROR_FIELD: email_error}
             )
             if email_error != NO_EMAIL_ERROR:
@@ -138,9 +138,7 @@ class CleanVolunteerTable(Function[BaseModel]):
         # mark now valid emails which had been previously marked as invalid
         if valid_email and prev_email_error:
             self.log.info(f"Marking email: {email} as valid for record: {record_id}")
-            self.airtable.volunteers.update(
-                record_id, {VOLUNTEER_EMAIL_ERROR_FIELD: ""}
-            )
+            airtable.volunteers.update(record_id, {VOLUNTEER_EMAIL_ERROR_FIELD: ""})
             counter["n_fixed_emails"] += 1
 
         return counter
@@ -150,7 +148,7 @@ class CleanVolunteerTable(Function[BaseModel]):
         Clean volunteer records in Airtable
         """
         self.log.info(f"Fetching {VOLUNTEERS_TABLE_NAME}")
-        records = self.airtable.volunteers.all(
+        records = airtable.volunteers.all(
             fields=[
                 VOLUNTEER_PHONE_NUMBER_FIELD,
                 VOLUNTEER_INVALID_PHONE_FIELD,

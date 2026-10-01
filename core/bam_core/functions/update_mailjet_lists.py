@@ -9,8 +9,14 @@ from bam_core.constants import (
     VOLUNTEERS_TABLE_NAME,
 )
 from bam_core.functions.base import Function
+from bam_core.lib.airtable import Airtable
+from bam_core.lib.mailjet import Mailjet
 
 MAILJET_LISTS = ["Volunteers", "All Contacts"]
+
+airtable = Airtable()
+mailjet = Mailjet()
+
 
 class Params(BaseModel):
     dry_run: CliImplicitFlag[bool] = Field(
@@ -61,9 +67,9 @@ class UpdateMailjetLists(Function):
         return list(new_contacts.values())
 
     def run(self, params: Params, /):
-        current_contacts = set(self.mailjet.get_all_emails())
+        current_contacts = set(mailjet.get_all_emails())
         self.log.info(f"Syncing contacts from {VOLUNTEERS_TABLE_NAME}")
-        all_contacts = self.airtable.volunteers.all(
+        all_contacts = airtable.volunteers.all(
             fields=[
                 VOLUNTEER_NAME_FIELD,
                 VOLUNTEER_EMAIL_FIELD,
@@ -86,7 +92,7 @@ class UpdateMailjetLists(Function):
                     self.log.info("Dry run enabled. Skipping...")
                     continue
                 try:
-                    self.mailjet.add_contact_to_list(**kwargs)
+                    mailjet.add_contact_to_list(**kwargs)
                 except Exception as e:
                     n_failures += 1
                     self.log.error(
