@@ -15,7 +15,7 @@ from bam_core.lib.s3 import S3
 from bam_core.utils.serde import obj_to_json
 
 logger = logging.getLogger(__name__)
-s3 = S3()
+s3 = S3(parent_logger=logger)
 
 
 def request_status_is(s: str):

@@ -9,7 +9,7 @@ from bam_core.lib.dialpad import Dialpad
 from bam_core.utils.etc import now_est
 
 logger = logging.getLogger(__name__)
-dialpad = Dialpad(logger=logger)
+dialpad = Dialpad(parent_logger=logger)
 
 
 class Params(BaseModel):

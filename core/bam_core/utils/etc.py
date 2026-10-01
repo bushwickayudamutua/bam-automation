@@ -1,11 +1,9 @@
-import logging
+from logging import Logger
 import os
 import time
 from datetime import datetime
 from typing import Any
 from zoneinfo import ZoneInfo
-
-log = logging.getLogger(__name__)
 
 
 def list_files(path: str, ignore_hidden: bool = False) -> list[str]:
@@ -86,10 +84,12 @@ def to_bool(val: str | bool) -> bool:
 
 
 def retry(
+    *,
     times: int = 5,
     wait: int = 5,
     backoff: float = 1.5,
     exceptions: list[type[Exception]] = [Exception],
+    logger: Logger,
 ) -> Any:
     """
     Retry Decorator
@@ -115,7 +115,7 @@ def retry(
                         raise e
 
                     wait_time = wait * (backoff**attempt)
-                    log.warning(
+                    logger.warning(
                         f"Exception thrown when attempting to run {func}: {e}."
                         f" Attempt {attempt} of {times}."
                         f" Waiting {wait_time} seconds before retrying."

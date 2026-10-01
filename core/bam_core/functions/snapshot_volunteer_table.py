@@ -18,7 +18,7 @@ LAST_MODIFIED_FIELD = "Last Modified"
 
 logger = logging.getLogger(__name__)
 airtable = Airtable()
-s3 = S3()
+s3 = S3(parent_logger=logger)
 
 
 class Params(BaseModel):

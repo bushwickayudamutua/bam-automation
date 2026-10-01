@@ -1,3 +1,4 @@
+from logging import getLogger, Logger
 import csv
 from typing import Any, Generator
 import requests
@@ -23,8 +24,9 @@ class Dialpad:
         user_id=DIALPAD_USER_ID,
         first_name_field="First Name",
         phone_number_field="Phone Number",
-        logger: Logger,
+        parent_logger: Logger,
     ):
+        self.logger = parent_logger.getChild("dialpad")
         self.api_token = api_token
         self.user_id = user_id
         self.first_name_field = first_name_field  # Default field for first names, can be overridden
@@ -78,11 +80,11 @@ class Dialpad:
     ) -> Generator[dict[str, Any], None, None]:
         for i, row in enumerate(rows):
             if not testing and i % 30 == 0 and i != 0:
-                self.log.info(
+                self.logger.info(
                     "Taking a little nap so that we don't get rate limited, will start back up in 30 seconds 😴"
                 )
                 time.sleep(30)
-                self.log.info("Texts are sending, go to dialpad 🐥💼")
+                self.logger.info("Texts are sending, go to dialpad 🐥💼")
 
             request_url = self._get_random_request_url()
             first_name = self._get_first_word(
@@ -109,7 +111,7 @@ class Dialpad:
                     "content-type": "application/json",
                     "authorization": f"Bearer {self.api_token}",
                 }
-                self.log.info(
+                self.logger.info(
                     f"""[{phone_num}] {"WOULD SEND" if testing else "SENDING"}: '{current_split_message}'"""
                 )
                 if not testing:
@@ -118,17 +120,17 @@ class Dialpad:
                             DIALPAD_API_URL, json=payload, headers=headers
                         )
                         json_resp = response.json()
-                        self.log.info(f"Response: {json_resp}")
+                        self.logger.info(f"Response: {json_resp}")
                         if not response.ok:
                             api_error_message = json_resp.get("error", {}).get(
                                 "message", "Unknown error"
                             )
-                            self.log.error(
+                            self.logger.error(
                                 f"Error sending message to {first_name} at {phone_num}: {api_error_message}"
                             )
                             break
                     except Exception as e:
-                        self.log.error(f"Error: {e}")
+                        self.logger.error(f"Error: {e}")
             if not testing:
                 time.sleep(2)
             yield row
@@ -138,11 +140,11 @@ class Dialpad:
     ) -> Generator[Household, None, None]:
         for i, household in enumerate(households):
             if not testing and i % 30 == 0 and i != 0:
-                self.log.info(
+                self.logger.info(
                     "Taking a little nap so that we don't get rate limited, will start back up in 30 seconds 😴"
                 )
                 time.sleep(30)
-                self.log.info("Texts are sending, go to dialpad 🐥💼")
+                self.logger.info("Texts are sending, go to dialpad 🐥💼")
 
             request_url = self._get_random_request_url()
             first_name = household.name
@@ -165,7 +167,7 @@ class Dialpad:
                     "content-type": "application/json",
                     "authorization": f"Bearer {self.api_token}",
                 }
-                self.log.info(
+                self.logger.info(
                     f"""[{phone_num}] {"WOULD SEND" if testing else "SENDING"}: '{current_split_message}'"""
                 )
                 if not testing:
@@ -174,17 +176,17 @@ class Dialpad:
                             DIALPAD_API_URL, json=payload, headers=headers
                         )
                         json_resp = response.json()
-                        self.log.info(f"Response: {json_resp}")
+                        self.logger.info(f"Response: {json_resp}")
                         if not response.ok:
                             api_error_message = json_resp.get("error", {}).get(
                                 "message", "Unknown error"
                             )
-                            self.log.error(
+                            self.logger.error(
                                 f"Error sending message to {first_name} at {phone_num}: {api_error_message}"
                             )
                             break
                     except Exception as e:
-                        self.log.error(f"Error: {e}")
+                        self.logger.error(f"Error: {e}")
             if not testing:
                 time.sleep(2)
             yield household
@@ -202,7 +204,7 @@ class Dialpad:
 
 
 if __name__ == "__main__":
-    dialpad = Dialpad()
+    dialpad = Dialpad(parent_logger=logging.getLogger(__name__))
     dialpad.send_sms_from_csv(
         "contacts.csv",
         "Hello [FIRST_NAME], visit [REQUEST_URL] for more info!",

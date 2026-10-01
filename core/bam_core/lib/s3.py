@@ -25,8 +25,6 @@ from bam_core.settings import (
 )
 from bam_core.utils import etc
 
-log = logging.getLogger(__name__)
-
 BAM_STOR_DEFAULT_MIMETYPE = "binary/octet-stream"
 
 
@@ -61,6 +59,7 @@ def parse(s3_url) -> tuple:
 class S3:
     def __init__(
         self,
+        *,
         bucket_name: str = S3_BUCKET,
         aws_access_key_id: str | None = None,
         aws_secret_access_key: str | None = None,
@@ -68,6 +67,7 @@ class S3:
         base_url: str = S3_BASE_URL,
         region_name: str | None = S3_REGION_NAME,
         platform: str = S3_PLATFORM,
+        parent_logger: logging.Logger,
     ):
         self.scheme, self.bucket_name = get_bucket_name_and_scheme(bucket_name)
         if aws_access_key_id is None:
@@ -96,6 +96,7 @@ class S3:
         if self.platform == "s3":
             self.scheme = "s3"
         self.s3_prefix = f"{self.scheme}://{self.bucket_name}/"
+        self.logger = parent_logger.getChild("s3")
 
     # ////////////////////////
     #  Absolute Key Formatting
@@ -290,13 +291,13 @@ class S3:
         """
         # TODO: replace all these os calls with ``path```
         if os.path.isdir(local_path):
-            log.debug(
+            self.logger.debug(
                 "[upload] found directory at {local_path}. The default is to recursively upload from here."
             )
             for filename in etc.list_files(local_path):
                 sub_path = os.path.relpath(filename, start=local_path)
                 file_key = os.path.join(key, sub_path)
-                log.debug(f"[s3-upload] UPLOADING {filename} to {file_key}")
+                self.logger.debug(f"[s3-upload] UPLOADING {filename} to {file_key}")
                 self._upload_file(
                     filename,
                     file_key,
