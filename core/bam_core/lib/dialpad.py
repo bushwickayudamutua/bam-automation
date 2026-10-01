@@ -18,17 +18,17 @@ RANDOM_REQUEST_URL_SIZE = (
 class Dialpad:
     def __init__(
         self,
+        *,
         api_token=DIALPAD_API_TOKEN,
         user_id=DIALPAD_USER_ID,
         first_name_field="First Name",
         phone_number_field="Phone Number",
-        logger=None,
+        logger: Logger,
     ):
         self.api_token = api_token
         self.user_id = user_id
         self.first_name_field = first_name_field  # Default field for first names, can be overridden
         self.phone_number_field = phone_number_field  # Default field for phone numbers, can be overridden
-        self.log = logger
 
     def _show_parsing_warning(self, count):
         response = input(

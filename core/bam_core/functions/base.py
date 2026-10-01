@@ -18,30 +18,6 @@ logger = logging.getLogger(__name__)
 
 P = TypeVar("P", bound=BaseModel)
 
-class FunctionLogger:
-    def __init__(self, name):
-        self.logger = logging.getLogger(name)
-        self.log_lines = []
-
-    def _log(self, level, msg):
-        self.log_lines.append({"level": level, "message": msg, "time": now_utc()})
-        getattr(self.logger, level)(msg)
-
-    def info(self, msg):
-        self._log("info", msg)
-
-    def error(self, msg):
-        self._log("error", msg)
-
-    def exception(self, msg):
-        self._log("exception", msg)
-
-    def debug(self, msg):
-        self._log("debug", msg)
-
-    def warning(self, msg):
-        self._log("warning", msg)
-
 
 class Function(Generic[P]):
     """
@@ -56,14 +32,10 @@ class Function(Generic[P]):
     nycpl = NycPlanningLabs()
 
     def __init__(self):
-        self.log = FunctionLogger(self.__class__.__name__)
+        self.log = logging.getLogger(self.__class__.__name__)
         self.dialpad = Dialpad(logger=self.log)
 
     param_model: type[P]
-
-    @property
-    def log_lines(self) -> list[dict[str, Any]]:
-        return self.log.log_lines
 
     def run(self, _params: P, /):
         raise NotImplementedError
