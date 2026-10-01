@@ -5,9 +5,10 @@ from typing import NotRequired, TypedDict
 
 from pyairtable.formulas import AND, OR, Field
 from pyairtable.orm import Model
+from pydantic import BaseModel, Field as PdField
+from pydantic_settings import CliImplicitFlag
 
 from bam_core.functions.base import Function
-from bam_core.functions.params import Param, Params
 from bam_core.lib.airtable_v2 import FurnitureRequest, Request, count_table
 from bam_core.utils.serde import obj_to_json
 
@@ -113,19 +114,19 @@ METRIC_CONFIGS: list[MetricConfig] = [
 ]
 
 
+class Params(BaseModel):
+    dry_run: CliImplicitFlag[bool] = PdField(
+        True,
+        description="If true, data will not be written to the digital ocean space.",
+    )
+
+
 class UpdateWebsiteRequestData(Function):
     """
     Update the request counts on the website
     """
 
-    params = Params(
-        Param(
-            name="dry_run",
-            type="bool",
-            default=True,
-            description="If true, data will not be written to the digital ocean space.",
-        )
-    )
+    param_model = Params
 
     def _write_data_to_s3(self, data: object, s3_filepath: str):
         td = tempfile.gettempdir()
@@ -137,7 +138,7 @@ class UpdateWebsiteRequestData(Function):
         self.s3.purge_cdn_cache(s3_filepath)
         self.log.info(f"Purged CDN cache for file: {s3_filepath}")
 
-    def run(self, params):
+    def run(self, params: Params, /):
         """"""
         now = datetime.now(UTC)
 

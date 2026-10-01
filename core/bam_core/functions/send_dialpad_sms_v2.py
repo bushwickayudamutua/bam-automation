@@ -1,62 +1,53 @@
+from pydantic import BaseModel, Field
+from pydantic_settings import CliImplicitFlag
+
 from bam_core.functions.base import Function
-from bam_core.functions.params import Param, Params
 from bam_core.lib.airtable_v2 import Household
 from bam_core.utils.etc import now_est
 
 
-class SendDialpadSMSV2(Function):
+class Params(BaseModel):
+    view_name: str = Field(
+        description="An Airtable view name to fetch Household records from."
+    )
+    message_template: str = Field(
+        description="The template of the message to send via SMS. Use [FIRST_NAME] to insert the first name and [REQUEST_URL] to insert a request form URL which is randomized so it wont get blocked by Dialpad."
+    )
+    max_messages: int | None = Field(
+        None,
+        description="The maximum number of messages to send. If not specified, all records across all the views will be processed.",
+    )
+    dry_run: CliImplicitFlag[bool] = Field(
+        True,
+        description="If true, messages will not be sent and only logged. Useful for testing.",
+    )
+
+
+class SendDialpadSMSV2(Function[Params]):
     """
     Given a list of Airtable views, send SMS messages to phone numbers in the view via Dialpad.
     """
 
-    params = Params(
-        Param(
-            name="view_name",
-            type="string",
-            required=True,
-            description="An Airtable view name to fetch Household records from.",
-        ),
-        Param(
-            name="message_template",
-            type="string",
-            required=True,
-            description="The template of the message to send via SMS. Use [FIRST_NAME] to insert the first name and [REQUEST_URL] to insert a request form URL which is randomized so it wont get blocked by Dialpad.",
-        ),
-        Param(
-            name="max_messages",
-            type="int",
-            default=None,
-            description="The maximum number of messages to send. If not specified, all records across all the views will be processed.",
-            required=False,
-        ),
-        Param(
-            name="dry_run",
-            type="bool",
-            default=True,
-            description="If true, messages will not be sent and only logged. Useful for testing.",
-        ),
-    )
+    param_model = Params
 
-    def run(self, params):
+    def run(self, params: Params, /):
         """
         Snapshot Airtable tables
         """
-        view_name = params.get("view_name")
-        message = params.get("message_template")
-        max_messages = params.get("max_messages") or 1e9
-        dry_run = params.get("dry_run", True)
 
         num_messages_sent = 0
         for household in self.dialpad.send_sms_v2(
-            households=Household.all(view=view_name, max_records=max_messages),
-            message=message,
-            testing=dry_run,
+            households=Household.all(
+                view=params.view_name, max_records=params.max_messages
+            ),
+            message_template=params.message_template,
+            testing=params.dry_run,
         ):
             if not household:
                 continue
             num_messages_sent += 1
             # update last auto-texted field in Airtable
-            if not dry_run:
+            if not params.dry_run:
                 self.log.info(f"Setting Last Texted for household {household.bam_id}")
                 household.last_texted = now_est().date()
                 household.save()

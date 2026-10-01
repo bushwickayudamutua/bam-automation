@@ -1,7 +1,9 @@
 import logging
 import traceback
-from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
-from typing import Any
+from typing import Any, Generic, TypeVar
+
+from pydantic import BaseModel, ValidationError
+from pydantic_settings import CliApp
 
 from bam_core.functions.params import Params
 from bam_core.lib.airtable import Airtable
@@ -14,6 +16,7 @@ from bam_core.utils.etc import now_utc
 
 logger = logging.getLogger(__name__)
 
+P = TypeVar("P", bound=BaseModel)
 
 class FunctionLogger:
     def __init__(self, name):
@@ -40,7 +43,7 @@ class FunctionLogger:
         self._log("warning", msg)
 
 
-class Function:
+class Function(Generic[P]):
     """
     A reusable class for building Digital Ocean Functions
     """
@@ -52,54 +55,37 @@ class Function:
     gsheets = GoogleSheets()
     nycpl = NycPlanningLabs()
 
-    def __init__(self, parser: ArgumentParser | None = None):
-        self.parser = parser or ArgumentParser(
-            prog=self.__class__.__name__,
-            description=self.__class__.__doc__,
-            formatter_class=ArgumentDefaultsHelpFormatter,
-        )
+    def __init__(self):
         self.log = FunctionLogger(self.__class__.__name__)
         self.dialpad = Dialpad(logger=self.log)
 
-    @property
-    def params(self) -> Params:
-        """
-        Define the Params for this function.
-        """
-        return Params()
+    param_model: type[P]
 
     @property
     def log_lines(self) -> list[dict[str, Any]]:
         return self.log.log_lines
 
-    def run(self, params: dict[str, Any]) -> Any:
-        """
-        The core logic of your function.
-        """
+    def run(self, _params: P, /):
         raise NotImplementedError
 
-    def run_api(self, params: dict[str, Any]) -> Any:
-        """
-        The API Handler.
-        """
-        params = self.params.parse_dict(params)
-        return self.run(params)
-
-    def run_do(self, event, _context) -> dict[str, Any]:
+    def run_do(self, event: dict[str, Any], _context, /):
         """
         The Digital Ocean Function Handler.
         """
-        params = self.params.parse_dict(event)
-        output = self.run(params)
-        return {"body": output}
+        try:
+            params = self.param_model.model_validate(event)
+        except ValidationError as e:
+            return {
+                "status": 400,
+                "error": e.errors(),
+            }
+        return {"status": 200, "body": self.run(params)}
 
     def run_cli(self):
         """
         The CLI handler
         """
-        self.params.add_cli_arguments(self.parser)
-        params = self.params.parse_cli_arguments(self.parser)
-        return self.run(params)
+        return self.run(CliApp.run(self.param_model))
 
     @classmethod
     def run_do_functions(cls, event, *functions) -> dict[str, Any]:

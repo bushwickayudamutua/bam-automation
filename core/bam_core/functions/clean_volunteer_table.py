@@ -1,6 +1,7 @@
 from collections import Counter
 
 from pyairtable.api.types import RecordDict
+from pydantic import BaseModel
 
 from bam_core.constants import (
     VOLUNTEER_EMAIL_ERROR_FIELD,
@@ -14,10 +15,13 @@ from bam_core.utils.email import NO_EMAIL_ERROR, format_email
 from bam_core.utils.phone import format_phone_number
 
 
-class CleanVolunteerTable(Function):
+
+class CleanVolunteerTable(Function[BaseModel]):
     """
     Clean phone numbers and email addresses in Airtable
     """
+
+    param_model = BaseModel
 
     def clean_phone_number(self, record: RecordDict, counter: Counter[str]):
         """
@@ -141,7 +145,7 @@ class CleanVolunteerTable(Function):
 
         return counter
 
-    def run(self, params):
+    def run(self, _params: BaseModel, /):
         """
         Clean volunteer records in Airtable
         """
