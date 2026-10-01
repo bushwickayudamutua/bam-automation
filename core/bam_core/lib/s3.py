@@ -236,7 +236,7 @@ class S3:
         :yield str
         """
         if local_path is None:
-            local_path = tempfile.gettempdir(prefix="bam_")
+            local_path = tempfile.gettempdir()
         os.makedirs(local_path, exist_ok=True)
 
         for key in self.list_keys(prefix, key_filter):

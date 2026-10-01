@@ -38,9 +38,6 @@ class Dialpad:
         )
         return response.lower() == "y"
 
-    def _get_random_hex(self, _size=4):
-        return
-
     def _get_random_request_url(self):
         return BAM_URL + "".join(
             random.choices("0123456789abcdef", k=RANDOM_REQUEST_URL_SIZE)

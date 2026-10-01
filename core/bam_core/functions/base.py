@@ -5,7 +5,6 @@ from typing import Any, Generic, TypeVar
 from pydantic import BaseModel, ValidationError
 from pydantic_settings import CliApp
 
-logger = logging.getLogger(__name__)
 
 P = TypeVar("P", bound=BaseModel)
 
@@ -38,26 +37,3 @@ class Function(Generic[P]):
         The CLI handler
         """
         return self.run(CliApp.run(self.param_model))
-
-    @classmethod
-    def run_do_functions(cls, event, *functions) -> dict[str, Any]:
-        """
-        Run a list of DO functions and handle errors
-        """
-        failures = []
-        output = {}
-        for function in functions:
-            fn = function.__name__
-            logger.info(f"Running {fn}\n{'*' * 80}")
-            try:
-                output[fn] = function().run_do(event)
-            except Exception as e:
-                logger.error(f"Error running {fn}")
-                logger.error(e)
-                traceback.print_exc()
-                failures.append(fn)
-            logger.info(f"Finished {fn}\n{'*' * 80}")
-        if failures:
-            raise Exception(f"Errors running {fn}: {failures}")
-
-        return output
