@@ -1,6 +1,6 @@
 {
 
-"view_name": "Main",
+"view_name": "Outreach View",
 "distro_day": "Sunday",
 "request_types": ["baby_diapers", "school_supplies", "soap_and_pads", "clothing"],
 "languages": ["Arabic", "Chinese", "Spanish", "English"],
