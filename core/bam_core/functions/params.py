@@ -141,15 +141,17 @@ def _parse_str(value: Any, label: str) -> str:
 
 
 def _parse_str_list(value: Any, label: str) -> list:
-    if not isinstance(value, list) or len(value) == 0:
+    if isinstance(value, str):
+        return [_parse_str(value, f"{label}[]")]
+    elif not isinstance(value, list) or len(value) == 0:
         raise ValueError(f"'{label}' must be a non-empty list")
     return [_parse_str(v, f"{label}[]") for v in value]
 
 
 class ItSMSMessageTemplateParams(ParamJsonType):
     name = "it_sms_message_template"
-    lang_keys = {"languages", "script", "location", "distro"}
-    day_keys = {"day", "time"}
+    script_keys = {"languages", "script", "location", "distro"}
+    distro_keys = {"day", "time"}
 
     def validate(self, value: Any) -> dict:
         template = super().validate(value)
@@ -159,7 +161,7 @@ class ItSMSMessageTemplateParams(ParamJsonType):
         for lang, subpars in template.items():
             if not isinstance(subpars, dict):
                 raise ValueError(f"'{lang}' must be a dict")
-            unknown = set(subpars) - self.lang_keys
+            unknown = set(subpars) - self.script_keys
             if unknown:
                 raise ValueError(f"'{lang}' has unknown keys: {sorted(unknown)}")
 
@@ -176,12 +178,12 @@ class ItSMSMessageTemplateParams(ParamJsonType):
                 for day, day_info in distro.items():
                     if not isinstance(day_info, dict):
                         raise ValueError(f"'{lang}.distro.{day}' must be a dict")
-                    unknown = set(day_info) - self.day_keys
+                    unknown = set(day_info) - self.distro_keys
                     if unknown:
                         raise ValueError(f"'{lang}.distro.{day}' has unknown keys: {sorted(unknown)}")
                     for key in day_info:
                         day_info[key] = _parse_str(day_info[key], f"{lang}.distro.{day}.{key}")
-
+        
         return template
 
 
