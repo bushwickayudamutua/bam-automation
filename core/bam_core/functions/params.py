@@ -134,6 +134,81 @@ class ParamBoolListType(ParamStringListType):
     sub_type = ParamBoolType()
 
 
+def _parse_str(value: Any, label: str) -> str:
+    if not isinstance(value, str) or value.strip() == "":
+        raise ValueError(f"'{label}' must be a non-empty string")
+    return value.strip()
+
+
+def _parse_str_list(value: Any, label: str) -> list:
+    if not isinstance(value, list) or len(value) == 0:
+        raise ValueError(f"'{label}' must be a non-empty list")
+    return [_parse_str(v, f"{label}[]") for v in value]
+
+
+class ItSMSMessageTemplateParams(ParamJsonType):
+    name = "it_sms_message_template"
+    lang_keys = {"languages", "script", "location", "distro"}
+    day_keys = {"day", "time"}
+
+    def validate(self, value: Any) -> dict:
+        template = super().validate(value)
+        if not isinstance(template, dict):
+            raise ValueError("'message_template' must be a dict")
+
+        for lang, subpars in template.items():
+            if not isinstance(subpars, dict):
+                raise ValueError(f"'{lang}' must be a dict")
+            unknown = set(subpars) - self.lang_keys
+            if unknown:
+                raise ValueError(f"'{lang}' has unknown keys: {sorted(unknown)}")
+
+            if "languages" in subpars:
+                subpars["languages"] = _parse_str_list(subpars["languages"], f"{lang}.languages")
+            for key in ("script", "location"):
+                if key in subpars:
+                    subpars[key] = _parse_str(subpars[key], f"{lang}.{key}")
+            
+            if "distro" in subpars:
+                distro = subpars["distro"]
+                if not isinstance(distro, dict):
+                    raise ValueError(f"'{lang}.distro' must be a dict")
+                for day, day_info in distro.items():
+                    if not isinstance(day_info, dict):
+                        raise ValueError(f"'{lang}.distro.{day}' must be a dict")
+                    unknown = set(day_info) - self.day_keys
+                    if unknown:
+                        raise ValueError(f"'{lang}.distro.{day}' has unknown keys: {sorted(unknown)}")
+                    for key in day_info:
+                        day_info[key] = _parse_str(day_info[key], f"{lang}.distro.{day}.{key}")
+
+        return template
+
+
+class ItSMSRequestLabelParams(ParamJsonType):
+    name = "it_sms_request_label"
+    bool_params = ["capitalize"]
+
+    def validate(self, value: Any) -> dict:
+        labels = super().validate(value)
+        if not isinstance(labels, dict):
+            raise ValueError("'request_label' must be a dict")
+
+        for item, subpars in labels.items():
+            if item in self.bool_params:
+                labels[item] = to_bool(labels[item])
+                continue
+            if not isinstance(subpars, dict):
+                raise ValueError(f"'{item}' must be a dict")
+            for key, val in subpars.items():
+                if key == "types":
+                    subpars[key] = _parse_str_list(val, f"{item}.types")
+                else:
+                    subpars[key] = _parse_str(val, f"{item}.{key}")
+
+        return labels
+
+
 PARAM_TYPES = (
     ParamStringType,
     ParamIntType,
@@ -146,6 +221,8 @@ PARAM_TYPES = (
     ParamDatetimeListType,
     ParamBoolListType,
     ParamJsonType,
+    ItSMSMessageTemplateParams,
+    ItSMSRequestLabelParams,
 )
 
 PARAM_TYPES_MAP = {str(t().name): t for t in PARAM_TYPES}

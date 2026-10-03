@@ -1,19 +1,19 @@
 from bam_core.lib.airtable_v2 import Household
 from bam_core.functions.base import Function
-from bam_core.functions.params import Params, Param
+from bam_core.functions.params import Params, Param, ItSMSMessageTemplateParams, ItSMSRequestLabelParams
 from bam_core.utils.etc import now_est, replace_parameters
+from argparse import ArgumentParser
 from datetime import date
 import json
 
 
-MESSAGE_TEMPLATE_PARAMS = "sms_params/message_template.json"
-REQUEST_LABEL_PARAMS = "sms_params/item_label.json"
-
-
-class ItSendDialpadSMSV2(Function):
+class ItSendDialpadSMS(Function):
     """
     Given an Airtable view, iterate over EG items and languages, and send SMS messages to phone numbers in the view via Dialpad.
     """
+
+    MESSAGE_TEMPLATE_PARAMS = "sms_params/message_template.json"
+    REQUEST_LABEL_PARAMS = "sms_params/request_label.json"
 
     params = Params(
         Param(
@@ -48,13 +48,13 @@ class ItSendDialpadSMSV2(Function):
         ),
         Param(
             name="message_template",
-            type="json",
+            type="it_sms_message_template",
             default=None,
             description="Optional parameters to override default parameters for text messace scripts in 'sms_params/message_template.json'",
         ),
         Param(
             name="request_label",
-            type="json",
+            type="it_sms_request_label",
             default=None,
             description="Optional parameters to override default parameters for handling EG item types in 'sms_params/request_label.json'",
         ),
@@ -109,12 +109,12 @@ class ItSendDialpadSMSV2(Function):
         verbose = params.get("verbose", True)
         
         # Load default parameters for text messace scripts:
-        with open(MESSAGE_TEMPLATE_PARAMS, 'r') as file:
-            message_template_pars = json.load(file)
+        with open(self.MESSAGE_TEMPLATE_PARAMS, 'r') as file:
+            message_template_pars = ItSMSMessageTemplateParams().validate(json.load(file))
 
         # Load default parameters for handling EG item types:
-        with open(REQUEST_LABEL_PARAMS, 'r') as file:
-            request_label_pars = json.load(file)
+        with open(self.REQUEST_LABEL_PARAMS, 'r') as file:
+            request_label_pars = ItSMSRequestLabelParams().validate(json.load(file))
 
         # Add / replace with custom input parameters:
         if message_template_custom:
@@ -139,10 +139,10 @@ class ItSendDialpadSMSV2(Function):
                 time = message_template_pars[lang]["distro"][distro_day]["time"]
 
                 if not item_label:
-                    ValueError(f"Item label can not be empty! Please provide label in {lang} with 'request_label'")
+                    raise ValueError(f"Item label can not be empty! Please provide label in {lang} with 'request_label'")
 
-                if not all(location, day, time):
-                    ValueError(f"Distro details can not be empty! Please provide day, time, and location in {lang} with 'message_template'")
+                if not all([location, day, time]):
+                    raise ValueError(f"Distro details can not be empty! Please provide day, time, and location in {lang} with 'message_template'")
 
                 curr_msg = message_template_pars[lang]["script"]
                 if lang == "Arabic":
@@ -244,7 +244,7 @@ class ItSendDialpadSMSV2(Function):
 
         # Send SMS via Dialpad per household:
         num_messages_sent = 0
-        for household in self.dialpad.it_send_sms_v2(
+        for household in self.dialpad.it_send_sms(
             households=households,
             messages=messages,
             testing=dry_run,
@@ -267,54 +267,24 @@ class ItSendDialpadSMSV2(Function):
         if num_failed > 0:
             self.log.info(f"{num_failed} messages failed!")
 
+    def run_cli(self):
+        """
+        The CLI handler, with optional '--config-file' in DO input format
+        """
+        config_parser = ArgumentParser(add_help=False)
+        config_parser.add_argument("--config-file")
+        config_args, other_args = config_parser.parse_known_args()
 
-def parse_message_template(input_params: dict) -> Params:
-    template = input_params.get("message_template", input_params)
-    
-    if not isinstance(template, dict):
-        raise ValueError("'message_template' must be a 'dict' type")
+        if config_args.config_file is None:
+            self.parser.add_argument("--config-file", help="JSON file of parameters in DO input format. Can not be combined with other arguments.")
+            return super().run_cli()
+        if other_args:
+            raise ValueError("'--config-file' can not be combined with other arguments!")
 
-    for lang, subpars in template.items():
-        if not isinstance(subpars, dict):
-            raise ValueError(f"'{lang}' must be a 'dict' type")
-
-        if "languages" in subpars:
-            ln = subpars["languages"]
-            if not isinstance(ln, list) or len(ln) == 0:
-                raise ValueError(f"'{lang}.languages' must be a non-empty list")
-
-        if "script" in subpars:
-            sc = subpars["script"]
-            if not isinstance(sc, str) or sc.strip() == "":
-                raise ValueError(f"'{lang}.script' must be a non-empty string")
-
-        if "location" in subpars:
-            lc = subpars["location"]
-            if not isinstance(lc, str) or lc.strip() == "":
-                raise ValueError(f"'{lang}.location' must be a non-empty string")
-
-        if "distro" in subpars:
-            distro = subpars["distro"]
-            if not isinstance(distro, dict):
-                raise ValueError(f"'{lang}.distro' must be a dictionary")
-            
-            for day, day_info in distro.items():
-                if not isinstance(day_info, dict):
-                    raise ValueError(f"'{lang}.distro.{day}' must be a dictionary")
-
-                if "day" in day_info:
-                    d = day_info["day"]
-                    if not isinstance(d, str) or d.strip() == "":
-                        raise ValueError(f"'{lang}.distro.{day}.day' must be a non-empty string")
-
-                if "time" in day_info:
-                    t = day_info["time"]
-                    if not isinstance(t, str) or t.strip() == "":
-                        raise ValueError(f"'{lang}.distro.{day}.time' must be a non-empty string")
-    
-    return Params(Param("message_template", type="json", default=template))
+        with open(config_args.config_file, "r") as file:
+            return self.run_api(json.load(file))
 
 
 if __name__ == "__main__":
-    ItSendDialpadSMSV2().run_cli()
+    ItSendDialpadSMS().run_cli()
 
