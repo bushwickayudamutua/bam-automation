@@ -108,16 +108,16 @@ class Household(Model):
     needs_delivery = F.CheckboxField('Needs Delivery')
     needs_email_outreach = F.CheckboxField('Needs Email Outreach')
 
-    open_request_types = F.LookupField[F.SelectField]("Open Request Types")
+    open_request_types = F.LookupField[str]("Open Request Types")
     
-    baby_diapers_requested_at = F.LookupField[F.DateField]('Baby Diapers Requested At')
-    adult_diapers_requested_at = F.LookupField[F.DateField]('Adult Diapers Requested At')
-    clothing_requested_at = F.LookupField[F.DateField]('Clothing Requested At')
-    soap_requested_at = F.LookupField[F.DateField]('Soap Requested At')
-    pads_requested_at = F.LookupField[F.DateField]('Pads Requested At')
-    school_supplies_requested_at = F.LookupField[F.DateField]('School Supplies Requested At')
-    pots_and_pans_requested_at = F.LookupField[F.DateField]('Pots & Pans Requested At')
-    plates_and_cups_requested_at = F.LookupField[F.DateField]('Plates & Cups Requested At')
+    baby_diapers_requested_at = F.LookupField[date]('Baby Diapers Requested At')
+    adult_diapers_requested_at = F.LookupField[date]('Adult Diapers Requested At')
+    clothing_requested_at = F.LookupField[date]('Clothing Requested At')
+    soap_requested_at = F.LookupField[date]('Soap Requested At')
+    pads_requested_at = F.LookupField[date]('Pads Requested At')
+    school_supplies_requested_at = F.LookupField[date]('School Supplies Requested At')
+    pots_and_pans_requested_at = F.LookupField[date]('Pots & Pans Requested At')
+    plates_and_cups_requested_at = F.LookupField[date]('Plates & Cups Requested At')
     
     
     if TYPE_CHECKING:
