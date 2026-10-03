@@ -3,7 +3,6 @@ from bam_core.functions.base import Function
 from bam_core.functions.params import Params, Param, ItSMSMessageTemplateParams, ItSMSRequestLabelParams
 from bam_core.utils.etc import now_est, replace_parameters
 from argparse import ArgumentParser
-from datetime import date
 import json
 
 
@@ -32,13 +31,13 @@ class ItSendDialpadSMS(Function):
             name="request_types",
             type="string_list",
             required=True,
-            description="The EG items to text for. Must be defined in 'item_label' for each language.",
+            description="The EG items to text for. Must be defined in 'request_label' for each language.",
         ),
         Param(
             name="languages",
             type="string_list",
             required=True,
-            description="The languages to text in. Must be included in 'item_label' and 'message_template' parameters.",
+            description="The languages to text in. Must be included in 'request_label' and 'message_template' parameters.",
         ),
         Param(
             name="volunteer",
@@ -50,7 +49,7 @@ class ItSendDialpadSMS(Function):
             name="message_template",
             type="it_sms_message_template",
             default=None,
-            description="Optional parameters to override default parameters for text messace scripts in 'sms_params/message_template.json'",
+            description="Optional parameters to override default parameters for text message scripts in 'sms_params/message_template.json'",
         ),
         Param(
             name="request_label",
@@ -85,10 +84,6 @@ class ItSendDialpadSMS(Function):
     )
 
     def run(self, params, context):
-        """
-        Snapshot Airtable tables
-        """
-
         view_name = params.get("view_name")
         distro_day = params.get("distro_day")
         request_types = params.get("request_types")
@@ -101,7 +96,7 @@ class ItSendDialpadSMS(Function):
         dry_run = params.get("dry_run", True)
         verbose = params.get("verbose", True)
         
-        # Load default parameters for text messace scripts:
+        # Load default parameters for text message scripts:
         with open(self.MESSAGE_TEMPLATE_PARAMS, 'r') as file:
             message_template_pars = ItSMSMessageTemplateParams().validate(json.load(file))
 
@@ -125,35 +120,29 @@ class ItSendDialpadSMS(Function):
         for item in request_types:
             message_template[item] = {}
             for lang, vol in zip(languages, volunteer):
-                item_label = request_label_pars[item][lang]
+                request_label = request_label_pars[item][lang]
                 item_cap = request_label_pars["capitalize"]
                 location = message_template_pars[lang]["location"]
                 day = message_template_pars[lang]["distro"][distro_day]["day"]
                 time = message_template_pars[lang]["distro"][distro_day]["time"]
-
-                if not item_label:
-                    raise ValueError(f"Item label can not be empty! Please provide label in {lang} with 'request_label'")
-
-                if not all([location, day, time]):
-                    raise ValueError(f"Distro details can not be empty! Please provide day, time, and location in {lang} with 'message_template'")
 
                 curr_msg = message_template_pars[lang]["script"]
                 if lang == "Arabic":
                     curr_msg = (
                         curr_msg
                         .replace("[متطوع]", vol)
-                        .replace("[المنتج]", item_label)
+                        .replace("[المنتج]", request_label)
                         .replace("[يوم]", day)
                         .replace("[وقت]", time)
                         .replace("[مكان]", location)
                     )
                 else:
                     if item_cap and lang in ["English", "Spanish"]:
-                        item_label = item_label.upper()
+                        request_label = request_label.upper()
                     curr_msg = (
                         curr_msg
                         .replace("[VOLUNTEER]", vol)
-                        .replace("[ITEM_LABEL]", item_label)
+                        .replace("[REQUEST_LABEL]", request_label)
                         .replace("[DAY]", day)
                         .replace("[TIME]", time)
                         .replace("[LOCATION]", location)
@@ -161,7 +150,7 @@ class ItSendDialpadSMS(Function):
                 message_template[item][lang] = curr_msg
 
         # Pull records from the Households view (and exclude last texted today by default):
-        today = date.today().strftime("%Y-%m-%d")
+        today = now_est().date().strftime("%Y-%m-%d")
         households_formula = ("NOT(IS_SAME({Last Texted}, '"+today+"'))") if exclude_texted_today else None
         households = Household.all(view=view_name, formula=households_formula)
 
@@ -214,7 +203,7 @@ class ItSendDialpadSMS(Function):
         num_households = len(households_idx)
         mode_str = "test" if dry_run else "text"
         if num_households == 0:
-            self.log.info(f"No households selected!")
+            self.log.info("No households selected!")
             return
         elif num_households > max_messages:
             households_idx = households_idx[:max_messages]
@@ -227,29 +216,21 @@ class ItSendDialpadSMS(Function):
         messages = [messages[i] for i in households_idx]
 
         # Send SMS via Dialpad per household:
-        num_messages_sent = 0
-        for household in self.dialpad.it_send_sms(
+        num_messages_sent = self.dialpad.it_send_sms(
             households=households,
             messages=messages,
             testing=dry_run,
             verbose=verbose
-        ):
-            if not household:
-                continue
+        )
 
-            num_messages_sent += 1
+        if dry_run:
+            self.log.info("Successful dry run!")
+        else:
+            self.log.info(f"Successfully sent {num_messages_sent} messages!")
+            num_failed = num_households - num_messages_sent
+            if num_failed > 0:
+                self.log.info(f"{num_failed} messages failed!")
 
-            # update last auto-texted field in Airtable
-            if not dry_run:
-                if verbose:
-                    self.log.info(f"Setting Last Texted for household {household.bam_id} at {household.phone_number}")
-                household.last_texted = now_est().date()
-                household.save()
-
-        self.log.info(f"Successfully {mode_str}ed {num_messages_sent} messages!")
-        num_failed = num_households - num_messages_sent
-        if num_failed > 0:
-            self.log.info(f"{num_failed} messages failed!")
 
     def run_cli(self):
         """

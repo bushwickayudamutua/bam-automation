@@ -3,6 +3,7 @@ from typing import Any, Generator
 import requests
 import time
 import random
+from bam_core.utils.etc import now_est
 
 from bam_core.lib.airtable_v2 import Household
 from bam_core.settings import DIALPAD_API_TOKEN, DIALPAD_USER_ID
@@ -194,7 +195,8 @@ class Dialpad:
         messages: list[str],
         testing: bool = False,
         verbose: bool = True,
-    ) -> Generator[Household, None, None]:
+    ) -> int:
+        num_messages_sent = 0
         for i, (household, message) in enumerate(zip(households, messages)):
             if not testing and i % 30 == 0 and i != 0:
                 self.log.info("Taking a little nap so that we don't get rate limited, will start back up in 30 seconds 😴")
@@ -203,6 +205,7 @@ class Dialpad:
 
             phone_num = self._clean_phone_number(household.phone_number)
             split_messages = self._split_message(message)
+            sms_success = True
             for current_split_message in split_messages:
                 payload = {
                     "infer_country_code": False,
@@ -224,15 +227,29 @@ class Dialpad:
                         if verbose:
                             self.log.info(f"Response: {json_resp}")
                         if not response.ok:
+                            sms_success = False
                             api_error_message = json_resp.get("error", {}).get("message", "Unknown error")
-                            self.log.error(f"Error sending message to {household.name} at {phone_num}: {api_error_message}")
+                            self.log.error(f"Error sending message to household {household.bam_id} ({household.name} at {phone_num}):\n{api_error_message}")
                             break
                     except Exception as e:
-                        self.log.error(f"Error: {e}")
+                        sms_success = False
+                        self.log.error(f"Error for household {household.bam_id}:\n{e}")
+            
             if not testing:
                 time.sleep(2)
-            yield household
-    
+                if sms_success:
+                    num_messages_sent += 1
+                    if verbose:
+                        self.log.info(f"Setting 'Last Texted' for household {household.bam_id} ({household.name} at {phone_num})")
+                    try:
+                        household.last_texted = now_est().date()
+                        household.save()
+                    except Exception as e:
+                        self.log.error(f"Error setting 'Last Texted' for household {household.bam_id}:\n{e}")
+        
+        return num_messages_sent
+
+
     def send_sms_from_csv(self, file_path, user_message):
         with open(file_path, newline="", encoding="utf-8") as csv_file:
             reader = csv.DictReader(csv_file)
