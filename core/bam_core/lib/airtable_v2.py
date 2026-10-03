@@ -111,6 +111,18 @@ class Household(Model):
     needs_delivery = F.CheckboxField("Needs Delivery")
     needs_email_outreach = F.CheckboxField("Needs Email Outreach")
 
+    open_request_types = F.LookupField[str]("Open Request Types")
+    
+    baby_diapers_requested_at = F.LookupField[date]('Baby Diapers Requested At')
+    adult_diapers_requested_at = F.LookupField[date]('Adult Diapers Requested At')
+    clothing_requested_at = F.LookupField[date]('Clothing Requested At')
+    soap_requested_at = F.LookupField[date]('Soap Requested At')
+    pads_requested_at = F.LookupField[date]('Pads Requested At')
+    school_supplies_requested_at = F.LookupField[date]('School Supplies Requested At')
+    pots_and_pans_requested_at = F.LookupField[date]('Pots & Pans Requested At')
+    plates_and_cups_requested_at = F.LookupField[date]('Plates & Cups Requested At')
+    
+    
     if TYPE_CHECKING:
 
         def __init__(
@@ -132,6 +144,20 @@ class Household(Model):
             needs_delivery: bool = False,
             needs_email_outreach: bool = False,
         ): ...
+    
+
+    def get_requested_date(self, type: str):
+        DATE_FIELD_MAP = {
+            "Pañales / Baby Diapers / 嬰兒紙尿褲": "baby_diapers_requested_at",
+            "Pañales de adultos / Adult Diapers / 成人紙尿褲": "adult_diapers_requested_at",
+            "Ropa / Clothing / 服裝": "clothing_requested_at",
+            "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品": "soap_requested_at",
+            "Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾": "pads_requested_at",
+            "Cosas de Escuela / School Supplies / 學校用品": "school_supplies_requested_at",
+            "Ollas y Sartenes / Pots & Pans / 鍋碗瓢盆": "pots_and_pans_requested_at",
+            "Platos o Tazas / Plates or Cups / 盘子或杯子": "plates_and_cups_requested_at",
+        }
+        return getattr(self, DATE_FIELD_MAP.get(type))
 
 
 class Request(Model):

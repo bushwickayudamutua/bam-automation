@@ -1,0 +1,52 @@
+
+{
+
+"English": {
+  "languages": ["Inglés / English / 英文"],
+  "script": "Hi [FIRST_NAME], I'm [VOLUNTEER] from BAM. We are distributing [REQUEST_LABEL], [DAY], [TIME]. Location is [LOCATION]. If you want an appointment, what time do you prefer? Thank you :)",
+  "location": "<DISTRO LOCATION>",
+  "distro": {
+    "Sunday": {
+      "day": "tomorrow Sunday",
+      "time": "between 11 am - 12:30 pm"
+    }
+  }
+},
+
+"Spanish": {
+  "languages": ["Español / Spanish / 西班牙语"],
+  "script": "Hola [FIRST_NAME], soy [VOLUNTEER] de BAM. Tenemos una distribución de [REQUEST_LABEL], [DAY], [TIME], en [LOCATION]. Si deseas una cita porfa dinos a qué hora prefieres. Gracias :)",
+  "location": "<DISTRO LOCATION>",
+  "distro": {
+    "Sunday": {
+      "day": "mañana Domingo",
+      "time": "entre las 11 am - 12:30 pm"
+    }
+  }
+},
+
+"Arabic": {
+  "languages": ["Árabe / Arabic / 阿拉伯語"],
+  "script": "سلام [اسم]، أنا [متطوع] من «بام». سنقوم غدًا بتوزيع [المنتج]. لدينا مواعيد [يوم] [وقت] في [مكان]. لو كنت تريد ميعاد، ما الوقت الذي يناسبكم؟ شكرا :)",
+  "location": "<DISTRO LOCATION>",
+  "distro": {
+    "Sunday": {
+      "day": "غدا يوم الأحد",
+      "time": "من ۱۱ صباحًا حتى ۱۲:۳۰ ظهرًا"
+    }
+  }
+},
+
+"Chinese": {
+  "languages": ["Chino Mandarín / Mandarin / 普通话", "Chino Cantonés / Cantonese / 广东话", "Chino Toishanés / Toishanese / 台山话"],
+  "script": "您好[FIRST_NAME]，这里是BAM布什威克互助会的[VOLUNTEER]。我们这[DAY]的免费必需品分发活动还有名额。我们会有[REQUEST_LABEL]。时间[TIME]，地址是[LOCATION]。如果您有时间参加，请在这里回复是+您想预约的时间。",
+  "location": "<DISTRO LOCATION>",
+  "distro": {
+    "Sunday": {
+      "day": "周日",
+      "time": "上午11:00到下午12:30"
+    }
+  }
+}
+
+}
