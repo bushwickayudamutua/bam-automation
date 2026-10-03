@@ -1,41 +1,37 @@
 from collections import Counter
-from typing import Any, Dict
 
+from pyairtable.api.types import RecordDict
+
+from bam_core.constants import (
+    VOLUNTEER_EMAIL_ERROR_FIELD,
+    VOLUNTEER_EMAIL_FIELD,
+    VOLUNTEER_INVALID_PHONE_FIELD,
+    VOLUNTEER_PHONE_NUMBER_FIELD,
+    VOLUNTEERS_TABLE_NAME,
+)
 from bam_core.functions.base import Function
+from bam_core.utils.email import NO_EMAIL_ERROR, format_email
 from bam_core.utils.phone import format_phone_number
-from bam_core.utils.email import format_email, NO_EMAIL_ERROR
 
 
-class CleanAirtableViews(Function):
+class CleanVolunteerTable(Function):
     """
     Clean phone numbers and email addresses in Airtable
     """
 
-    CONFIG = [
-        {
-            "table_name": "Assistance Requests: Main",
-            "view_name": "Raw Data: DO NOT EDIT OR CHANGE FILTERS!",
-        },
-        {
-            "table_name": "Volunteers: Main",
-            "view_name": "Raw Data: DO NOT EDIT",
-        },
-    ]
-
-    def clean_phone_number(self, record, table, counter):
+    def clean_phone_number(self, record: RecordDict, counter: Counter[str]):
         """
         Clean phone number and update record if necessary
         """
         record_id = record["id"]
-        phone_number = record["fields"].get("Phone Number", None)
+        phone_number = record["fields"].get(VOLUNTEER_PHONE_NUMBER_FIELD)
         was_invalid_phone_number = record["fields"].get(
-            "Invalid Phone Number?", False
+            VOLUNTEER_INVALID_PHONE_FIELD, False
         )
 
         # phone number cleaning logic #
 
         valid_phone_number = False
-        clean_phone_number = None
         if phone_number:
             clean_phone_number = format_phone_number(phone_number)
             if clean_phone_number is not None:
@@ -44,11 +40,11 @@ class CleanAirtableViews(Function):
                     self.log.info(
                         f"Changing phone number: {phone_number} to {clean_phone_number} for record: {record_id}"
                     )
-                    table.update(
+                    self.airtable.volunteers.update(
                         record_id,
                         {
-                            "Phone Number": clean_phone_number,
-                            "Invalid Phone Number?": False,
+                            VOLUNTEER_PHONE_NUMBER_FIELD: clean_phone_number,
+                            VOLUNTEER_INVALID_PHONE_FIELD: False,
                         },
                     )
                     counter["n_reformatted_phone_numbers"] += 1
@@ -58,7 +54,9 @@ class CleanAirtableViews(Function):
             self.log.info(
                 f"Marking phone number: {phone_number} as invalid for record: {record_id}"
             )
-            table.update(record_id, {"Invalid Phone Number?": True})
+            self.airtable.volunteers.update(
+                record_id, {VOLUNTEER_INVALID_PHONE_FIELD: True}
+            )
             counter["n_invalid_phone_numbers"] += 1
 
         # mark now valid phone numbers which had been previously marked as invalid
@@ -66,21 +64,22 @@ class CleanAirtableViews(Function):
             self.log.info(
                 f"Marking phone number: {phone_number} as valid for record: {record_id}"
             )
-            table.update(record_id, {"Invalid Phone Number?": False})
+            self.airtable.volunteers.update(
+                record_id, {VOLUNTEER_INVALID_PHONE_FIELD: False}
+            )
             counter["n_fixed_phone_numbers"] += 1
 
         return counter
 
-    def clean_email(self, record, table, counter):
+    def clean_email(self, record: RecordDict, counter: Counter[str]):
         """
         Clean email and update record if necessary
         """
         record_id = record["id"]
-        email = record["fields"].get("Email", None)
-        prev_email_error = record["fields"].get("Email Error", None)
+        email = record["fields"].get(VOLUNTEER_EMAIL_FIELD)
+        prev_email_error = record["fields"].get(VOLUNTEER_EMAIL_ERROR_FIELD)
 
         valid_email = False
-        clean_email = None
         email_error = ""
 
         # check for empty emails
@@ -89,11 +88,11 @@ class CleanAirtableViews(Function):
                 self.log.info(
                     f"Marking email: {email} as invalid for record: {record_id} because of error: {NO_EMAIL_ERROR}"
                 )
-                table.update(
+                self.airtable.volunteers.update(
                     record_id,
                     {
-                        "Email": "",
-                        "Email Error": NO_EMAIL_ERROR,
+                        VOLUNTEER_EMAIL_FIELD: "",
+                        VOLUNTEER_EMAIL_ERROR_FIELD: NO_EMAIL_ERROR,
                     },
                 )
                 counter["n_missing_emails"] += 1
@@ -108,11 +107,11 @@ class CleanAirtableViews(Function):
                     self.log.info(
                         f"Changing email: {email} to {clean_email} for record: {record_id}"
                     )
-                    table.update(
+                    self.airtable.volunteers.update(
                         record_id,
                         {
-                            "Email": clean_email,
-                            "Email Error": "",
+                            VOLUNTEER_EMAIL_FIELD: clean_email,
+                            VOLUNTEER_EMAIL_ERROR_FIELD: "",
                         },
                     )
                     counter["n_reformatted_emails"] += 1
@@ -124,7 +123,9 @@ class CleanAirtableViews(Function):
             self.log.info(
                 f"Marking email: {email} as invalid for record: {record_id} because of error: {email_error}"
             )
-            table.update(record_id, {"Email Error": email_error})
+            self.airtable.volunteers.update(
+                record_id, {VOLUNTEER_EMAIL_ERROR_FIELD: email_error}
+            )
             if email_error != NO_EMAIL_ERROR:
                 counter["n_invalid_emails"] += 1
             else:
@@ -132,61 +133,42 @@ class CleanAirtableViews(Function):
 
         # mark now valid emails which had been previously marked as invalid
         if valid_email and prev_email_error:
-            self.log.info(
-                f"Marking email: {email} as valid for record: {record_id}"
+            self.log.info(f"Marking email: {email} as valid for record: {record_id}")
+            self.airtable.volunteers.update(
+                record_id, {VOLUNTEER_EMAIL_ERROR_FIELD: ""}
             )
-            table.update(record_id, {"Email Error": ""})
             counter["n_fixed_emails"] += 1
 
         return counter
 
-    def clean_view(self, view_to_clean: Dict[str, str]) -> Dict[str, Any]:
+    def run(self, params):
         """
-        Clean a view of records in Airtable
+        Clean volunteer records in Airtable
         """
-        self.log.info(
-            f"Fetching {view_to_clean['table_name']}--{view_to_clean['view_name']}"
-        )
-        table = self.airtable.get_table(view_to_clean["table_name"])
-        records = self.airtable.get_view(
-            table_name=view_to_clean["table_name"],
-            view_name=view_to_clean["view_name"],
+        self.log.info(f"Fetching {VOLUNTEERS_TABLE_NAME}")
+        records = self.airtable.volunteers.all(
             fields=[
-                "Phone Number",
-                "Invalid Phone Number?",
-                "Email",
-                "Email Error",
-            ],  # add more fields here for future cleaning steps.
+                VOLUNTEER_PHONE_NUMBER_FIELD,
+                VOLUNTEER_INVALID_PHONE_FIELD,
+                VOLUNTEER_EMAIL_FIELD,
+                VOLUNTEER_EMAIL_ERROR_FIELD,
+            ]  # add more fields here for future cleaning steps.
         )
-        self.log.info(
-            f"Cleaning {len(records)} records from {view_to_clean['table_name']}--{view_to_clean['view_name']}"
-        )
+        self.log.info(f"Cleaning {len(records)} records from {VOLUNTEERS_TABLE_NAME}")
         phone_counter = Counter()
         email_counter = Counter()
 
         for record in records:
-            phone_counter = self.clean_phone_number(
-                record, table, phone_counter
-            )
-            email_counter = self.clean_email(record, table, email_counter)
+            phone_counter = self.clean_phone_number(record, phone_counter)
+            email_counter = self.clean_email(record, email_counter)
 
-        return {
-            "view": view_to_clean,
+        result = {
             "phone_numbers": dict(phone_counter),
             "email_addresses": dict(email_counter),
         }
-
-    def run(self, event, context):
-        """
-        Clean all views in config.yml
-        """
-        results = []
-        for view_to_clean in self.CONFIG:
-            result = self.clean_view(view_to_clean)
-            results.append(result)
-        self.log.info(f"Results: {results}")
-        return results
+        self.log.info(f"Result: {result}")
+        return result
 
 
 if __name__ == "__main__":
-    CleanAirtableViews().run_cli()
+    CleanVolunteerTable().run_cli()

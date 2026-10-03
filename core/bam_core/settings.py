@@ -10,9 +10,6 @@ dotenv.load_dotenv()
 
 AIRTABLE_TOKEN = os.getenv("BAM_AIRTABLE_TOKEN", None)
 AIRTABLE_BASE_ID = os.getenv("BAM_AIRTABLE_BASE_ID", None)
-AIRTABLE_ASSISTANCE_REQUESTS_TABLE_ID = os.getenv(
-    "BAM_AIRTABLE_ASSISTANCE_REQUESTS_TABLE_ID", None
-)
 AIRTABLE_VOLUNTEERS_TABLE_ID = os.getenv(
     "BAM_AIRTABLE_VOLUNTEERS_TABLE_ID", None
 )
@@ -23,9 +20,6 @@ AIRTABLE_ESSENTIAL_GOODS_DONATIONS_TABLE_ID = os.getenv(
 # v2 settings
 AIRTABLE_V2_BASE_ID = os.getenv("BAM_AIRTABLE_V2_BASE_ID", None)
 AIRTABLE_V2_TOKEN = os.getenv("BAM_AIRTABLE_V2_TOKEN", None)
-AIRTABLE_V2_ASSISTANCE_REQUESTS_TABLE_ID = os.getenv(
-    "BAM_AIRTABLE_V2_ASSISTANCE_REQUESTS_TABLE_ID", None
-)
 
 # mailjet settings
 MAILJET_API_KEY = os.getenv("BAM_MAILJET_API_KEY", None)
@@ -57,9 +51,6 @@ S3_CDN_ID = os.getenv("BAM_S3_CDN_ID", None)
 # dialpad settings
 DIALPAD_API_TOKEN = os.getenv("BAM_DIALPAD_API_TOKEN", None)
 DIALPAD_USER_ID = os.getenv("BAM_DIALPAD_USER_ID", None)
-
-# SALT for hashing
-SALT = os.getenv("BAM_SALT", "bam")
 
 # logging settings
 LOG_LEVEL = os.getenv("BAM_LOG_LEVEL", "INFO")

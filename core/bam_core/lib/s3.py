@@ -2,17 +2,27 @@
 Utilities for interacting with AWS S3 / Digital Ocean Spaces
 """
 
-import os
-from io import BytesIO
-import tempfile
 import logging
+import os
+import tempfile
 import urllib.parse
-from typing import Callable, List, Union, Optional
+from collections.abc import Callable
+from io import BytesIO
 
 import boto3
 import requests
 
-from bam_core import settings
+from bam_core.settings import (
+    DO_TOKEN,
+    S3_ACCESS_KEY_ID,
+    S3_BASE_URL,
+    S3_BUCKET,
+    S3_CDN_ID,
+    S3_ENDPOINT_URL,
+    S3_PLATFORM,
+    S3_REGION_NAME,
+    S3_SECRET_ACCESS_KEY,
+)
 from bam_core.utils import etc
 
 log = logging.getLogger(__name__)
@@ -44,23 +54,34 @@ def parse(s3_url) -> tuple:
         key = s3_url[len(bucket_name) + 1 :]
     else:
         key = s3_url
-    if key.startswith("/"):
-        key = key[1:]
+    key = key.removeprefix("/")
     return bucket_name, key
 
 
-class S3(object):
+class S3:
     def __init__(
         self,
-        bucket_name: str = settings.S3_BUCKET,
-        aws_access_key_id: str = settings.S3_ACCESS_KEY_ID,
-        aws_secret_access_key: str = settings.S3_SECRET_ACCESS_KEY,
-        endpoint_url: str = settings.S3_ENDPOINT_URL,
-        base_url: str = settings.S3_BASE_URL,
-        region_name: Optional[str] = settings.S3_REGION_NAME,
-        platform: str = settings.S3_PLATFORM,
+        bucket_name: str = S3_BUCKET,
+        aws_access_key_id: str | None = None,
+        aws_secret_access_key: str | None = None,
+        endpoint_url: str = S3_ENDPOINT_URL,
+        base_url: str = S3_BASE_URL,
+        region_name: str | None = S3_REGION_NAME,
+        platform: str = S3_PLATFORM,
     ):
         self.scheme, self.bucket_name = get_bucket_name_and_scheme(bucket_name)
+        if aws_access_key_id is None:
+            if S3_ACCESS_KEY_ID is None:
+                raise RuntimeError(
+                    "Missing required environment variable: S3_ACCESS_KEY_ID"
+                )
+            aws_access_key_id = S3_ACCESS_KEY_ID
+        if aws_secret_access_key is None:
+            if S3_SECRET_ACCESS_KEY is None:
+                raise RuntimeError(
+                    "Missing required environment variable: S3_SECRET_ACCESS_KEY"
+                )
+            aws_secret_access_key = S3_SECRET_ACCESS_KEY
         self.access_key = aws_access_key_id
         self.access_secret = aws_secret_access_key
         self.endpoint_url = endpoint_url
@@ -82,7 +103,7 @@ class S3(object):
     # ///////////////////////
 
     def _in_key(self, key: str) -> str:
-        f"""
+        """
         Format input key to accept full paths.
         :param key: An S3 key
         :return str
@@ -92,7 +113,7 @@ class S3(object):
         return key
 
     def _out_key(self, key: str) -> str:
-        f"""
+        """
         Format output key to return full paths.
         :param key: An S3 key
         :return str
@@ -117,12 +138,12 @@ class S3(object):
     # ///////////////////////
     @property
     def connection_kwargs(self):
-        return dict(
-            region_name=self.region_name,
-            aws_access_key_id=self.access_key,
-            aws_secret_access_key=self.access_secret,
-            endpoint_url=self.endpoint_url,
-        )
+        return {
+            "region_name": self.region_name,
+            "aws_access_key_id": self.access_key,
+            "aws_secret_access_key": self.access_secret,
+            "endpoint_url": self.endpoint_url,
+        }
 
     def connect_resource(self):
         """
@@ -147,17 +168,15 @@ class S3(object):
     # ///////////////////////
 
     def get_meta(self, key: str) -> dict:
-        f"""
+        """
         Fetch metadata about this file on S3.
         :param key: An S3 key
         :return dict
         """
-        return self.client.head_object(
-            Bucket=self.bucket_name, Key=self._in_key(key)
-        )
+        return self.client.head_object(Bucket=self.bucket_name, Key=self._in_key(key))
 
     def get_contents(self, key: str):
-        f"""
+        """
         Fetch the file contents from a key.
         :param key: An S3 key
         :return dict
@@ -171,32 +190,28 @@ class S3(object):
                 f.close()
 
     def exists(self, key: str) -> bool:
-        f"""
+        """
         Check whether this key exists
         :param key: An S3 key
         :return bool
         """
         objs = list(self.bucket.objects.filter(Prefix=self._in_key(key)))
-        if len(objs) > 0 and objs[0].key == self._in_key(key):
-            return True
-        return False
+        return len(objs) > 0 and objs[0].key == self._in_key(key)
 
-    def download(self, key: str, local_path: Union[None, str] = None) -> str:
-        f"""
+    def download(self, key: str, local_path: None | str = None) -> str:
+        """
         Download an s3 key to a local file
         :param key: An S3 key
         :param local_path: The local filepath to write to. if it doesn't exist, the file will be written to a tempfile and the path will be outputted."
         :return str
         """
         if local_path is None:
-            local_path = os.path.join(
-                tempfile.mkdtemp(), os.path.basename(key)
-            )
+            local_path = os.path.join(tempfile.mkdtemp(), os.path.basename(key))
         self.bucket.download_file(self._in_key(key), local_path)
         return local_path
 
     def download_file_obj(self, key: str) -> BytesIO:
-        f"""
+        """
         Download an s3 key to a file-like object
         :param key: An S3 key
         :param fobj: A file-like object to write to. If not provided, the function will create an `io.BytesIO` object, write the file contents to it, and return it.
@@ -209,10 +224,10 @@ class S3(object):
     def download_all(
         self,
         prefix: str,
-        local_path: Union[None, str] = None,
+        local_path: None | str = None,
         key_filter: Callable = lambda _x: True,
     ):
-        f"""
+        """
         Download s3 files under a given prefix to a local directory. Returns the list of local filepaths.
         :param prefix: A prefix used to identify a list of s3 keys
         :param local_path: The local filepath to write to. if it doesn't exist, the file will be written to a tempfile and the path will be outputted."
@@ -229,9 +244,9 @@ class S3(object):
             yield dl_path
 
     def upload_file_obj(
-        self, fobj: BytesIO, key: str, mimetype: Optional[str] = None
+        self, fobj: BytesIO, key: str, mimetype: str | None = None
     ) -> None:
-        f"""
+        """
         Upload a file object to s3, optionally setting its mimetype
         :param key: An S3 key
         :param fobj: A file-like object to write to. If not provided, the function will create an `io.BytesIO` object, write the file contents to it, and return it.
@@ -249,7 +264,7 @@ class S3(object):
     def _upload_file(
         self, local_path: str, key: str, mimetype: str = BAM_STOR_DEFAULT_MIMETYPE
     ) -> str:
-        f"""
+        """
         Upload a file to a s3 bucket, optionally applying a mimetype
         :param local_path: The local filepath to write to. if it doesn't exist, the file will be written to a tempfile and the path will be outputted."
         :param key: An S3 key
@@ -266,7 +281,7 @@ class S3(object):
     def upload(
         self, local_path: str, key: str, mimetype: str = BAM_STOR_DEFAULT_MIMETYPE
     ):
-        f"""
+        """
         Upload a file to a s3 bucket
         :param local_path: The local filepath to write to. if it doesn't exist, the file will be written to a tempfile and the path will be outputted."
         :param key: An S3 key
@@ -290,7 +305,7 @@ class S3(object):
         return self._upload_file(local_path, key, mimetype)
 
     def delete(self, key: str) -> None:
-        f"""
+        """
         Delete a file from s3.
         :param key: An S3 key
         :return None
@@ -299,7 +314,7 @@ class S3(object):
         obj.delete()
 
     def move(self, old_key: str, new_key: str, copy: bool = False) -> str:
-        f"""
+        """
         Move a file on s3
         :param old_key: the file's current location
         :param new_key: the file's new location
@@ -317,10 +332,8 @@ class S3(object):
             old_obj.delete()
         return self._out_key(old_key)
 
-    def move_all(
-        self, old_pfx: str, new_pfx: str, copy: bool = False
-    ) -> List[str]:
-        f"""
+    def move_all(self, old_pfx: str, new_pfx: str, copy: bool = False) -> list[str]:
+        """
         Move files on s3 returning their new paths
         :param old_pfx: the files' current prefix
         :param new_key: the files' new prefix
@@ -342,19 +355,13 @@ class S3(object):
         return new_paths
 
     def copy(self, old_key: str, new_key: str) -> None:
-        """"""
-        self.move(
-            self._in_key(old_key), self._in_key(new_key), copy=True
-        )
+        self.move(self._in_key(old_key), self._in_key(new_key), copy=True)
 
-    def copy_all(self, old_pfx: str, new_pfx: str) -> List[str]:
-        """"""
-        return self.move_all(
-            self._in_key(old_pfx), self._in_key(new_pfx), copy=True
-        )
+    def copy_all(self, old_pfx: str, new_pfx: str) -> list[str]:
+        return self.move_all(self._in_key(old_pfx), self._in_key(new_pfx), copy=True)
 
     def list_keys(self, prefix: str, key_filter: Callable = lambda _x: True):
-        f"""
+        """
         List keys in S3 bucket.
         :param prefix: A prefix used to identify a list of s3 keys
         :param prefix: A function that accepts a key and returns true if we should include the key in the results
@@ -370,10 +377,8 @@ class S3(object):
     #  Public/Private Access
     # ///////////////////////
 
-    def set_acl(
-        self, key: str, acl: str, raise_on_missing: bool = False
-    ) -> None:
-        f"""
+    def set_acl(self, key: str, acl: str, raise_on_missing: bool = False) -> None:
+        """
         Set the access control for a s3 key
         :param key: An S3 key
         :param acl: The ACL string (either ``private`` or ``public-read``)
@@ -388,7 +393,7 @@ class S3(object):
         obj.Acl().put(ACL=acl)
 
     def set_private(self, key: str) -> None:
-        f"""
+        """
         Make this file on s3 private
         :param key: An S3 key
         :return None
@@ -396,7 +401,7 @@ class S3(object):
         self.set_acl(key, "private")
 
     def set_public(self, key: str):
-        f"""
+        """
         Make this file on s3 private
         :param key: An S3 key
         :return None
@@ -404,7 +409,7 @@ class S3(object):
         self.set_acl(key, "public-read")
 
     def get_presigned_url(self, key: str, expiration: int = 3600) -> str:
-        f"""
+        """
         Create a presigned url for an s3 asset.
         :param key: An S3 key
         :param expiration: The number of seconds this url is valid for.
@@ -417,14 +422,12 @@ class S3(object):
         )
 
     def get_public_url(self, key: str) -> str:
-        f"""
+        """
         Get the public url for an s3 asset.
         :param key: An S3 key
         :return str
         """
-        return "{}/{}/{}".format(
-            self.client.meta.endpoint_url, self.bucket_name, self._in_key(key)
-        )
+        return f"{self.client.meta.endpoint_url}/{self.bucket_name}/{self._in_key(key)}"
 
     def purge_cdn_cache(self, prefix=""):
         """
@@ -434,8 +437,8 @@ class S3(object):
         "https://api.digitalocean.com/v2/cdn/endpoints/<CDN_ENDPOINT_ID>/cache"
         """
         r = requests.delete(
-            f"https://api.digitalocean.com/v2/cdn/endpoints/{settings.S3_CDN_ID}/cache",
-            headers={"Authorization": "Bearer {}".format(settings.DO_TOKEN)},
+            f"https://api.digitalocean.com/v2/cdn/endpoints/{S3_CDN_ID}/cache",
+            headers={"Authorization": f"Bearer {DO_TOKEN}"},
             json={"files": [f"{prefix}*"]},
         )
         r.raise_for_status()

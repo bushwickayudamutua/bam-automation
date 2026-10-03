@@ -137,7 +137,7 @@ class UpdateWebsiteRequestData(Function):
         self.s3.purge_cdn_cache(s3_filepath)
         self.log.info(f"Purged CDN cache for file: {s3_filepath}")
 
-    def run(self, params, context):
+    def run(self, params):
         """"""
         now = datetime.now(UTC)
 
