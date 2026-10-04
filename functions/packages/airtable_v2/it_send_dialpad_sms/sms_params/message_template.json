@@ -6,6 +6,14 @@
   "script": "Hi [FIRST_NAME], I'm [VOLUNTEER] from BAM. We are distributing [REQUEST_LABEL], [DAY], [TIME]. Location is [LOCATION]. If you want an appointment, what time do you prefer? Thank you :)",
   "location": "<DISTRO LOCATION>",
   "distro": {
+    "Tuesday": {
+      "day": "tomorrow Tuesday",
+      "time": "between 11 am - 12:30 pm"
+    },
+    "Friday": {
+      "day": "tomorrow Friday",
+      "time": "between 10 am - 12:30 pm"
+    },
     "Sunday": {
       "day": "tomorrow Sunday",
       "time": "between 11 am - 12:30 pm"
@@ -18,6 +26,14 @@
   "script": "Hola [FIRST_NAME], soy [VOLUNTEER] de BAM. Tenemos una distribución de [REQUEST_LABEL], [DAY], [TIME], en [LOCATION]. Si deseas una cita porfa dinos a qué hora prefieres. Gracias :)",
   "location": "<DISTRO LOCATION>",
   "distro": {
+    "Tuesday": {
+      "day": "mañana Martes",
+      "time": "entre las 11 am - 12:30 pm"
+    },
+    "Friday": {
+      "day": "mañana Viernes",
+      "time": "entre las 10 am - 12:30 pm"
+    },
     "Sunday": {
       "day": "mañana Domingo",
       "time": "entre las 11 am - 12:30 pm"
@@ -30,6 +46,14 @@
   "script": "سلام [اسم]، أنا [متطوع] من «بام». سنقوم غدًا بتوزيع [المنتج]. لدينا مواعيد [يوم] [وقت] في [مكان]. لو كنت تريد ميعاد، ما الوقت الذي يناسبكم؟ شكرا :)",
   "location": "<DISTRO LOCATION>",
   "distro": {
+    "Tuesday": {
+      "day": "غداً يوم الثلاثاء",
+      "time": "من ۱۱ صباحًا حتى ۱۲:۳۰ ظهرًا"
+    },
+    "Friday": {
+      "day": "غداً الجمعة",
+      "time": "من ۱۰ صباحًا حتى ۱۲:۳۰ ظهرًا"
+    },
     "Sunday": {
       "day": "غدا يوم الأحد",
       "time": "من ۱۱ صباحًا حتى ۱۲:۳۰ ظهرًا"
@@ -42,6 +66,14 @@
   "script": "您好[FIRST_NAME]，这里是BAM布什威克互助会的[VOLUNTEER]。我们这[DAY]的免费必需品分发活动还有名额。我们会有[REQUEST_LABEL]。时间[TIME]，地址是[LOCATION]。如果您有时间参加，请在这里回复是+您想预约的时间。",
   "location": "<DISTRO LOCATION>",
   "distro": {
+    "Tuesday": {
+      "day": "周二",
+      "time": "上午11:00到下午12:30"
+    },
+    "Friday": {
+      "day": "周五",
+      "time": "上午10:00到下午12:30"
+    },
     "Sunday": {
       "day": "周日",
       "time": "上午11:00到下午12:30"

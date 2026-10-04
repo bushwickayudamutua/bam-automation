@@ -43,7 +43,7 @@ Currently supported languages:
 `English`, `Spanish`, `Arabic`, `Chinese`
 
 Currently supported distro days:
-`Sunday`
+`Tuesday`, `Friday`, `Sunday`
 
 Format per language:
 - `languages`: list of Household `Languages` texted with this template. This is a single value except for `Chinese`, which includes Mandarin, Cantonese, and Toishanese.
@@ -54,7 +54,7 @@ Format per language:
 
 **NOTE**
 - All parameters provided by this file can be overridden using `message_template` input parameter to DO (or `--config-file`). New languages and distro days can be added.
-- The following is an example of customizing distro address and time in Spanish:
+- The following is an example of customizing Sunday distro address and time in Spanish:
 ```
 "message_template": {
   "Spanish": {
