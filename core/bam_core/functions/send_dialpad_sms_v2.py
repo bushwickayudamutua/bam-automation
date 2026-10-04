@@ -55,8 +55,7 @@ class SendDialpadSMSV2(Function):
         dry_run = params.get("dry_run", True)
         
         # Pull records from the Households view (and exclude last texted today by default):
-        today = date.today().strftime("%Y-%m-%d")
-        households_formula = "NOT(IS_SAME({Last Texted}, '"+today+"'))" if exclude_texted_today else None
+        households_formula = Household.last_texted.ne(now_est().date()) if exclude_texted_today else None
         households_all = Household.all(view=view_name, formula=households_formula, max_records=max_messages)
 
         self.log.info(f"Selected {len(households_all)} households!")
