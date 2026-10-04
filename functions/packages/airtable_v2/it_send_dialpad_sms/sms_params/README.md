@@ -46,7 +46,7 @@ Currently supported distro days:
 `Sunday`
 
 Format per language:
-- `languages`: list of Household `Languages` texted with this template. This is a single value except for `Chinese`, which incldues Mandarin, Cantose, and Toishanese.
+- `languages`: list of Household `Languages` texted with this template. This is a single value except for `Chinese`, which includes Mandarin, Cantonese, and Toishanese.
 - `script`: message text with placeholders `[FIRST_NAME]`, `[VOLUNTEER]`, `[REQUEST_LABEL]`, `[DAY]`, `[TIME]`, `[LOCATION]` (or `[اسم]`, `[متطوع]`, `[المنتج]`, `[يوم]`, `[وقت]`, `[مكان]` in `Arabic`).
 - `location`: distro address. This is empty by default for security, so it must always be provided for every language and day.
 - `distro`: `day` and `time` per distro day.
@@ -79,7 +79,7 @@ Currently supported EG items:
 
 - If `capitalize` is true, the name of the item will be in all caps (in `English` & `Spanish`). This is false by default.
 - Format per EG item:
-  - `types`: list of Requests `Type` in the Household `Open Request Types`. If more than one provided (e.g. `soap_and_pads`), it selects households that have an open request for all types. The earliest requested date (`Request Opened At`, via lookup) of the first item will be used for sorting.
+  - `types`: list of Requests `Type` in the Household `Open Request Types`. If more than one is provided (e.g. `soap_and_pads`), it selects households that have an open request for all types. The earliest requested date (`Request Opened At`, via lookup) of the first item will be used for sorting.
   - One label per language, e.g. `"English": "baby diapers"`.
 
 **NOTE**
