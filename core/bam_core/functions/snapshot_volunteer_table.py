@@ -4,8 +4,7 @@ import tempfile
 from datetime import datetime, timedelta
 
 from pyairtable.api.types import RecordDict
-from pydantic import BaseModel, Field
-from pydantic_settings import CliImplicitFlag
+from pydantic import Field
 
 from bam_core.constants import AIRTABLE_DATETIME_FORMAT, VOLUNTEERS_TABLE_NAME
 from bam_core.functions.base import Function
@@ -14,28 +13,24 @@ from bam_core.lib.s3 import S3
 from bam_core.utils.etc import now_est, now_utc
 from bam_core.utils.serde import obj_to_json
 
-LAST_MODIFIED_FIELD = "Last Modified"
-
 logger = logging.getLogger(__name__)
 airtable = Airtable()
 s3 = S3(parent_logger=logger)
 
-
-class Params(BaseModel):
-    number_of_days: int | None = Field(
-        1, description="The number of days to go back in time to fetch modified records"
-    )
-    dry_run: CliImplicitFlag[bool] = Field(
-        True, description="If true, data will not be written to Digital Ocean Space."
-    )
+LAST_MODIFIED_FIELD = "Last Modified"
 
 
-class SnapshotVolunteerTable(Function[Params]):
+class SnapshotVolunteerTable(Function):
     """
     Fetch modified records from Airtable and upload to Digital Ocean Space
     """
 
-    param_model = Params
+    number_of_days: int | None = Field(
+        1, description="The number of days to go back in time to fetch modified records"
+    )
+    dry_run: bool = Field(
+        True, description="If true, data will not be written to Digital Ocean Space."
+    )
 
     def _get_modified_records(self, number_of_days: int | None) -> list[RecordDict]:
         """
@@ -77,12 +72,12 @@ class SnapshotVolunteerTable(Function[Params]):
         slug = self._get_slug_from_table_name(table_name)
         return f"airtable-snapshots/{slug}/{slug}-{self._get_date_slug()}.json"
 
-    def run(self, params: Params, /):
+    def run(self):
         """
         Snapshot Airtable tables
         """
         logger.info(f"Fetching modified records from '{VOLUNTEERS_TABLE_NAME}'")
-        records = self._get_modified_records(params.number_of_days)
+        records = self._get_modified_records(self.number_of_days)
         if not records:
             logger.info(f"No modified records found in {VOLUNTEERS_TABLE_NAME} table")
             return
@@ -93,7 +88,7 @@ class SnapshotVolunteerTable(Function[Params]):
         # write json to a tempfile and upload to digital ocean space
         tmp = tempfile.NamedTemporaryFile(delete=False)
         filepath = self._get_filepath(VOLUNTEERS_TABLE_NAME)
-        if not params.dry_run:
+        if not self.dry_run:
             logger.info(
                 f"Writing {len(records)} records to {tmp.name} and uploading to {filepath}"
             )
@@ -113,4 +108,4 @@ class SnapshotVolunteerTable(Function[Params]):
 
 
 if __name__ == "__main__":
-    SnapshotVolunteerTable().run_cli()
+    SnapshotVolunteerTable.run_cli()

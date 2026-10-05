@@ -6,9 +6,7 @@ from typing import NotRequired, TypedDict
 
 from pyairtable.formulas import AND, OR, Field
 from pyairtable.orm import Model
-from pydantic import BaseModel
 from pydantic import Field as PdField
-from pydantic_settings import CliImplicitFlag
 
 from bam_core.functions.base import Function
 from bam_core.lib.airtable_v2 import FurnitureRequest, Request, count_table
@@ -120,19 +118,15 @@ METRIC_CONFIGS: list[MetricConfig] = [
 ]
 
 
-class Params(BaseModel):
-    dry_run: CliImplicitFlag[bool] = PdField(
-        True,
-        description="If true, data will not be written to the digital ocean space.",
-    )
-
-
 class UpdateWebsiteRequestData(Function):
     """
     Update the request counts on the website
     """
 
-    param_model = Params
+    dry_run: bool = PdField(
+        True,
+        description="If true, data will not be written to the digital ocean space.",
+    )
 
     def _write_data_to_s3(self, data: object, s3_filepath: str):
         td = tempfile.gettempdir()
@@ -144,7 +138,7 @@ class UpdateWebsiteRequestData(Function):
         s3.purge_cdn_cache(s3_filepath)
         logger.info(f"Purged CDN cache for file: {s3_filepath}")
 
-    def run(self, params: Params, /):
+    def run(self):
         """"""
         now = datetime.now(UTC)
 
@@ -222,7 +216,7 @@ class UpdateWebsiteRequestData(Function):
             f"Generated metrics:\n\tOPEN {open_request_data['metrics']}\n\tFULFILLED {fulfilled_request_data['metrics']}"
         )
 
-        if params.dry_run:
+        if self.dry_run:
             logger.info("Dry run enabled. Skipping upload to digital ocean space.")
             return open_request_data, fulfilled_request_data
         self._write_data_to_s3(open_request_data, OPEN_REQUEST_FILEPATH)
@@ -238,4 +232,4 @@ class UpdateWebsiteRequestData(Function):
 
 
 if __name__ == "__main__":
-    UpdateWebsiteRequestData().run_cli()
+    UpdateWebsiteRequestData.run_cli()

@@ -1,36 +1,40 @@
-from typing import Any, Generic, TypeVar
+from typing import Any
 
 from pydantic import BaseModel, ValidationError
-from pydantic_settings import CliApp
-
-P = TypeVar("P", bound=BaseModel)
 
 
-class Function(Generic[P]):
+class Function(BaseModel):
     """
     A reusable class for building Digital Ocean Functions
     """
 
-    param_model: type[P]
-
-    def run(self, _params: P, /):
+    def run(self) -> Any:
         raise NotImplementedError
 
-    def run_do(self, event: dict[str, Any], _context, /):
+    @classmethod
+    def run_do(cls, event: dict[str, Any], _context, /):
         """
         The Digital Ocean Function Handler.
         """
         try:
-            params = self.param_model.model_validate(event)
+            params = cls.model_validate(event)
         except ValidationError as e:
             return {
                 "status": 400,
                 "error": e.errors(),
             }
-        return {"status": 200, "body": self.run(params)}
+        return {"status": 200, "body": params.run()}
 
-    def run_cli(self):
+    @classmethod
+    def run_cli(cls):
         """
         The CLI handler
         """
-        return self.run(CliApp.run(self.param_model))
+        try:
+            from pydantic_settings import CliApp
+        except ImportError:
+            raise RuntimeError(
+                "Must install dev dependency pydantic-settings to run function in CLI mode"
+            )
+
+        CliApp.run(cls).run()

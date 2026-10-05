@@ -1,8 +1,7 @@
 import logging
 
 from pyairtable.api.types import RecordDict
-from pydantic import BaseModel, Field
-from pydantic_settings import CliImplicitFlag
+from pydantic import Field
 
 from bam_core.constants import (
     VOLUNTEER_EMAIL_ERROR_FIELD,
@@ -14,17 +13,11 @@ from bam_core.functions.base import Function
 from bam_core.lib.airtable import Airtable
 from bam_core.lib.mailjet import Mailjet
 
-MAILJET_LISTS = ["Volunteers", "All Contacts"]
-
 logger = logging.getLogger(__name__)
 airtable = Airtable()
 mailjet = Mailjet()
 
-
-class Params(BaseModel):
-    dry_run: CliImplicitFlag[bool] = Field(
-        True, description="If true, data will not be written to Mailjet."
-    )
+MAILJET_LISTS = ["Volunteers", "All Contacts"]
 
 
 class UpdateMailjetLists(Function):
@@ -32,7 +25,9 @@ class UpdateMailjetLists(Function):
     Sync volunteer contacts from Airtable to Mailjet
     """
 
-    param_model = Params
+    dry_run: bool = Field(
+        True, description="If true, data will not be written to Mailjet."
+    )
 
     def _filter_new_contacts(
         self,
@@ -69,7 +64,7 @@ class UpdateMailjetLists(Function):
 
         return list(new_contacts.values())
 
-    def run(self, params: Params, /):
+    def run(self):
         current_contacts = set(mailjet.get_all_emails())
         logger.info(f"Syncing contacts from {VOLUNTEERS_TABLE_NAME}")
         all_contacts = airtable.volunteers.all(
@@ -91,7 +86,7 @@ class UpdateMailjetLists(Function):
             for list_name in MAILJET_LISTS:
                 kwargs = {**contact, "list_name": list_name}
                 logger.info(f"Adding contact {contact} to list {list_name}")
-                if params.dry_run:
+                if self.dry_run:
                     logger.info("Dry run enabled. Skipping...")
                     continue
                 try:
@@ -109,4 +104,4 @@ class UpdateMailjetLists(Function):
 
 
 if __name__ == "__main__":
-    UpdateMailjetLists().run_cli()
+    UpdateMailjetLists.run_cli()
