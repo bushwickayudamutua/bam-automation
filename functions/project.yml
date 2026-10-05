@@ -26,6 +26,9 @@ environment:
 parameters: {}
 packages:
   - name: airtable
+    parameters: {}
+    annotations: {}
+    functions:
       - name: snapshot_volunteer_table
         binary: false
         main: ""
