@@ -8,7 +8,7 @@ on:
 jobs:
   check-core:
     runs-on: ubuntu-latest
-    default:
+    defaults:
       run:
         working-directory: ./core
 
@@ -36,7 +36,7 @@ jobs:
 
   check-app:
     runs-on: ubuntu-latest
-    default:
+    defaults:
       run:
         working-directory: ./app
 
