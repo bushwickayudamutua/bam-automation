@@ -9,7 +9,7 @@ Re-usable functions and settings for automations.
 * [`bam_core.functions`](bam_core/functions/): Code for our [Digital Ocean Functions](../functions/)
 * [`bam_core.settings`](bam_core/settings.py): Shared env-based settings.
 * [`bam_core.constants`](bam_core/constants.py): References to Airtable fields, values, views, and schemas.
-* [`tests`](tests/): tests run via `pytest -vv .`
+* [`tests`](tests/): tests run via `uv run pytest -vv .`
 * [`scripts`](scripts/): assorted one-off scripts.
 
 ## How do I install this locally?
@@ -17,7 +17,7 @@ Re-usable functions and settings for automations.
 Follow the setup guide in the [README](../README.md) of this repository, then run the tests to confirm everything is working:
 
 ```bash
-pytest -vv . # run the tests
+uv run pytest -vv . # run the tests
 ```
 
 ## How do I contribute new functionality?

@@ -25,14 +25,14 @@ jobs:
           uv sync --locked --dev
       - name: Run linting and formatting checks
         run: |
-          ruff check .
-          ruff format --check .
+          uv run ruff check .
+          uv run ruff format --check .
       - name: Run type checks
         run: |
-          ty check .
+          uv run ty check .
       - name: Run tests
         run: |
-          pytest -vv .
+          uv run pytest -vv .
 
   check-app:
     runs-on: ubuntu-latest
@@ -53,11 +53,11 @@ jobs:
           uv sync --locked --dev
       - name: Run linting and formatting checks
         run: |
-          ruff check .
-          ruff format --check .
+          uv run ruff check .
+          uv run ruff format --check .
       - name: Run type checks
         run: |
-          ty check .
+          uv run ty check .
       - name: Run tests
         run: |
-          pytest -vv .
+          uv run pytest -vv .

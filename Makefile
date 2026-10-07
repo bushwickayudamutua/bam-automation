@@ -33,11 +33,3 @@ run-daily:
 run-hourly:
 
 	cd functions/packages/cron/hourly && python __main__.py false
-
-test-core:
-
-	cd core && pytest -vv .
-
-test-app:
-
-	cd app && pytest -vv .
