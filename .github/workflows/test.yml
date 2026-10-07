@@ -1,33 +1,63 @@
-name: Run tests
+name: Run checks and tests
 on:
   pull_request:
     branches:
       - main
+  workflow_call:
 
 jobs:
-  test:
+  check-core:
     runs-on: ubuntu-latest
+    default:
+      run:
+        working-directory: ./core
 
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
+      - uses: astral-sh/setup-uv@v10.1.0
         with:
-          python-version: "3.11"
-      - name: Install test dependencies
-        run: |
-          python -m pip install --upgrade pip wheel setuptools
-          pip install -r requirements-dev.txt
+          enable-cache: true
       - name: Populate .env file
         run: |
           echo "${{ secrets.BAM_ENV_FILE_CONTENTS }}" > ./.env
-      - name: Run core tests
+      - name: Install Python and dependencies
         run: |
-          pip install .
-          pytest -vv .
-        working-directory: ./core
-      - name: Run API tests
+          uv sync --locked --dev
+      - name: Run linting and formatting checks
         run: |
-          pip install ../core
-          pip install -r requirements.txt
+          ruff check .
+          ruff format --check .
+      - name: Run type checks
+        run: |
+          ty check .
+      - name: Run tests
+        run: |
           pytest -vv .
+
+  check-app:
+    runs-on: ubuntu-latest
+    default:
+      run:
         working-directory: ./app
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: astral-sh/setup-uv@v10.1.0
+        with:
+          enable-cache: true
+      - name: Populate .env file
+        run: |
+          echo "${{ secrets.BAM_ENV_FILE_CONTENTS }}" > ./.env
+      - name: Install Python and dependencies
+        run: |
+          uv sync --locked --dev
+      - name: Run linting and formatting checks
+        run: |
+          ruff check .
+          ruff format --check .
+      - name: Run type checks
+        run: |
+          ty check .
+      - name: Run tests
+        run: |
+          pytest -vv .

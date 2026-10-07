@@ -22,3 +22,13 @@ dependencies = [
 # https://pip.pypa.io/en/stable/reference/pip/#pep-517-and-518-support
 requires = ["setuptools>=68.1.2", "wheel>=0.41.2"]
 build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.16.10",
+    "ty>=0.0.85",
+]
+manual = [
+    "pydantic-settings>=2.15.0",
+]
