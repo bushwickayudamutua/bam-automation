@@ -42,7 +42,7 @@ packages:
           logs: 256
           memory: 1024
         triggers:
-          - name: trigger-daily-run
+          - name: snapshot-volunteer-daily
             sourceType: scheduler
             sourceDetails:
               cron: "33 2 * * *" # 10:33pm ET
@@ -80,7 +80,7 @@ packages:
           logs: 256
           memory: 1024
         triggers:
-          - name: trigger-hourly-run
+          - name: update-website-hourly
             sourceType: scheduler
             sourceDetails:
               cron: "3 * * * *" # every hour at 3 minutes after the hour
@@ -103,7 +103,7 @@ packages:
           logs: 256
           memory: 1024
         triggers:
-          - name: trigger-daily-run
+          - name: update-mailjet-daily
             sourceType: scheduler
             sourceDetails:
               cron: "33 2 * * *" # 10:33pm ET
