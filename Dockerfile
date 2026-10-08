@@ -30,4 +30,4 @@ ADD app /opt/bam
 RUN uv sync --locked --no-dev
 
 # Start app
-CMD ["uvicorn", "bam_app.main:app", "--port", "3030", "--host", "0.0.0.0"]
+CMD ["uv", "run", "uvicorn", "bam_app.main:app", "--port", "3030", "--host", "0.0.0.0"]
