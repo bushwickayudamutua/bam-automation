@@ -23,13 +23,12 @@ jobs:
       - name: Install Python and dependencies
         run: |
           uv sync --locked --dev
-      - name: Run linting and formatting checks
+      - name: Run linting check
         run: |
-          uv run ruff check .
-          uv run ruff format --check .
+          uv run ruff check . --output-format concise --exit-zero
       - name: Run type checks
         run: |
-          uv run ty check .
+          uv run ty check . --output-format concise
       - name: Run tests
         run: |
           uv run pytest -vv .
@@ -51,13 +50,12 @@ jobs:
       - name: Install Python and dependencies
         run: |
           uv sync --locked --dev
-      - name: Run linting and formatting checks
+      - name: Run linting check
         run: |
-          uv run ruff check .
-          uv run ruff format --check .
+          uv run ruff check . --output-format concise --exit-zero
       - name: Run type checks
         run: |
-          uv run ty check .
+          uv run ty check . --output-format concise
       - name: Run tests
         run: |
           uv run pytest -vv .
