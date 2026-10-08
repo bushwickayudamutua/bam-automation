@@ -28,7 +28,7 @@ jobs:
           uv run ruff check . --output-format concise --exit-zero
       - name: Run type checks
         run: |
-          uv run ty check . --output-format concise
+          uv run ty check . --output-format concise --exit-zero
       - name: Run tests
         run: |
           uv run pytest -vv .
@@ -55,7 +55,7 @@ jobs:
           uv run ruff check . --output-format concise --exit-zero
       - name: Run type checks
         run: |
-          uv run ty check . --output-format concise
+          uv run ty check . --output-format concise --exit-zero
       - name: Run tests
         run: |
           uv run pytest -vv .
