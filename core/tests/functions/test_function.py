@@ -1,53 +1,19 @@
 from bam_core.functions.base import Function
-from bam_core.functions.params import (
-    Param,
-    Params,
-)
 
 
-def test_function_run():
-    class TestFunction(Function):
-        def run(self, params):
-            return params
+class TestFunction(Function):
+    test: str = ""
 
-    function = TestFunction()
-    assert function.run_api({}) == {}
+    def run(self):
+        return {"test": self.test}
 
 
 def test_function_run_params_default():
-    class TestFunction(Function):
-        params = Params(
-            Param(
-                name="test",
-                type="string",
-                default="",
-                description="Test param",
-            )
-        )
-
-        def run(self, params):
-            return params
-
     function = TestFunction()
-    assert function.run_api({}) == {"test": ""}
+    assert function.run() == {"test": ""}
 
 
-def test_function_run_raises_param_missing():
-    class TestFunction(Function):
-        params = Params(
-            Param(
-                name="test",
-                type="string",
-                default="",
-                description="Test param",
-            )
-        )
-
-        def run(self, params):
-            return params
-
-    function = TestFunction()
-    try:
-        function.run_api({})
-    except Exception as e:
-        assert str(e) == "Missing required parameter: test"
+def test_function_run_params_non_default():
+    test = "Hello, Bushwick!"
+    function = TestFunction(test=test)
+    assert function.run() == {"test": test}
