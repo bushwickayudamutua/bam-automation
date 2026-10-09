@@ -3,7 +3,6 @@ from typing import Any, Generator
 import requests
 import time
 import random
-from bam_core.utils.etc import now_est
 from datetime import date
 
 from bam_core.lib.airtable_v2 import Household
