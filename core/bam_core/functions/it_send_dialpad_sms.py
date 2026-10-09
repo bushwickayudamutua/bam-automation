@@ -150,7 +150,8 @@ class ItSendDialpadSMS(Function):
                 message_template[item][lang] = curr_msg
 
         # Pull records from the Households view (and exclude last texted today by default):
-        households_formula = Household.last_texted.ne(now_est().date()) if exclude_texted_today else None
+        today_date = now_est().date()
+        households_formula = Household.last_texted.ne(today_date) if exclude_texted_today else None
         households = Household.all(view=view_name, formula=households_formula)
 
         # Create text message per household:
@@ -218,6 +219,7 @@ class ItSendDialpadSMS(Function):
         num_messages_sent = self.dialpad.it_send_sms(
             households=households,
             messages=messages,
+            today_date=today_date,
             testing=dry_run,
             verbose=verbose
         )

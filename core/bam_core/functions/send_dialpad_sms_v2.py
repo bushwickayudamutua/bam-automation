@@ -55,7 +55,8 @@ class SendDialpadSMSV2(Function):
         dry_run = params.get("dry_run", True)
         
         # Pull records from the Households view (and exclude last texted today by default):
-        households_formula = Household.last_texted.ne(now_est().date()) if exclude_texted_today else None
+        today_date = now_est().date()
+        households_formula = Household.last_texted.ne(today_date) if exclude_texted_today else None
         households_all = Household.all(view=view_name, formula=households_formula, max_records=max_messages)
 
         self.log.info(f"Selected {len(households_all)} households!")
@@ -72,7 +73,7 @@ class SendDialpadSMSV2(Function):
             # update last auto-texted field in Airtable
             if not dry_run:
                 self.log.info(f"Setting Last Texted for household {household.bam_id}")
-                household.last_texted = now_est().date()
+                household.last_texted = today_date
                 household.save()
         
         self.log.info(f"Successfully sent {num_messages_sent} messages!")

@@ -4,6 +4,7 @@ import requests
 import time
 import random
 from bam_core.utils.etc import now_est
+from datetime import date
 
 from bam_core.lib.airtable_v2 import Household
 from bam_core.settings import DIALPAD_API_TOKEN, DIALPAD_USER_ID
@@ -193,6 +194,7 @@ class Dialpad:
     def it_send_sms(
         self, households: list[Household],
         messages: list[str],
+        today_date: date,
         testing: bool = False,
         verbose: bool = True,
     ) -> int:
@@ -242,7 +244,7 @@ class Dialpad:
                     if verbose:
                         self.log.info(f"Setting 'Last Texted' for household {household.bam_id} ({household.name} at {phone_num})")
                     try:
-                        household.last_texted = now_est().date()
+                        household.last_texted = today_date
                         household.save()
                     except Exception as e:
                         self.log.error(f"Error setting 'Last Texted' for household {household.bam_id}:\n{e}")
