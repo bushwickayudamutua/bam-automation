@@ -4,6 +4,9 @@ on:
     branches:
       - main
   workflow_call:
+    secrets:
+      BAM_ENV_FILE_CONTENTS:
+        required: true
 
 jobs:
   check-core:

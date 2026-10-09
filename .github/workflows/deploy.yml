@@ -8,16 +8,25 @@ on:
 jobs:
   test:
     uses: ./.github/workflows/test.yml
+    secrets:
+      BAM_ENV_FILE_CONTENTS: ${{ secrets.BAM_ENV_FILE_CONTENTS }}
 
   deploy:
     runs-on: ubuntu-latest
     needs: test
     steps:
     - uses: actions/checkout@v3
+    - uses: astral-sh/setup-uv@v10.1.0
+      with:
+        python-version: "3.11"
+        enable-cache: true
     - name: Install doctl
       uses: digitalocean/action-doctl@v2
       with:
         token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+    - name: Install virtualenv
+      run: |
+        uv tool install virtualenv
     - name: Populate .env file for functions
       run: |
         echo "${{ secrets.BAM_ENV_FILE_CONTENTS }}" > ./.env
