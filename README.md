@@ -4,41 +4,40 @@ Hi! Welcome to `bam-automation`. This repository contains code for syncing data 
 
 ## Local Development Setup
 
-You'll first need `python3.11` installed. If you're on a Mac, you can do this with [Homebrew](https://brew.sh/).
+You'll first need `uv` installed. If you're on a Mac, you can do this with [Homebrew](https://brew.sh/).
 
 ```
-brew install python@3.11
+brew install uv
 ```
 
-Next you'll need to setup a virtual environment and install the dependencies for each subproject:
+Next you'll need to setup each subproject:
 
 ```
-python3.11 -m venv .venv # create a virtualenv
-source .venv/bin/activate # activate it
-pip install -r requirements-dev.txt # install the development requirements
-pip install -e ./core # install the bam-core library
-pip install -r ./app/requirements.txt # install the automation API requirements
-pip install -r ./notebooks/requirements.txt # install the notebook requirements
+# In each of app/, core/
+uv sync --locked --dev # install dependencies, including dev dependencies
 ```
 
-Finally, configure your local environment by copying [`.env.sample`](.env.sample) to `.env` and fill in the missing values. You'll need to ask someone in our Signal chat for access to these secrets:
+`uv` downloads the correct version of Python, creates a virtual environment and installs dependencies for you. Finally, configure your local environment by copying [`.env.sample`](.env.sample) to `.env` and fill in the missing values. You'll need to ask someone in our Signal chat for access to these secrets:
 
-```bash
+```
 cp .env.sample .env
 ```
 
 ## Subfolders
-## [`app`](app/)
+
+### [`app`](app/)
+
 This folder contains a [`fastapi`](https://fastapi.tiangolo.com/) application designed to provide additional functionality to Airtable automations via HTTP requests.
 
-## [`automation-scripts`](automation-scripts/)
+### [`automation-scripts`](automation-scripts/)
+
 This folder contains scripts used in Airtable automations. There is no automatic deploy at the moment, but at the very least it provides a place for us to track changes.
 
-## [`core`](core/)
+### [`core`](core/)
 
 This folder contains a python module with reusable utilities for connecting and interacting with our tech services (Airtable, Dialpad, Twilio, Mailjet, Digital Ocean, etc). This module is automatically included in every function's virtual environment.
 
-## [`functions`](functions/)
+### [`functions`](functions/)
 
 This folder contains code for [Digital Ocean Functions](https://www.digitalocean.com/products/functions) which can be run via:
 

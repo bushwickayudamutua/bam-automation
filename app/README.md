@@ -23,7 +23,7 @@ Currently, it has the following endpoints:
 Follow the setup guide in the [README](../README.md) of this repository, then run the tests to confirm everything is working:
 
 ```shell
-pytest -vv . # run the tests
+uv run pytest -vv . # run the tests
 ```
 
 ## How do I run this locally?
