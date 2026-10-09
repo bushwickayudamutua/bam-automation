@@ -3,6 +3,7 @@ from typing import Any, Generator
 import requests
 import time
 import random
+from datetime import date
 
 from bam_core.lib.airtable_v2 import Household
 from bam_core.settings import DIALPAD_API_TOKEN, DIALPAD_USER_ID
@@ -188,6 +189,67 @@ class Dialpad:
             if not testing:
                 time.sleep(2)
             yield household
+
+    def it_send_sms(
+        self, households: list[Household],
+        messages: list[str],
+        today_date: date,
+        testing: bool = False,
+        verbose: bool = True,
+    ) -> int:
+        num_messages_sent = 0
+        for i, (household, message) in enumerate(zip(households, messages)):
+            if not testing and i % 30 == 0 and i != 0:
+                self.log.info("Taking a little nap so that we don't get rate limited, will start back up in 30 seconds 😴")
+                time.sleep(30)
+                self.log.info("Texts are sending, go to dialpad 🐥💼")
+
+            phone_num = self._clean_phone_number(household.phone_number)
+            split_messages = self._split_message(message)
+            sms_success = True
+            for current_split_message in split_messages:
+                payload = {
+                    "infer_country_code": False,
+                    "to_numbers": phone_num,
+                    "text": current_split_message,
+                    "user_id": self.user_id,
+                }
+                headers = {
+                    "accept": "application/json",
+                    "content-type": "application/json",
+                    "authorization": f"Bearer {self.api_token}",
+                }
+                if verbose:
+                    self.log.info(f"""[{phone_num}] {"WOULD SEND" if testing else "SENDING"}: '{current_split_message}'""")
+                if not testing:
+                    try:
+                        response = requests.post(DIALPAD_API_URL, json=payload, headers=headers)
+                        json_resp = response.json()
+                        if verbose:
+                            self.log.info(f"Response: {json_resp}")
+                        if not response.ok:
+                            sms_success = False
+                            api_error_message = json_resp.get("error", {}).get("message", "Unknown error")
+                            self.log.error(f"Error sending message to household {household.bam_id} ({household.name} at {phone_num}):\n{api_error_message}")
+                            break
+                    except Exception as e:
+                        sms_success = False
+                        self.log.error(f"Error for household {household.bam_id}:\n{e}")
+            
+            if not testing:
+                time.sleep(2)
+                if sms_success:
+                    num_messages_sent += 1
+                    if verbose:
+                        self.log.info(f"Setting 'Last Texted' for household {household.bam_id} ({household.name} at {phone_num})")
+                    try:
+                        household.last_texted = today_date
+                        household.save()
+                    except Exception as e:
+                        self.log.error(f"Error setting 'Last Texted' for household {household.bam_id}:\n{e}")
+        
+        return num_messages_sent
+
 
     def send_sms_from_csv(self, file_path, user_message):
         with open(file_path, newline="", encoding="utf-8") as csv_file:
