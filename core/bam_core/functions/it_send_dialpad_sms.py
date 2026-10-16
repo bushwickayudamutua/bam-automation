@@ -83,7 +83,7 @@ class ItSendDialpadSMS(Function):
         ),
     )
 
-    def run(self, params, context):
+    def run(self, params):
         view_name = params.get("view_name")
         distro_day = params.get("distro_day")
         request_types = params.get("request_types")
