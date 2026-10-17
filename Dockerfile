@@ -1,5 +1,5 @@
 # This Dockerfile is for running the automation API in ./app
-FROM astral/uv:bookworm
+FROM astral/uv:0.12.10-python3.11-bookworm
 
 # set env
 ENV LC_ALL C.UTF-8

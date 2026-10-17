@@ -4,10 +4,10 @@ Hi! Welcome to `bam-automation`. This repository contains code for syncing data 
 
 ## Local Development Setup
 
-You'll first need `uv` installed. If you're on a Mac, you can do this with [Homebrew](https://brew.sh/).
+You'll first need `uv` (version `0.12.10`) installed. If you're on a Mac, you can do this with [Homebrew](https://brew.sh/).
 
 ```
-brew install uv
+brew install uv@0.12.10
 ```
 
 Next you'll need to setup each subproject:
