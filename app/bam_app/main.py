@@ -1,11 +1,11 @@
-from fastapi import FastAPI, HTTPException, status
-
+from bam_core.utils.email import format_email
+from bam_core.utils.geo import format_address
 from bam_core.utils.phone import (
     format_phone_number,
     is_international_phone_number,
 )
-from bam_core.utils.email import format_email
-from bam_core.utils.geo import format_address
+from fastapi import FastAPI, HTTPException, status
+
 from bam_app.settings import APIKEY
 
 app = FastAPI()
@@ -22,10 +22,10 @@ def check_api_key(apikey: str):
 @app.get("/clean-record")
 def clean_record(
     apikey: str,
-    phone: str = None,
-    email: str = None,
+    phone: str | None = None,
+    email: str | None = None,
     dns_check: bool = False,
-    address: str = None,
+    address: str | None = None,
     city_state: str = "",
     zip_code: str = "",
 ):

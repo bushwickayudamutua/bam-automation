@@ -1,0 +1,30 @@
+[project]
+name = "bam-app"
+version = "0.0.1"
+description = "API and Interface for BAM Automations"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    { name = "BAM", email = "bushwickayudamutua@gmail.com" },
+]
+dependencies = [
+    "bam-core",
+    "fastapi>=0.142.2",
+    "sqlalchemy>=2.1.3",
+    "uvicorn>=0.54.0",
+]
+
+[build-system]
+requires = ["setuptools>=68.1.2", "wheel>=0.41.2"]
+build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.13.1",
+    "pytest>=9.1.1",
+    "ruff>=0.16.10",
+    "ty>=0.0.85",
+]
+
+[tool.uv.sources]
+bam-core = { path = "../core" }
