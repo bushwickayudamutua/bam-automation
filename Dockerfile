@@ -1,5 +1,5 @@
 # This Dockerfile is for running the automation API in ./app
-FROM astral/uv:0.12.10-python3.11-bookworm
+FROM astral/uv:0.12.10-python3.11-trixie
 
 # set env
 ENV LC_ALL C.UTF-8
@@ -8,24 +8,11 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV BAM_ENV=docker
 ENV UV_NO_DEV=1
 
-# Install system requirements
-RUN apt update
-RUN apt install -y \
-	curl \
-	build-essential \
-	python3-pip \
-	uwsgi \
-	uwsgi-plugin-python3
-
-# Configure system
-RUN export PATH=~/.local/bin:$PATH
-ENV PYTHONPATH "/opt/bam:$PYTHONPATH"
-
 # Install API requirements
 
 WORKDIR /opt/bam
 
-# Install api.
+# Install core, api, and configured dependencies.
 ADD core /opt/core
 ADD app /opt/bam
 RUN uv sync --locked
