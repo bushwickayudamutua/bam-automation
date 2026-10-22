@@ -1,7 +1,9 @@
+from unittest.mock import patch
+
 from fastapi.testclient import TestClient
+
 from bam_app.main import app
 from bam_app.settings import APIKEY
-from unittest.mock import patch
 
 client = TestClient(app)
 
@@ -93,14 +95,12 @@ def test_clean_record_with_valid_intl_number():
 
 
 def test_apikey_invalid():
-    response = client.get(f"/clean-record?apikey=invalid")
+    response = client.get("/clean-record?apikey=invalid")
     assert response.status_code == 401
 
 
 def test_clean_record_with_null_input():
-    response = client.get(
-        f"/clean-record?apikey={APIKEY}&phone=null&email=null"
-    )
+    response = client.get(f"/clean-record?apikey={APIKEY}&phone=null&email=null")
     assert response.status_code == 200
     assert response.json() == {
         "email": "",
@@ -124,9 +124,7 @@ def test_clean_record_with_missing_input():
 
 
 def test_clean_record_with_invalid_email():
-    response = client.get(
-        f"/clean-record?apikey={APIKEY}&phone=&email=invalid"
-    )
+    response = client.get(f"/clean-record?apikey={APIKEY}&phone=&email=invalid")
     assert response.status_code == 200
     assert response.json() == {
         "email": "invalid",
@@ -138,9 +136,7 @@ def test_clean_record_with_invalid_email():
 
 
 def test_clean_record_with_reformatted_email():
-    response = client.get(
-        f"/clean-record?apikey={APIKEY}&phone=&email=foo @gmail .com"
-    )
+    response = client.get(f"/clean-record?apikey={APIKEY}&phone=&email=foo @gmail .com")
     assert response.status_code == 200
     assert response.json() == {
         "email": "foo@gmail.com",

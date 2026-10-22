@@ -13,7 +13,7 @@ dialpad = Dialpad(parent_logger=logger)
 
 class SendDialpadSMSV2(Function):
     """
-    Given a list of Airtable views, send SMS messages to phone numbers in the view via Dialpad.
+    Given an Airtable view, send SMS messages to phone numbers in the view via Dialpad.
     """
 
     view_name: str = Field(
@@ -21,6 +21,10 @@ class SendDialpadSMSV2(Function):
     )
     message_template: str = Field(
         description="The template of the message to send via SMS. Use [FIRST_NAME] to insert the first name and [REQUEST_URL] to insert a request form URL which is randomized so it wont get blocked by Dialpad."
+    )
+    exclude_texted_today: bool = Field(
+        True,
+        description="If true, households that were texted today will be excluded.",
     )
     max_messages: int | None = Field(
         None,
@@ -35,12 +39,22 @@ class SendDialpadSMSV2(Function):
         """
         Snapshot Airtable tables
         """
+        # Pull records from the Households view (and exclude last texted today by default):
+        today_date = now_est().date()
+        households_formula = (
+            Household.last_texted.ne(today_date) if self.exclude_texted_today else None
+        )
+        households_all = Household.all(
+            view=self.view_name,
+            formula=households_formula,
+            max_records=self.max_messages,
+        )
+
+        logger.info(f"Selected {len(households_all)} households!")
 
         num_messages_sent = 0
         for household in dialpad.send_sms_v2(
-            households=Household.all(
-                view=self.view_name, max_records=self.max_messages
-            ),
+            households=households_all,
             message_template=self.message_template,
             testing=self.dry_run,
         ):
@@ -50,8 +64,10 @@ class SendDialpadSMSV2(Function):
             # update last auto-texted field in Airtable
             if not self.dry_run:
                 logger.info(f"Setting Last Texted for household {household.bam_id}")
-                household.last_texted = now_est().date()
+                household.last_texted = today_date
                 household.save()
+
+        logger.info(f"Successfully sent {num_messages_sent} messages!")
 
 
 if __name__ == "__main__":

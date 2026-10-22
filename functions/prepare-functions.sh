@@ -2,9 +2,12 @@
 set -e
 
 # Pre-build script to prepare all function directories for deployment
-# Copies core package and shared files (.ignore, build.sh) to each function
+# Builds the core library and copies it to the shared lib/ folder
+# Copies shared files (.ignore, build.sh) to each function
 # Automatically discovers function directories by finding __main__.py files
 # Usage: ./prepare-functions.sh
+
+uv build core --wheel --out-dir functions/lib
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -30,7 +33,6 @@ for dir in "${FUNCTION_DIRS[@]}"; do
         echo "Warning: Directory $dir does not exist, skipping..."
         continue
     fi
-    cp -R core "$dir/"
     cp functions/.ignore "$dir/.ignore"
     cp functions/build.sh "$dir/build.sh"
 done

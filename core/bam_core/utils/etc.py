@@ -1,6 +1,11 @@
+import logging
 import os
+import time
 from datetime import datetime
+from typing import Any
 from zoneinfo import ZoneInfo
+
+log = logging.getLogger(__name__)
 
 
 def list_files(path: str, ignore_hidden: bool = False) -> list[str]:
@@ -47,3 +52,24 @@ def now_utc() -> datetime:
     :return datetime
     """
     return datetime.now(ZoneInfo("UTC"))
+
+
+def replace_parameters(
+    A: dict,
+    B: dict = None,
+) -> dict:
+    """
+    Recursively adds named parameters from nested 'dict' A to B,
+    and overrides existing values in B.
+    """
+    
+    if B is None:
+        B = deepcopy(A)
+    else:
+        for p, v in A.items():
+            if isinstance(v, dict):
+                B[p] = replace_parameters(v, B.get(p))
+            else:
+                B[p] = deepcopy(v)
+    
+    return B
