@@ -1,11 +1,7 @@
-import logging
 import os
-import time
+from copy import deepcopy
 from datetime import datetime
-from typing import Any
 from zoneinfo import ZoneInfo
-
-log = logging.getLogger(__name__)
 
 
 def list_files(path: str, ignore_hidden: bool = False) -> list[str]:
@@ -54,22 +50,21 @@ def now_utc() -> datetime:
     return datetime.now(ZoneInfo("UTC"))
 
 
-def replace_parameters(
-    A: dict,
-    B: dict = None,
+def deep_merge(
+    base: dict,
+    override: dict,
 ) -> dict:
     """
-    Recursively adds named parameters from nested 'dict' A to B,
-    and overrides existing values in B.
+    Recursively adds named parameters from override to base,
+    overriding existing values.
     """
-    
-    if B is None:
-        B = deepcopy(A)
-    else:
-        for p, v in A.items():
-            if isinstance(v, dict):
-                B[p] = replace_parameters(v, B.get(p))
-            else:
-                B[p] = deepcopy(v)
-    
-    return B
+
+    for p, override_value in override.items():
+        if isinstance(override_value, dict) and isinstance(
+            base_value := base.get(p), dict
+        ):
+            base[p] = deep_merge(base_value, override_value)
+        else:
+            base[p] = deepcopy(override_value)
+
+    return base

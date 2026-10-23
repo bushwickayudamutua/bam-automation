@@ -67,7 +67,11 @@ class SendDialpadSMSV2(Function):
                 household.last_texted = today_date
                 household.save()
 
-        logger.info(f"Successfully sent {num_messages_sent} messages!")
+        if not self.dry_run:
+            logger.info(f"Successfully sent {num_messages_sent} messages!")
+            num_failed = len(households_all) - num_messages_sent
+            if num_failed > 0:
+                logger.info(f"{num_failed} messages failed!")
 
 
 if __name__ == "__main__":
