@@ -1,9 +1,12 @@
 import csv
-from typing import Any, Generator
-import requests
-import time
 import random
+import time
+from collections.abc import Generator
 from datetime import date
+from logging import Logger
+from typing import Any
+
+import requests
 
 from bam_core.lib.airtable_v2 import Household
 from bam_core.settings import DIALPAD_API_TOKEN, DIALPAD_USER_ID
@@ -11,34 +14,34 @@ from bam_core.settings import DIALPAD_API_TOKEN, DIALPAD_USER_ID
 DIALPAD_API_URL = "https://dialpad.com/api/v2/sms"
 BAM_URL = "https://bushwickayudamutua.com/"
 MAX_MESSAGE_LENGTH = 160
-RANDOM_REQUEST_URL_SIZE = (
-    4  # Size of the random hex string to append to the URL
-)
+RANDOM_REQUEST_URL_SIZE = 4  # Size of the random hex string to append to the URL
 
 
 class Dialpad:
     def __init__(
         self,
+        *,
         api_token=DIALPAD_API_TOKEN,
         user_id=DIALPAD_USER_ID,
         first_name_field="First Name",
         phone_number_field="Phone Number",
-        logger=None,
+        parent_logger: Logger,
     ):
+        self.logger = parent_logger.getChild("dialpad")
         self.api_token = api_token
         self.user_id = user_id
-        self.first_name_field = first_name_field  # Default field for first names, can be overridden
-        self.phone_number_field = phone_number_field  # Default field for phone numbers, can be overridden
-        self.log = logger
+        self.first_name_field = (
+            first_name_field  # Default field for first names, can be overridden
+        )
+        self.phone_number_field = (
+            phone_number_field  # Default field for phone numbers, can be overridden
+        )
 
     def _show_parsing_warning(self, count):
         response = input(
             f"You're about to send {count} texts, are you super sure about the decision you're about to make? (y/n): "
         )
         return response.lower() == "y"
-
-    def get_random_hex(self, size=4):
-        return
 
     def _get_random_request_url(self):
         return BAM_URL + "".join(
@@ -79,23 +82,19 @@ class Dialpad:
     ) -> Generator[dict[str, Any], None, None]:
         for i, row in enumerate(rows):
             if not testing and i % 30 == 0 and i != 0:
-                self.log.info(
+                self.logger.info(
                     "Taking a little nap so that we don't get rate limited, will start back up in 30 seconds 😴"
                 )
                 time.sleep(30)
-                self.log.info("Texts are sending, go to dialpad 🐥💼")
+                self.logger.info("Texts are sending, go to dialpad 🐥💼")
 
             request_url = self._get_random_request_url()
-            first_name = self._get_first_word(
-                row.get(self.first_name_field, "")
-            )
-            phone_num = self._clean_phone_number(
-                row.get(self.phone_number_field, "")
-            )
+            first_name = self._get_first_word(row.get(self.first_name_field, ""))
+            phone_num = self._clean_phone_number(row.get(self.phone_number_field, ""))
 
-            updated_message = message.replace(
-                "[FIRST_NAME]", first_name
-            ).replace("[REQUEST_URL]", request_url)
+            updated_message = message.replace("[FIRST_NAME]", first_name).replace(
+                "[REQUEST_URL]", request_url
+            )
             split_messages = self._split_message(updated_message)
 
             for current_split_message in split_messages:
@@ -110,7 +109,7 @@ class Dialpad:
                     "content-type": "application/json",
                     "authorization": f"Bearer {self.api_token}",
                 }
-                self.log.info(
+                self.logger.info(
                     f"""[{phone_num}] {"WOULD SEND" if testing else "SENDING"}: '{current_split_message}'"""
                 )
                 if not testing:
@@ -119,37 +118,37 @@ class Dialpad:
                             DIALPAD_API_URL, json=payload, headers=headers
                         )
                         json_resp = response.json()
-                        self.log.info(f"Response: {json_resp}")
+                        self.logger.info(f"Response: {json_resp}")
                         if not response.ok:
                             api_error_message = json_resp.get("error", {}).get(
                                 "message", "Unknown error"
                             )
-                            self.log.error(
+                            self.logger.error(
                                 f"Error sending message to {first_name} at {phone_num}: {api_error_message}"
                             )
                             break
                     except Exception as e:
-                        self.log.error(f"Error: {e}")
+                        self.logger.error(f"Error: {e}")
             if not testing:
                 time.sleep(2)
             yield row
 
     def send_sms_v2(
-        self, households: list[Household], message: str, testing: bool = False
+        self, households: list[Household], message_template: str, testing: bool = False
     ) -> Generator[Household, None, None]:
         for i, household in enumerate(households):
             if not testing and i % 30 == 0 and i != 0:
-                self.log.info(
+                self.logger.info(
                     "Taking a little nap so that we don't get rate limited, will start back up in 30 seconds 😴"
                 )
                 time.sleep(30)
-                self.log.info("Texts are sending, go to dialpad 🐥💼")
+                self.logger.info("Texts are sending, go to dialpad 🐥💼")
 
             request_url = self._get_random_request_url()
             first_name = household.name
             phone_num = self._clean_phone_number(household.phone_number)
 
-            updated_message = message.replace(
+            updated_message = message_template.replace(
                 "[FIRST_NAME]", first_name
             ).replace("[REQUEST_URL]", request_url)
             split_messages = self._split_message(updated_message)
@@ -166,7 +165,7 @@ class Dialpad:
                     "content-type": "application/json",
                     "authorization": f"Bearer {self.api_token}",
                 }
-                self.log.info(
+                self.logger.info(
                     f"""[{phone_num}] {"WOULD SEND" if testing else "SENDING"}: '{current_split_message}'"""
                 )
                 if not testing:
@@ -175,23 +174,24 @@ class Dialpad:
                             DIALPAD_API_URL, json=payload, headers=headers
                         )
                         json_resp = response.json()
-                        self.log.info(f"Response: {json_resp}")
+                        self.logger.info(f"Response: {json_resp}")
                         if not response.ok:
                             api_error_message = json_resp.get("error", {}).get(
                                 "message", "Unknown error"
                             )
-                            self.log.error(
+                            self.logger.error(
                                 f"Error sending message to {first_name} at {phone_num}: {api_error_message}"
                             )
                             break
                     except Exception as e:
-                        self.log.error(f"Error: {e}")
+                        self.logger.error(f"Error: {e}")
             if not testing:
                 time.sleep(2)
             yield household
 
     def it_send_sms(
-        self, households: list[Household],
+        self,
+        households: list[Household],
         messages: list[str],
         today_date: date,
         testing: bool = False,
@@ -200,9 +200,11 @@ class Dialpad:
         num_messages_sent = 0
         for i, (household, message) in enumerate(zip(households, messages)):
             if not testing and i % 30 == 0 and i != 0:
-                self.log.info("Taking a little nap so that we don't get rate limited, will start back up in 30 seconds 😴")
+                self.logger.info(
+                    "Taking a little nap so that we don't get rate limited, will start back up in 30 seconds 😴"
+                )
                 time.sleep(30)
-                self.log.info("Texts are sending, go to dialpad 🐥💼")
+                self.logger.info("Texts are sending, go to dialpad 🐥💼")
 
             phone_num = self._clean_phone_number(household.phone_number)
             split_messages = self._split_message(message)
@@ -220,36 +222,49 @@ class Dialpad:
                     "authorization": f"Bearer {self.api_token}",
                 }
                 if verbose:
-                    self.log.info(f"""[{phone_num}] {"WOULD SEND" if testing else "SENDING"}: '{current_split_message}'""")
+                    self.logger.info(
+                        f"""[{phone_num}] {"WOULD SEND" if testing else "SENDING"}: '{current_split_message}'"""
+                    )
                 if not testing:
                     try:
-                        response = requests.post(DIALPAD_API_URL, json=payload, headers=headers)
+                        response = requests.post(
+                            DIALPAD_API_URL, json=payload, headers=headers
+                        )
                         json_resp = response.json()
                         if verbose:
-                            self.log.info(f"Response: {json_resp}")
+                            self.logger.info(f"Response: {json_resp}")
                         if not response.ok:
                             sms_success = False
-                            api_error_message = json_resp.get("error", {}).get("message", "Unknown error")
-                            self.log.error(f"Error sending message to household {household.bam_id} ({household.name} at {phone_num}):\n{api_error_message}")
+                            api_error_message = json_resp.get("error", {}).get(
+                                "message", "Unknown error"
+                            )
+                            self.logger.error(
+                                f"Error sending message to household {household.bam_id} ({household.name} at {phone_num}):\n{api_error_message}"
+                            )
                             break
                     except Exception as e:
                         sms_success = False
-                        self.log.error(f"Error for household {household.bam_id}:\n{e}")
-            
+                        self.logger.error(
+                            f"Error for household {household.bam_id}:\n{e}"
+                        )
+
             if not testing:
                 time.sleep(2)
                 if sms_success:
                     num_messages_sent += 1
                     if verbose:
-                        self.log.info(f"Setting 'Last Texted' for household {household.bam_id} ({household.name} at {phone_num})")
+                        self.logger.info(
+                            f"Setting 'Last Texted' for household {household.bam_id} ({household.name} at {phone_num})"
+                        )
                     try:
                         household.last_texted = today_date
                         household.save()
                     except Exception as e:
-                        self.log.error(f"Error setting 'Last Texted' for household {household.bam_id}:\n{e}")
-        
-        return num_messages_sent
+                        self.logger.error(
+                            f"Error setting 'Last Texted' for household {household.bam_id}:\n{e}"
+                        )
 
+        return num_messages_sent
 
     def send_sms_from_csv(self, file_path, user_message):
         with open(file_path, newline="", encoding="utf-8") as csv_file:
@@ -257,15 +272,6 @@ class Dialpad:
             rows = list(reader)
             print(f"{len(rows)} records in this file")
             if self._show_parsing_warning(len(rows)):
-                for row in self.send_sms(rows, user_message):
-                    pass
+                self.send_sms(rows, user_message)
             else:
                 print("Operation cancelled.")
-
-
-if __name__ == "__main__":
-    dialpad = Dialpad()
-    dialpad.send_sms_from_csv(
-        "contacts.csv",
-        "Hello [FIRST_NAME], visit [REQUEST_URL] for more info!",
-    )

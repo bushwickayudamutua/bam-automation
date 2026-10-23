@@ -1,9 +1,96 @@
-from bam_core.lib.airtable_v2 import Household
-from bam_core.functions.base import Function
-from bam_core.functions.params import Params, Param, ItSMSMessageTemplateParams, ItSMSRequestLabelParams
-from bam_core.utils.etc import now_est, replace_parameters
-from argparse import ArgumentParser
 import json
+import logging
+from enum import StrEnum
+from pathlib import Path
+
+import pyairtable.formulas as F
+from pydantic import (
+    BaseModel,
+    Field,
+    PrivateAttr,
+    TypeAdapter,
+    model_validator,
+)
+
+from bam_core.functions.base import Function
+from bam_core.lib.airtable_v2 import Household
+from bam_core.lib.dialpad import Dialpad
+from bam_core.utils.etc import deep_merge, now_est
+
+logger = logging.getLogger(__name__)
+dialpad = Dialpad(parent_logger=logger)
+
+DEFUALT_MESSAGE_TEMPLATE_CFG_PATH = "default_message_template_config.json"
+
+
+class RequestKey(StrEnum):
+    baby_diapers = "baby_diapers"
+    adult_diapers = "adult_diapers"
+    clothing = "clothing"
+    soap = "soap"
+    pads = "pads"
+    school_supplies = "school_supplies"
+    pots_and_pans = "pots_and_pans"
+    plates_and_cups = "plates_and_cups"
+
+    def to_airtable(self) -> str:
+        if self == RequestKey.baby_diapers:
+            return "Pañales / Baby Diapers / 嬰兒紙尿褲"
+        if self == RequestKey.adult_diapers:
+            return "Pañales de adultos / Adult Diapers / 成人紙尿褲"
+        if self == RequestKey.clothing:
+            return "Ropa / Clothing / 服裝"
+        if self == RequestKey.soap:
+            return "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品"
+        if self == RequestKey.pads:
+            return "Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾"
+        if self == RequestKey.school_supplies:
+            return "Cosas de Escuela / School Supplies / 學校用品"
+        if self == RequestKey.pots_and_pans:
+            return "Ollas y Sartenes / Pots & Pans / 鍋碗瓢盆"
+        if self == RequestKey.plates_and_cups:
+            return "Platos o Tazas / Plates or Cups / 盘子或杯子"
+
+
+class LanguageKey(StrEnum):
+    english = "english"
+    spanish = "spanish"
+    arabic = "arabic"
+    mandarin = "mandarin"
+    cantonese = "cantonese"
+    toishanese = "toishanese"
+
+    def to_airtable(self) -> str:
+        if self == LanguageKey.english:
+            return "Inglés / English / 英文"
+        if self == LanguageKey.spanish:
+            return "Español / Spanish / 西班牙语"
+        if self == LanguageKey.arabic:
+            return "Árabe / Arabic / 阿拉伯語"
+        if self == LanguageKey.mandarin:
+            return "Chino Mandarín / Mandarin / 普通话"
+        if self == LanguageKey.cantonese:
+            return "Chino Cantonés / Cantonese / 广东话"
+        if self == LanguageKey.toishanese:
+            return "Chino Toishanés / Toishanese / 台山话"
+
+
+class DistroDescription(BaseModel):
+    day: str
+    time: str
+
+
+class MessageTemplate(BaseModel):
+    volunteer_name: str
+    script: list[str]
+    location: str
+    request_labels: dict[RequestKey, str]
+    distro: dict[str, DistroDescription]
+
+
+class RequestLabel(BaseModel):
+    types: list[str]
+    translations: dict[str, str]
 
 
 class ItSendDialpadSMS(Function):
@@ -11,246 +98,188 @@ class ItSendDialpadSMS(Function):
     Given an Airtable view, iterate over EG items and languages, and send SMS messages to phone numbers in the view via Dialpad.
     """
 
-    MESSAGE_TEMPLATE_PARAMS = "sms_params/message_template.json"
-    REQUEST_LABEL_PARAMS = "sms_params/request_label.json"
-
-    params = Params(
-        Param(
-            name="view_name",
-            type="string",
-            required=True,
-            description="An Airtable view name to fetch Household records from.",
-        ),
-        Param(
-            name="distro_day",
-            type="string",
-            required=True,
-            description="The day of EG distro. Must be defined in 'message_template' for each language.",
-        ),
-        Param(
-            name="request_types",
-            type="string_list",
-            required=True,
-            description="The EG items to text for. Must be defined in 'request_label' for each language.",
-        ),
-        Param(
-            name="languages",
-            type="string_list",
-            required=True,
-            description="The languages to text in. Must be included in 'request_label' and 'message_template' parameters.",
-        ),
-        Param(
-            name="volunteer",
-            type="string_list",
-            required=True,
-            description="Name of the volunteer sending sms messages. Must be one value (used for every language) or a list matching the order of 'languages'",
-        ),
-        Param(
-            name="message_template",
-            type="it_sms_message_template",
-            default=None,
-            description="Optional parameters to override default parameters for text message scripts in 'sms_params/message_template.json'",
-        ),
-        Param(
-            name="request_label",
-            type="it_sms_request_label",
-            default=None,
-            description="Optional parameters to override default parameters for handling EG item types in 'sms_params/request_label.json'",
-        ),
-        Param(
-            name="exclude_texted_today",
-            type="bool",
-            default=True,
-            description="If true, households that were texted today will be excluded.",
-        ),
-        Param(
-            name="max_messages",
-            type="int",
-            default=500,
-            description="The maximum number of messages to send. If not specified, the default maximum is 500.",
-        ),
-        Param(
-            name="dry_run",
-            type="bool",
-            default=True,
-            description="If true, messages will not be sent and only logged. Useful for testing.",
-        ),
-        Param(
-            name="verbose",
-            type="bool",
-            default=True,
-            description="If true, the sms message per household is logged.",
-        ),
+    distro_day: str = Field(
+        description="The day of EG distro. Must be defined in 'message_template' for each language.",
+    )
+    request_types: list[RequestKey] = Field(
+        description="The EG items to text for. The order determines which item will be mentioned in each message."
+    )
+    languages: list[LanguageKey] = Field(
+        description="The languages to text in. The order determines language preference in the case of multilingual households.",
+    )
+    view_name: str | None = Field(
+        None, description="An Airtable view name to fetch Household records from."
+    )
+    message_template_config_path: str | None = Field(
+        None, description="Path to the template config file."
+    )
+    message_template_overrides: dict[LanguageKey, dict] | None = Field(
+        None,
+        description="Optional parameters to override default parameters for text message scripts.",
+    )
+    volunteer_name: str | None = Field(
+        None,
+        description="Name of the volunteer sending sms messages. This parameter takes precedence over any volunteer names specified in message_template_overrides.",
+    )
+    location: str | None = Field(
+        None,
+        description="Location of the distro. This parameters takes precedence over any locations specified in message_template_overrides.",
+    )
+    exclude_texted_today: bool = Field(
+        True,
+        description="If true, households that were texted today will be excluded.",
+    )
+    max_messages: int = Field(
+        500,
+        description="The maximum number of messages to send",
+    )
+    dry_run: bool = Field(
+        True,
+        description="If true, messages will not be sent. Useful for testing.",
+    )
+    verbose: bool = Field(
+        True,
+        description="If true, the sms message per household is logged.",
     )
 
-    def run(self, params):
-        view_name = params.get("view_name")
-        distro_day = params.get("distro_day")
-        request_types = params.get("request_types")
-        languages = params.get("languages")
-        volunteer = params.get("volunteer")
-        message_template_custom = params.get("message_template")
-        request_label_custom = params.get("request_label")
-        exclude_texted_today = params.get("exclude_texted_today", True)
-        max_messages = params.get("max_messages", 500)
-        dry_run = params.get("dry_run", True)
-        verbose = params.get("verbose", True)
-        
-        # Load default parameters for text message scripts:
-        with open(self.MESSAGE_TEMPLATE_PARAMS, 'r') as file:
-            message_template_pars = ItSMSMessageTemplateParams().validate(json.load(file))
+    _message_template_map: dict[LanguageKey, MessageTemplate] = PrivateAttr()
 
-        # Load default parameters for handling EG item types:
-        with open(self.REQUEST_LABEL_PARAMS, 'r') as file:
-            request_label_pars = ItSMSRequestLabelParams().validate(json.load(file))
+    @model_validator(mode="after")
+    def build_message_template_map(self):
+        # Read config file
+        if self.message_template_config_path is None:
+            config_path = Path(__file__).parent / DEFUALT_MESSAGE_TEMPLATE_CFG_PATH
+        else:
+            config_path = self.message_template_config_path
+        with open(config_path, "r") as f:
+            message_template_map_obj = json.load(f)
 
-        # Add / replace with custom input parameters:
-        if message_template_custom:
-            message_template_pars = replace_parameters(message_template_custom, message_template_pars)
-        if request_label_custom:
-            request_label_pars = replace_parameters(request_label_custom, request_label_pars)
-        
-        if len(volunteer) == 1:
-            volunteer = volunteer * len(languages)
-        elif len(volunteer) != len(languages):
-            raise ValueError("'volunteer' must be one value or a list matching the order of 'languages'!")
+        # Apply overrides
+        message_template_map_obj = (
+            message_template_map_obj
+            if self.message_template_overrides is None
+            else deep_merge(message_template_map_obj, self.message_template_overrides)
+        )
 
-        # Create message templates iterating over 'request_types' and 'languages':
-        message_template = {}
-        for item in request_types:
-            message_template[item] = {}
-            for lang, vol in zip(languages, volunteer):
-                request_label = request_label_pars[item][lang]
-                item_cap = request_label_pars["capitalize"]
-                location = message_template_pars[lang]["location"]
-                day = message_template_pars[lang]["distro"][distro_day]["day"]
-                time = message_template_pars[lang]["distro"][distro_day]["time"]
+        # Save volunteer name in config if provided
+        if self.volunteer_name is not None:
+            for template in message_template_map_obj.values():
+                template["volunteer_name"] = self.volunteer_name
 
-                curr_msg = message_template_pars[lang]["script"]
-                if lang == "Arabic":
-                    curr_msg = (
-                        curr_msg
-                        .replace("[متطوع]", vol)
-                        .replace("[المنتج]", request_label)
-                        .replace("[يوم]", day)
-                        .replace("[وقت]", time)
-                        .replace("[مكان]", location)
-                    )
-                else:
-                    if item_cap and lang in ["English", "Spanish"]:
-                        request_label = request_label.upper()
-                    curr_msg = (
-                        curr_msg
-                        .replace("[VOLUNTEER]", vol)
-                        .replace("[REQUEST_LABEL]", request_label)
-                        .replace("[DAY]", day)
-                        .replace("[TIME]", time)
-                        .replace("[LOCATION]", location)
-                    )
-                message_template[item][lang] = curr_msg
+        # Save location in config if provided
+        if self.location is not None:
+            for template in message_template_map_obj.values():
+                template["location"] = self.location
 
-        # Pull records from the Households view (and exclude last texted today by default):
+        # Validate object
+        self._message_template_map = TypeAdapter(
+            dict[LanguageKey, MessageTemplate]
+        ).validate_python(message_template_map_obj)
+
+        return self
+
+    def run(self):
+        # Pull Household records, applying appropriate filtering and sorting
+        household_formulas = [
+            # Filter by language
+            F.OR(
+                F.GT(
+                    F.FIND(lang_key.to_airtable(), F.to_formula(Household.languages)),
+                    0,
+                )
+                for lang_key in self.languages
+            ),
+            # Filter by open request type
+            F.OR(
+                F.GT(
+                    F.FIND(
+                        req_key.to_airtable(),
+                        F.to_formula(Household.open_request_types),
+                    ),
+                    0,
+                )
+                for req_key in self.request_types
+            ),
+        ]
         today_date = now_est().date()
-        households_formula = Household.last_texted.ne(today_date) if exclude_texted_today else None
-        households = Household.all(view=view_name, formula=households_formula)
+        if self.exclude_texted_today:
+            # Filter out households texted today, if specified
+            household_formulas.append(Household.last_texted.ne(today_date))
+
+        households = Household.all(
+            view=self.view_name, formula=F.AND(household_formulas)
+        )
+
+        households = sorted(
+            households,
+            key=lambda household: min(
+                request_date
+                for req_key in self.request_types
+                if (request_date := household.get_requested_date(req_key.to_airtable()))
+                is not None
+            ),
+        )
+
+        households = households[: self.max_messages]
+
+        logger.info(f"Selected {len(households)} household!")
 
         # Create text message per household:
         messages = []
         for household in households:
-            which_type = [
-                i for i, item in enumerate(request_types)
-                if all([rtype in household.open_request_types for rtype in request_label_pars[item]["types"]])
-            ]
-            if which_type:
-                curr_type = request_types[which_type[0]]
-            else:
-                messages.append(None)
-                continue
+            message_template = next(
+                message_template
+                for lang_key, message_template in self._message_template_map.items()
+                if lang_key.to_airtable() in household.languages
+            )
 
-            which_lang = [
-                i for i, lang in enumerate(languages)
-                if any([hlang in household.languages for hlang in message_template_pars[lang]["languages"]])
-            ]
-            if which_lang:
-                curr_lang = languages[which_lang[0]]
-            else:
-                messages.append(None)
-                continue
-            
-            curr_msg = message_template[curr_type][curr_lang]
-            curr_name = self.dialpad._get_first_word(household.name)
-            if curr_lang == "Arabic":
-                curr_msg = curr_msg.replace("[اسم]", curr_name)
-            else:
-                curr_msg = curr_msg.replace("[FIRST_NAME]", curr_name)
-            
-            messages.append(curr_msg)
+            first_name = dialpad._get_first_word(household.name)
+            volunteer_name = message_template.volunteer_name
+            request_label = next(
+                message_template.request_labels[req_key]
+                for req_key in self.request_types
+                if req_key.to_airtable() in household.open_request_types
+            )
+            day = message_template.distro[self.distro_day].day
+            time = message_template.distro[self.distro_day].time
+            location = message_template.location
 
-        # Sort selected households by earliest requested date fields:
-        households_idx = [i for i, m in enumerate(messages) if m is not None]
-        request_dates = []
-        for item in request_types:
-            sort_type = request_label_pars[item]["types"][0]
-            request_dates.append([
-                d[0] if (d := households[i].get_requested_date(sort_type)) else "9999"
-                for i in households_idx
-            ])
-        request_dates.append(households_idx)
-        request_dates = sorted(zip(*request_dates))
-        households_idx = [row[-1] for row in request_dates]
+            curr_script = "".join(
+                [
+                    first_name
+                    if expr == "[FIRST_NAME]"
+                    else volunteer_name
+                    if expr == "[VOLUNTEER_NAME]"
+                    else request_label
+                    if expr == "[REQUEST_LABEL]"
+                    else day
+                    if expr == "[DAY]"
+                    else time
+                    if expr == "[TIME]"
+                    else location
+                    if expr == "[LOCATION]"
+                    else expr
+                    for expr in message_template.script
+                ]
+            )
 
-        # Restrict number of households if needed:
-        num_households = len(households_idx)
-        mode_str = "test" if dry_run else "text"
-        if num_households == 0:
-            self.log.info("No households selected!")
-            return
-        elif num_households > max_messages:
-            households_idx = households_idx[:max_messages]
-            self.log.info(f"Will {mode_str} {max_messages} out of {num_households} selected households!")
-            num_households = max_messages
-        else:
-            self.log.info(f"Will {mode_str} {num_households} selected households!")
-        
-        households = [households[i] for i in households_idx]
-        messages = [messages[i] for i in households_idx]
+            messages.append(curr_script)
 
         # Send SMS via Dialpad per household:
-        num_messages_sent = self.dialpad.it_send_sms(
+        num_messages_sent = dialpad.it_send_sms(
             households=households,
             messages=messages,
             today_date=today_date,
-            testing=dry_run,
-            verbose=verbose
+            testing=self.dry_run,
+            verbose=self.verbose,
         )
 
-        if dry_run:
-            self.log.info("Successful dry run!")
-        else:
-            self.log.info(f"Successfully sent {num_messages_sent} messages!")
-            num_failed = num_households - num_messages_sent
+        if not self.dry_run:
+            logger.info(f"Successfully sent {num_messages_sent} messages!")
+            num_failed = len(households) - num_messages_sent
             if num_failed > 0:
-                self.log.info(f"{num_failed} messages failed!")
-
-
-    def run_cli(self):
-        """
-        The CLI handler, with optional '--config-file' in DO input format
-        """
-        config_parser = ArgumentParser(add_help=False)
-        config_parser.add_argument("--config-file")
-        config_args, other_args = config_parser.parse_known_args()
-
-        if config_args.config_file is None:
-            self.parser.add_argument("--config-file", help="JSON file of parameters in DO input format. Can not be combined with other arguments.")
-            return super().run_cli()
-        if other_args:
-            raise ValueError("'--config-file' can not be combined with other arguments!")
-
-        with open(config_args.config_file, "r") as file:
-            return self.run_api(json.load(file))
+                logger.info(f"{num_failed} messages failed!")
 
 
 if __name__ == "__main__":
-    ItSendDialpadSMS().run_cli()
-
+    ItSendDialpadSMS.run_cli()
