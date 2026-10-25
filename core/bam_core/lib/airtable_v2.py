@@ -59,6 +59,9 @@ class FormSubmission(Model):
     internet_access = F.MultipleSelectField("Internet Access")
     roof_is_accessible = F.CheckboxField("Roof Accessible?")
 
+    # other requests/comments field
+    other_requests_and_comments = F.RichTextField("Other Requests and Comments")
+
     if TYPE_CHECKING:
 
         def __init__(
@@ -101,6 +104,7 @@ class Household(Model):
     other_languages = F.MultilineTextField("Other Languages")
 
     notes = F.RichTextField("Notes")
+    other_requests_and_comments = F.RichTextField("Other Requests and Comments")
 
     legacy_first_date_submitted = F.DateField("Legacy First Date Submitted")
     legacy_last_date_submitted = F.DateField("Legacy Last Date Submitted")

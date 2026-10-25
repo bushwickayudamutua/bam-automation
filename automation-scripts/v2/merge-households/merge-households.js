@@ -69,6 +69,7 @@ const mergeTextDeduped = (texts) => {
 }
 
 const notes = mergeText(households.map(h => h.getCellValue('Notes')))
+const otherReqs = mergeText(household.map(h => h.getCellValue('Other Requests and Comments'))
 
 const otherLanguages = mergeTextDeduped(
     households.map(h => h.getCellValue('Other Languages'))
@@ -87,6 +88,7 @@ await householdTable.updateRecordAsync(survivor, {
     'Furniture Requests': furnitureRequests,
     'Social Service Requests': socialServiceRequests,
     'Mesh Requests': meshRequests,
+    'Other Requests and Comments': otherReqs,
     'Needs Delivery': households.some(h => h.getCellValue('Needs Delivery')),
     'Needs Email Outreach': households.some(h => h.getCellValue('Needs Email Outreach')),
 })
