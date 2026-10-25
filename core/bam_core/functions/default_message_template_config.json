@@ -98,14 +98,14 @@
       ". لو كنت تريد ميعاد، ما الوقت الذي يناسبكم؟ شكرا :)"
     ],
     "request_labels": {
-      "baby_diapers": "ﺢﻓﺎﺿﺎﺗ ﺍﻸﻄﻓﺎﻟ",
-      "adult_diapers": "ﺢﻓﺎﺿﺎﺗ ﺎﻠﻜﺑﺍﺭ",
-      "clothing": "ﻡﻼﺒﺳ",
-      "soap": "ﺹﺎﺑﻮﻧ",
-      "pads": "ﻢﻨﺘﺟﺎﺗ ﺎﻠﻨﻇﺎﻓﺓ ﺎﻠﻨﺳﺎﺌﻳﺓ",
-      "school_supplies": "ﻝﻭﺍﺰﻣ ﻡﺩﺮﺴﻳﺓ",
-      "pots_and_pans": "ﺃﻭﺎﻨﻳ ﻂﻬﻳ",
-      "plates_and_cups": "ﺄﻄﺑﺎﻗ ﻭﺄﻛﻭﺎﺑ"
+      "baby_diapers": "حفاضات الأطفال",
+      "adult_diapers": "حفاضات الكبار",
+      "clothing": "ملابس",
+      "soap": "صابون",
+      "pads": "منتجات النظافة النسائية",
+      "school_supplies": "لوازم مدرسية",
+      "pots_and_pans": "أواني طهي",
+      "plates_and_cups": "أطباق وأكواب"
     },
     "distro": {
       "Tuesday": {
