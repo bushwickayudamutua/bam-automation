@@ -18,6 +18,12 @@ dependencies = [
     "pydantic>=2.13.4",
 ]
 
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+"bam_core.functions" = ["default_message_template_config.json"]
+
 [build-system]
 # These are the assumed default build requirements from pip:
 # https://pip.pypa.io/en/stable/reference/pip/#pep-517-and-518-support
