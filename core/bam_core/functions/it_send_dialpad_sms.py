@@ -228,8 +228,8 @@ class ItSendDialpadSMS(Function):
         messages = []
         for household in households:
             message_template = next(
-                message_template
-                for lang_key, message_template in self._message_template_map.items()
+                self._message_template_map[lang_key]
+                for lang_key in self.languages
                 if lang_key.to_airtable() in household.languages
             )
 
