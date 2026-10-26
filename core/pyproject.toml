@@ -15,7 +15,14 @@ dependencies = [
     "charset-normalizer==3.5.2",
     "googlemaps==4.10.0",
     "gspread==6.1.4",
+    "pydantic>=2.13.4",
 ]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+"bam_core.functions" = ["default_message_template_config.json"]
 
 [build-system]
 # These are the assumed default build requirements from pip:

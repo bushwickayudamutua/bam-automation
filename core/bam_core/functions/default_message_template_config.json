@@ -1,0 +1,166 @@
+{
+  "english": {
+    "script": [
+      "Hi ",
+      "[FIRST_NAME]",
+      ", I'm ",
+      "[VOLUNTEER_NAME]",
+      " from BAM. We are distributing ",
+      "[REQUEST_LABEL]",
+      ", ",
+      "[DAY]",
+      ", ",
+      "[TIME]",
+      ". Location is ",
+      "[LOCATION]",
+      ". If you want an appointment, what time do you prefer? Thank you :)"
+    ],
+    "request_labels": {
+      "baby_diapers": "baby diapers",
+      "adult_diapers": "adult diapers",
+      "clothing": "clothing",
+      "soap": "soap",
+      "pads": "feminine products",
+      "school_supplies": "school supplies",
+      "pots_and_pans": "pots and pans",
+      "plates_and_cups": "plates and cups"
+    },
+    "distro": {
+      "Tuesday": {
+        "day": "tomorrow Tuesday",
+        "time": "between 11 am - 12:30 pm"
+      },
+      "Friday": {
+        "day": "tomorrow Friday",
+        "time": "between 10 am - 12:30 pm"
+      },
+      "Sunday": {
+        "day": "tomorrow Sunday",
+        "time": "between 11 am - 12:30 pm"
+      }
+    }
+  },
+  "spanish": {
+    "script": [
+      "Hola ",
+      "[FIRST_NAME]",
+      ", soy ",
+      "[VOLUNTEER_NAME]",
+      " de BAM. Tenemos una distribución de ",
+      "[REQUEST_LABEL]",
+      ", ",
+      "[DAY]",
+      ", ",
+      "[TIME]",
+      ", en ",
+      "[LOCATION]",
+      ". Si deseas una cita porfa dinos a qué hora prefieres. Gracias :)"
+    ],
+    "request_labels": {
+      "baby_diapers": "pañales",
+      "adult_diapers": "pañales de adultos",
+      "clothing": "ropa",
+      "soap": "jabón",
+      "pads": "productos femenino",
+      "school_supplies": "cosas de escuela",
+      "pots_and_pans": "ollas y sartenes",
+      "plates_and_cups": "platos y tazas"
+    },
+    "distro": {
+      "Tuesday": {
+        "day": "mañana Martes",
+        "time": "entre las 11 am - 12:30 pm"
+      },
+      "Friday": {
+        "day": "mañana Viernes",
+        "time": "entre las 10 am - 12:30 pm"
+      },
+      "Sunday": {
+        "day": "mañana Domingo",
+        "time": "entre las 11 am - 12:30 pm"
+      }
+    }
+  },
+  "arabic": {
+    "script": [
+      "سلام ",
+      "[FIRST_NAME]",
+      "، أنا ",
+      "[VOLUNTEER_NAME]",
+      " من «بام». سنقوم غدًا بتوزيع ",
+      "[REQUEST_LABEL]",
+      ". لدينا مواعيد ",
+      "[DAY]",
+      " ",
+      "[TIME]",
+      " في ",
+      "[LOCATION]",
+      ". لو كنت تريد ميعاد، ما الوقت الذي يناسبكم؟ شكرا :)"
+    ],
+    "request_labels": {
+      "baby_diapers": "حفاضات الأطفال",
+      "adult_diapers": "حفاضات الكبار",
+      "clothing": "ملابس",
+      "soap": "صابون",
+      "pads": "منتجات النظافة النسائية",
+      "school_supplies": "لوازم مدرسية",
+      "pots_and_pans": "أواني طهي",
+      "plates_and_cups": "أطباق وأكواب"
+    },
+    "distro": {
+      "Tuesday": {
+        "day": "غداً يوم الثلاثاء",
+        "time": "من ۱۱ صباحًا حتى ۱۲:۳۰ ظهرًا"
+      },
+      "Friday": {
+        "day": "غداً الجمعة",
+        "time": "من ۱۰ صباحًا حتى ۱۲:۳۰ ظهرًا"
+      },
+      "Sunday": {
+        "day": "غداً يوم الأحد",
+        "time": "من ۱۱ صباحًا حتى ۱۲:۳۰ ظهرًا"
+      }
+    }
+  },
+  "mandarin": {
+    "script": [
+      "您好",
+      "[FIRST_NAME]",
+      "，这里是BAM布什威克互助会的",
+      "[VOLUNTEER_NAME]",
+      "。我们这",
+      "[DAY]",
+      "的免费必需品分发活动还有名额。我们会有",
+      "[REQUEST_LABEL]",
+      "。时间",
+      "[TIME]",
+      "，地址是",
+      "[LOCATION]",
+      "。如果您有时间参加，请在这里回复是+您想预约的时间。"
+    ],
+    "request_labels": {
+      "baby_diapers": "婴儿纸尿裤",
+      "adult_diapers": "成人纸尿裤",
+      "clothing": "衣服",
+      "soap": "肥皂",
+      "pads": "卫生巾",
+      "school_supplies": "学校用品",
+      "pots_and_pans": "锅和平底锅",
+      "plates_and_cups": "盘子和杯子"
+    },
+    "distro": {
+      "Tuesday": {
+        "day": "周二",
+        "time": "上午11:00到下午12:30"
+      },
+      "Friday": {
+        "day": "周五",
+        "time": "上午10:00到下午12:30"
+      },
+      "Sunday": {
+        "day": "周日",
+        "time": "上午11:00到下午12:30"
+      }
+    }
+  }
+}
