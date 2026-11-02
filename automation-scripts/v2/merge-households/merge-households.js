@@ -69,7 +69,7 @@ const mergeTextDeduped = (texts) => {
 }
 
 const notes = mergeText(households.map(h => h.getCellValue('Notes')))
-const otherReqs = mergeText(household.map(h => h.getCellValue('Other Requests and Comments'))
+const otherReqs = mergeText(households.map(h => h.getCellValue('Other Requests and Comments')))
 
 const otherLanguages = mergeTextDeduped(
     households.map(h => h.getCellValue('Other Languages'))
