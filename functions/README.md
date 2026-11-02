@@ -65,7 +65,7 @@ To ensure that functions are testable, reusable, and portable, please add the co
 ```python
 from bam_core.functions.update_website_request_data import UpdateWebsiteRequestData
 
-main = UpdateWebsiteRequestData().run_do
+main = UpdateWebsiteRequestData.run_do
 
 ```
 
@@ -74,35 +74,27 @@ You'll then write the logic for your function in `bam_core`.
 Below is an example to get you started. You would save this file as `bam_core/functions/my_new_function.py`
 
 ```python
-from typing import Dict, Any
 from bam_core.functions.base import Function
-from bam_core.functions.params import Params, Param
 
 class MyNewFunction(Function):
 
-    params = Params(
-        Param(
-            name="dry_run",
-            type="bool",
-            description="If true, update operations will not be performed.",
-            default=True,
-        )
+    name: str = Field(
+        "Francisca", description="A name.",
     )
 
-    def run(self, params, context) -> Dict[str, Any]:
+    def run(self):
         # # do your thing here
         # access airtable/mailjet/s3:
         # self.airtable
         # self.mailjet
         # self.s3
         # # access event / cli parameters
-        dry_run = params["dry_run"]
-        self.log.info("Hello!")
+        self.log.info(f"Hello, {self.name}!")
         return {}
 
 
 if __name__ == "__main__:
-    MyNewFunction().run_cli()
+    MyNewFunction.run_cli()
 ```
 
 **NOTE**: If your function is adding methods for accessing new services, or new methods for accessing existing services, consider adding those to [`bam_core.lib`](../core/bam_core/lib/) or [`bam_core.utils`](../core/bam_core/utils/) as a part of your work as it'll benefit others moving forward!

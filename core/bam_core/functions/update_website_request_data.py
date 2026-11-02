@@ -1,3 +1,4 @@
+import logging
 import os
 import tempfile
 from datetime import UTC, datetime, timedelta
@@ -5,11 +6,15 @@ from typing import NotRequired, TypedDict
 
 from pyairtable.formulas import AND, OR, Field
 from pyairtable.orm import Model
+from pydantic import Field as PdField
 
 from bam_core.functions.base import Function
-from bam_core.functions.params import Param, Params
 from bam_core.lib.airtable_v2 import FurnitureRequest, Request, count_table
+from bam_core.lib.s3 import S3
 from bam_core.utils.serde import obj_to_json
+
+logger = logging.getLogger(__name__)
+s3 = S3(parent_logger=logger)
 
 
 def request_status_is(s: str):
@@ -118,13 +123,9 @@ class UpdateWebsiteRequestData(Function):
     Update the request counts on the website
     """
 
-    params = Params(
-        Param(
-            name="dry_run",
-            type="bool",
-            default=True,
-            description="If true, data will not be written to the digital ocean space.",
-        )
+    dry_run: bool = PdField(
+        True,
+        description="If true, data will not be written to the digital ocean space.",
     )
 
     def _write_data_to_s3(self, data: object, s3_filepath: str):
@@ -132,12 +133,12 @@ class UpdateWebsiteRequestData(Function):
         tf = os.path.join(td, "data.json")
         with open(tf, "w") as f:
             f.write(obj_to_json(data))
-        fp = self.s3.upload(tf, s3_filepath, mimetype="application/json")
-        self.s3.set_public(fp)
-        self.s3.purge_cdn_cache(s3_filepath)
-        self.log.info(f"Purged CDN cache for file: {s3_filepath}")
+        fp = s3.upload(tf, s3_filepath, mimetype="application/json")
+        s3.set_public(fp)
+        s3.purge_cdn_cache(s3_filepath)
+        logger.info(f"Purged CDN cache for file: {s3_filepath}")
 
-    def run(self, params):
+    def run(self):
         """"""
         now = datetime.now(UTC)
 
@@ -161,7 +162,7 @@ class UpdateWebsiteRequestData(Function):
             "metrics": [],
         }
         for metric in METRIC_CONFIGS:
-            self.log.info(f"Generating metric:\n\t{metric}")
+            logger.info(f"Generating metric:\n\t{metric}")
             name = metric["name"]
             translations = metric["translations"]
             model = metric["model"]
@@ -211,19 +212,19 @@ class UpdateWebsiteRequestData(Function):
                 }
             )
 
-        self.log.info(
+        logger.info(
             f"Generated metrics:\n\tOPEN {open_request_data['metrics']}\n\tFULFILLED {fulfilled_request_data['metrics']}"
         )
 
-        if params["dry_run"]:
-            self.log.info("Dry run enabled. Skipping upload to digital ocean space.")
+        if self.dry_run:
+            logger.info("Dry run enabled. Skipping upload to digital ocean space.")
             return open_request_data, fulfilled_request_data
         self._write_data_to_s3(open_request_data, OPEN_REQUEST_FILEPATH)
-        self.log.info(
+        logger.info(
             f"Uploaded open request data with updated ts: {now.isoformat()} to digital ocean space: {OPEN_REQUEST_FILEPATH}"
         )
         self._write_data_to_s3(fulfilled_request_data, FULFILLED_REQUEST_FILEPATH)
-        self.log.info(
+        logger.info(
             f"Uploaded fulfilled request data from {start_date} to {end_date} to digital ocean space: {FULFILLED_REQUEST_FILEPATH}"
         )
 
@@ -231,4 +232,4 @@ class UpdateWebsiteRequestData(Function):
 
 
 if __name__ == "__main__":
-    UpdateWebsiteRequestData().run_cli()
+    UpdateWebsiteRequestData.run_cli()

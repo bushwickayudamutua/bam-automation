@@ -5,7 +5,6 @@ This module should not import from other utils
 
 import datetime
 import json
-from collections import Counter
 from decimal import Decimal
 from inspect import isgenerator
 from typing import Any
@@ -22,7 +21,7 @@ class SmartJSONEncoder(json.JSONEncoder):
     item_separator = ","
     key_separator = ":"
 
-    def default(self, o: Any) -> str:
+    def default(self, o: Any) -> Any:
         """Return a serializable for ``o``, or call the base implementation."""
         if isinstance(o, bytes):
             return o.decode("utf-8")
@@ -36,27 +35,12 @@ class SmartJSONEncoder(json.JSONEncoder):
             return list(o)
         if isgenerator(o):
             return list(o)
-        if isinstance(o, Counter):
-            return dict(o)
-        if self.refs and hasattr(o, "to_ref"):
-            return o.to_ref()
-        if hasattr(o, "to_dict"):
-            return o.to_dict()
-        if hasattr(o, "to_json"):
-            return o.to_json()
-        return json.JSONEncoder.default(self, o)
+        return super().default(o)
 
 
 # ///////////////////
 # FUNCTIONS
 # ///////////////////
-
-
-def json_to_obj(s: str) -> object:
-    """
-    json string > obj
-    """
-    return json.loads(s)
 
 
 def obj_to_json(o: object) -> str:
