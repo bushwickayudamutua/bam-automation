@@ -1,6 +1,6 @@
 ## Input parameters for iterative mass texting with `ItSendDialpadSMS`
 
-[it_sms_params_example.json](it_sms_params_example.json) is an example of DO input, but can also be used for CLI as `--config-file`.
+[sms_params/it_sms_params_example.json](sms_params/it_sms_params_example.json) is an example of DO input, but can also be used for CLI as `--config-file`.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
@@ -9,8 +9,8 @@
 | `request_types` | list | required | EG items to text for, in order of priority. Must be defined in `request_label`. |
 | `languages` | list | required | Languages to text in, in order of priority. Must be defined in `message_template` and `request_label`. |
 | `volunteer` | list | required | Volunteer name, either one value used for every language, or one per language in the same order as `languages`. |
-| `message_template` | json | | Overrides the defaults in [message_template.json](message_template.json). |
-| `request_label` | json | | Overrides the defaults in [request_label.json](request_label.json). |
+| `message_template` | json | | Overrides the defaults in [sms_params/message_template.json](sms_params/message_template.json). |
+| `request_label` | json | | Overrides the defaults in [sms_params/request_label.json](sms_params/request_label.json). |
 | `exclude_texted_today` | bool | `"True"` | Exclude Households texted today. |
 | `max_messages` | int | `500` | Maximum number of messages to send. |
 | `dry_run` | bool | `"True"` | Run in testing mode without sending Dialpad messages. |
@@ -24,9 +24,6 @@
 ### Local run
 Run from this function's directory with a config file in DO input format:
 ```
-export PYTHONPATH="${PYTHONPATH}:$(pwd)/core/"
-cd functions/packages/airtable_v2/it_send_dialpad_sms/
-
 python3 -m bam_core.functions.it_send_dialpad_sms \
     --config-file sms_params/it_sms_params_example.json
 ```
@@ -37,7 +34,7 @@ python -m bam_core.functions.it_send_dialpad_sms \
 ```
 
 ### `message_template`
-[message_template.json](message_template.json) contains the default templates for SMS messages.
+[sms_params/message_template.json](sms_params/message_template.json) contains the default templates for SMS messages.
 
 Currently supported languages:
 `English`, `Spanish`, `Arabic`, `Chinese`
@@ -69,7 +66,7 @@ Format per language:
 ```
 
 ### `request_label`
-[request_label.json](request_label.json) contains the default EG item labels used in the SMS messages.
+[sms_params/request_label.json](sms_params/request_label.json) contains the default EG item labels used in the SMS messages.
 
 Currently supported languages:
 `English`, `Spanish`, `Arabic`, `Chinese`
