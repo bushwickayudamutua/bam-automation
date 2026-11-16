@@ -148,20 +148,29 @@ class Household(Model):
             needs_delivery: bool = False,
             needs_email_outreach: bool = False,
         ): ...
-    
 
-    def get_requested_date(self, type: str):
-        DATE_FIELD_MAP = {
-            "Pañales / Baby Diapers / 嬰兒紙尿褲": "baby_diapers_requested_at",
-            "Pañales de adultos / Adult Diapers / 成人紙尿褲": "adult_diapers_requested_at",
-            "Ropa / Clothing / 服裝": "clothing_requested_at",
-            "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品": "soap_requested_at",
-            "Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾": "pads_requested_at",
-            "Cosas de Escuela / School Supplies / 學校用品": "school_supplies_requested_at",
-            "Ollas y Sartenes / Pots & Pans / 鍋碗瓢盆": "pots_and_pans_requested_at",
-            "Platos o Tazas / Plates or Cups / 盘子或杯子": "plates_and_cups_requested_at",
-        }
-        return getattr(self, DATE_FIELD_MAP.get(type))
+    def get_requested_date(self, type: str) -> date | None:
+        if type == "Pañales / Baby Diapers / 嬰兒紙尿褲":
+            request_dates = self.baby_diapers_requested_at
+        if type == "Pañales de adultos / Adult Diapers / 成人紙尿褲":
+            request_dates = self.adult_diapers_requested_at
+        if type == "Ropa / Clothing / 服裝":
+            request_dates = self.clothing_requested_at
+        if (
+            type
+            == "Jabón & Productos de baño / Soap & Shower Products / 肥皂和淋浴用品"
+        ):
+            request_dates = self.soap_requested_at
+        if type == "Productos Femenino - Toallitas / Feminine Products - Pads / 衛生巾":
+            request_dates = self.pads_requested_at
+        if type == "Cosas de Escuela / School Supplies / 學校用品":
+            request_dates = self.school_supplies_requested_at
+        if type == "Ollas y Sartenes / Pots & Pans / 鍋碗瓢盆":
+            request_dates = self.pots_and_pans_requested_at
+        if type == "Platos o Tazas / Plates or Cups / 盘子或杯子":
+            request_dates = self.plates_and_cups_requested_at
+        if request_dates:
+            return request_dates[0]
 
 
 class Request(Model):
