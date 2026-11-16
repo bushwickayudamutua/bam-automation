@@ -111,19 +111,20 @@ class ItSendDialpadSMS(Function):
         None, description="An Airtable view name to fetch Household records from."
     )
     message_template_config_path: str | None = Field(
-        None, description="Path to the template config file."
+        None,
+        description="Path to the template config file. The internal default config is used if not specified, in which case 'volunteer_name' and 'location' must be provided for each specified language, via a combination of 'default_volunteer_name', 'default_location', and 'message_template_overrides'.",
     )
     message_template_overrides: dict[LanguageKey, dict] | None = Field(
         None,
         description="Optional parameters to override default parameters for text message scripts.",
     )
-    volunteer_name: str | None = Field(
+    default_volunteer_name: str | None = Field(
         None,
-        description="Name of the volunteer sending sms messages. This parameter takes precedence over any volunteer names specified in message_template_overrides.",
+        description="Default string to use for each language's 'volunteer_name' parameter. If not specified, must be defined per language in the config or via 'message_template_overrides'.",
     )
-    location: str | None = Field(
+    default_location: str | None = Field(
         None,
-        description="Location of the distro. This parameters takes precedence over any locations specified in message_template_overrides.",
+        description="Default string to use for each language's 'location' parameter. If not specified, must be defined per language in the config or via 'message_template_overrides'.",
     )
     exclude_texted_today: bool = Field(
         True,
@@ -161,22 +162,22 @@ class ItSendDialpadSMS(Function):
             else deep_merge(message_template_map_obj, self.message_template_overrides)
         )
 
-        # Save volunteer name in config if provided
-        if self.volunteer_name is not None:
-            for template in message_template_map_obj.values():
-                template["volunteer_name"] = self.volunteer_name
-
-        # Save location in config if provided
-        if self.location is not None:
-            for template in message_template_map_obj.values():
-                template["location"] = self.location
+        # Fill in default volunteer name, location if provided
+        for template_obj in message_template_map_obj.values():
+            if "volunteer_name" not in template_obj:
+                template_obj["volunteer_name"] = self.default_volunteer_name
+            if "location" not in template_obj:
+                template_obj["location"] = self.default_location
 
         # Validate object
         self._message_template_map = TypeAdapter(
             dict[LanguageKey, MessageTemplate]
         ).validate_python(message_template_map_obj)
 
-        return self
+        # Save location in config if provided
+        if self.location is not None:
+            for template in message_template_map_obj.values():
+                template["location"] = self.location
 
     def run(self):
         # Pull Household records, applying appropriate filtering and sorting
